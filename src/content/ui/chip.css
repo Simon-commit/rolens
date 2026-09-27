@@ -66,9 +66,10 @@
 .flag {
   display: inline-flex;
 }
-/* Keeps the last marker clear of the chip's rounded (and, on rare items, gradient) edge. */
-.flag:last-child {
-  margin-right: 6px;
+/* An icon at the end sits as close to the edge as the logo does at the start, so the
+   chip's contents stay optically centred. */
+.chip:has(> .flag:last-child) {
+  padding-right: 5px;
 }
 .flag .rl-icon {
   width: 12px;
@@ -82,23 +83,7 @@
   color: var(--rl-warn);
 }
 .chip.is-rare {
-  border-color: transparent;
-}
-.chip.is-rare::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  padding: 1.5px;
-  border-radius: inherit;
-  background: linear-gradient(120deg, var(--rl-rare-a), var(--rl-rare-b), var(--rl-rare-c), var(--rl-rare-a));
-  background-size: 300% 100%;
-  animation: rl-shimmer 6s linear infinite;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  border-color: var(--rl-rare-line);
 }
 .chip.is-rare .flag--rare {
   color: var(--rl-rare-text);
@@ -132,7 +117,4 @@
   grid-row: 2;
   grid-column: 2 / -1;
   font-size: 11px;
-}
-:host([data-placement='overlay']) .flag:last-child {
-  margin-right: 0;
 }

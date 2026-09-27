@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatAge, formatDelta, formatPercent, formatRobux, percentChange, setNumberLocale } from '../src/core/format';
+import {
+  detectSeparators,
+  formatAge,
+  formatDelta,
+  formatPercent,
+  formatRobux,
+  percentChange,
+  setNumberLocale,
+} from '../src/core/format';
 import { formatUsd } from '../src/core/usd';
 
 describe('format', () => {
@@ -46,5 +54,13 @@ describe('number locale', () => {
   it('keeps English formatting by default', () => {
     expect(formatRobux(4000, false)).toBe('4,000');
     expect(formatUsd(38.6)).toBe('$38.60');
+  });
+});
+
+describe("reading Roblox's number format", () => {
+  it('detects grouping from displayed Robux amounts', () => {
+    expect(detectSeparators(['450', '14.186'])).toEqual({ group: '.', decimal: ',' });
+    expect(detectSeparators(['1,409,611'])).toEqual({ group: ',', decimal: '.' });
+    expect(detectSeparators(['450', '9'])).toBeNull();
   });
 });

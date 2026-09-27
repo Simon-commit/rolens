@@ -1,4 +1,4 @@
-import { setNumberLocale } from '../core/format';
+import { detectSeparators, numberSeparators, setNumberLocale, setNumberSeparators } from '../core/format';
 import { send } from '../core/messages';
 import { normaliseSettings, type Settings } from '../core/settings';
 import { resolveProvider } from '../providers';
@@ -6,7 +6,7 @@ import { findItemCards, renderBadges } from './badges';
 import { isOwnNode, removeOwnNodes } from './dom';
 import { registerFont } from './fonts';
 import { renderItemPanel } from './item-panel';
-import { catalogIdFromPath } from './selectors';
+import { catalogIdFromPath, SELECTORS } from './selectors';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
 import { applyThemePreference, detectTheme } from './ui/shadow';
@@ -16,8 +16,30 @@ const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
 let settings: Settings = normaliseSettings(undefined);
 let scheduled = false;
 
+let separatorsFromPage = false;
+
+/**
+ * Roblox formats numbers by account setting, not page language, so RoLens reads the
+ * grouping from Robux amounts on the page. Returns true when it changed.
+ */
+function matchRobloxNumbers(): boolean {
+  if (separatorsFromPage) return false;
+  const samples = [...document.querySelectorAll(SELECTORS.robuxAmount)]
+    .slice(0, 60)
+    .map((node) => node.textContent ?? '');
+  const found = detectSeparators(samples);
+  if (!found) return false;
+  separatorsFromPage = true;
+  const current = numberSeparators();
+  if (current.group === found.group && current.decimal === found.decimal) return false;
+  setNumberSeparators(found.group, found.decimal);
+  return true;
+}
+
 async function update(): Promise<void> {
   scheduled = false;
+  // Chips drawn before Roblox's prices appeared used the fallback format: redraw them.
+  if (matchRobloxNumbers()) removeOwnNodes(document);
   const cards = findItemCards(document);
   const pageItemId = settings.showItemPanel ? catalogIdFromPath(location.pathname) : null;
   const ids = new Set(cards.values());
@@ -65,8 +87,8 @@ function schedule(): void {
 
 function start(): void {
   registerFont();
-  // Numbers follow Roblox's own language, so RoLens reads "3.507" wherever Roblox does.
-  setNumberLocale(document.documentElement.lang || navigator.language);
+  // Until Roblox's own prices are on the page, follow the browser's language.
+  setNumberLocale(navigator.language || document.documentElement.lang);
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.
   new MutationObserver((mutations) => {
     const relevant = mutations.some((m) =>

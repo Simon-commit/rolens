@@ -28,12 +28,9 @@ html[data-rolens-dark] body:not(.dark-theme) {
   margin: 0;
 }
 
-[data-rolens-rare] {
-  --rolens-rare-glow:
-    0 0 0 2px rgba(245, 184, 61, 0.9), 0 0 0 5px rgba(232, 121, 249, 0.14), 0 6px 20px -4px rgba(245, 184, 61, 0.45);
-}
+/* Rare items: a quiet gold hairline, no glow or animation. */
 [data-rolens-rare] .item-card-thumb-container,
 [data-rolens-rare]:not(:has(.item-card-thumb-container)) {
-  border-radius: 10px;
-  box-shadow: var(--rolens-rare-glow);
+  outline: 1.5px solid rgba(214, 158, 46, 0.75);
+  outline-offset: -1.5px;
 }

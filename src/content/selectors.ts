@@ -7,9 +7,11 @@ export const SELECTORS = {
   /** Links that identify an item. The id is read from the href. */
   itemLink: 'a[href*="/catalog/"]',
   /** The card that owns an item link; one badge per card. */
-  card: '.item-card-container, .item-card, .list-item, li',
-  /** Where the badge goes inside a card, when present. */
-  cardCaption: '.item-card-caption, .item-card-name-link, .item-card-name',
+  card: '.trade-request-item, .item-card-container, .item-card, .list-item, li',
+  /** The card's caption (name and price); used to place the chip clear of the name. */
+  cardCaption: '.item-card-caption, .item-card-name-link, .item-card-name, .item-name',
+  /** Roblox's own Robux amounts, used to match its digit grouping (e.g. "14.186"). */
+  robuxAmount: '.text-robux-tile, .text-robux, .text-robux-lg',
   /** One side of a trade on the trades page. */
   tradeOffer: '.trade-list-detail-offer',
   tradeOfferHeader: '.trade-list-detail-offer-header, h3',

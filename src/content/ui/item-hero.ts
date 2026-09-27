@@ -33,11 +33,7 @@ const css = `
   content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
   background: linear-gradient(90deg, var(--rl-brand-a), var(--rl-brand-b));
 }
-.card.is-rare::before {
-  background: linear-gradient(90deg, var(--rl-rare-a), var(--rl-rare-b), var(--rl-rare-c), var(--rl-rare-a));
-  background-size: 300% 100%;
-  animation: rl-shimmer 6s linear infinite;
-}
+.card.is-rare::before { background: var(--rl-rare-line); }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .link {

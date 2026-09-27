@@ -25,6 +25,31 @@ export function setNumberLocale(locale: string | undefined): void {
   }
 }
 
+/** Uses the given separators directly, e.g. when read from numbers Roblox displays. */
+export function setNumberSeparators(group: string, decimal: string): void {
+  separators = { group, decimal };
+}
+
+/** Current separators, so callers can tell whether a change needs a re-render. */
+export function numberSeparators(): { group: string; decimal: string } {
+  return { ...separators };
+}
+
+/**
+ * Reads the digit grouping Roblox uses from amounts it displays. Robux amounts are whole
+ * numbers, so "14.186" can only mean a dot is the thousands separator. Null when no
+ * amount on the page is large enough to tell.
+ */
+export function detectSeparators(samples: Iterable<string>): { group: string; decimal: string } | null {
+  for (const sample of samples) {
+    const match = /^\s*\d{1,3}([.,\u00a0\u202f ])\d{3}(?:\1\d{3})*\s*$/.exec(sample);
+    if (!match) continue;
+    const group = match[1]!;
+    return { group, decimal: group === '.' ? ',' : '.' };
+  }
+  return null;
+}
+
 /** Rewrites an en-US formatted number with the current locale's separators. */
 export function localiseDigits(text: string): string {
   if (separators.group === ',' && separators.decimal === '.') return text;

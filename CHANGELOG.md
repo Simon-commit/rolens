@@ -5,6 +5,21 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-09-27
+
+### Changed
+
+- Rare items are marked with a quiet gold outline instead of an animated, multi-coloured glow. Value chips keep equal spacing on both sides when the rare marker is shown.
+
+### Fixed
+
+- Chips in the trade offer lists now line up with the Robux price instead of being placed inside the item name.
+- Number formatting is read from Roblox's own prices, since Roblox formats numbers by account setting rather than page language.
+
+### Internal
+
+- Tests now run against markup from a real, sanitised Roblox trade page.
+
 ## [0.4.2] - 2026-09-27
 
 ### Fixed

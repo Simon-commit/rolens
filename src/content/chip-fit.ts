@@ -8,8 +8,8 @@
  *
  *   overlay  tiles (large thumbnail): top-left corner of the thumbnail, the one corner
  *            Roblox leaves free (serial badges sit bottom-left, checkboxes top-right)
- *   row      list rows (small thumbnail): right-aligned in the row, in the free space
- *            beside the price, below the item name
+ *   row      list rows (small thumbnail): right-aligned on the Robux price line, which
+ *            is short and leaves the right side free; the item name is never covered
  *   inline   cards without a thumbnail: in the caption, as before
  *
  * None of these change the size of any Roblox element.
@@ -64,10 +64,19 @@ function anchor(host: HTMLElement, placement: Placement, target: HTMLElement): v
   if (host.parentElement !== target) target.append(host);
 }
 
-/** Vertically places a row chip below the item name, or centred when there's no room. */
-function positionInRow(host: HTMLElement, card: Element, caption: Element | null): void {
+/**
+ * Vertically places a row chip on the price line, or below the item name when there is no
+ * price, or centred as a last resort.
+ */
+function positionInRow(host: HTMLElement, card: Element, caption: Element | null, price: Element | null): void {
   const box = card.getBoundingClientRect();
   const height = host.getBoundingClientRect().height || 22;
+  const line = price?.getBoundingClientRect();
+  if (line && line.height > 0) {
+    const top = line.top - box.top + line.height / 2 - height / 2;
+    host.style.top = `${Math.round(Math.min(Math.max(0, top), box.height - height))}px`;
+    return;
+  }
   const nameBottom = caption ? caption.getBoundingClientRect().bottom - box.top : 0;
   let top = nameBottom + (box.height - nameBottom - height) / 2;
   if (!caption || top < nameBottom || top + height > box.height - 2) top = (box.height - height) / 2;
@@ -78,7 +87,12 @@ function positionInRow(host: HTMLElement, card: Element, caption: Element | null
  * Places `host` in `card`. Returns false when the card isn't laid out yet (hidden or
  * virtualised), so the caller can try again on a later scan.
  */
-export function fitChip(host: HTMLElement, card: Element, caption: Element | null): boolean {
+export function fitChip(
+  host: HTMLElement,
+  card: Element,
+  caption: Element | null,
+  price: Element | null = null,
+): boolean {
   const box = card.getBoundingClientRect();
   if (box.width === 0 && box.height === 0) return false;
 
@@ -90,7 +104,7 @@ export function fitChip(host: HTMLElement, card: Element, caption: Element | nul
   if (thumbnail && card instanceof HTMLElement) {
     anchor(host, 'row', card);
     host.style.right = `${ROW_INSET}px`;
-    positionInRow(host, card, caption);
+    positionInRow(host, card, caption, price);
     return true;
   }
   const inline = caption ?? card;

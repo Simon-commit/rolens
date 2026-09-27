@@ -27,11 +27,9 @@
   --rl-warn: #d97706;
   --rl-warn-soft: rgba(217, 119, 6, 0.1);
 
-  --rl-rare-a: #f5b83d;
-  --rl-rare-b: #e879f9;
-  --rl-rare-c: #60a5fa;
   --rl-rare-text: #b7791f;
   --rl-rare-soft: rgba(245, 184, 61, 0.14);
+  --rl-rare-line: rgba(214, 158, 46, 0.55);
 
   --rl-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --rl-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -6px rgba(15, 23, 42, 0.12);
@@ -77,6 +75,7 @@
 
   --rl-rare-text: #fcd34d;
   --rl-rare-soft: rgba(252, 211, 77, 0.12);
+  --rl-rare-line: rgba(252, 211, 77, 0.45);
 
   --rl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -6px rgba(0, 0, 0, 0.5);
@@ -166,25 +165,9 @@
   color: var(--rl-loss);
 }
 .rl-pill--rare {
-  position: relative;
   background: var(--rl-rare-soft);
   color: var(--rl-rare-text);
-}
-.rl-pill--rare::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(120deg, var(--rl-rare-a), var(--rl-rare-b), var(--rl-rare-c), var(--rl-rare-a));
-  background-size: 300% 100%;
-  animation: rl-shimmer 6s linear infinite;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--rl-rare-line);
 }
 
 /* Demand meter: five bars */
@@ -241,11 +224,6 @@
   background: var(--rl-accent);
 }
 
-@keyframes rl-shimmer {
-  to {
-    background-position: 300% 0;
-  }
-}
 @keyframes rl-rise {
   from {
     opacity: 0;

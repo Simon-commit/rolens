@@ -34,9 +34,10 @@ export function renderBadges(
     const existing = card.querySelector<HTMLElement>(':scope [data-rolens="badge"]');
     const item = lookup(id);
     const caption = card.querySelector(SELECTORS.cardCaption);
+    const price = card.querySelector(SELECTORS.robuxAmount);
     if (item && existing?.dataset.rolensKey === renderKey(item)) {
       // Cards that weren't laid out yet (hidden tabs, virtualised lists) get placed once visible.
-      if (existing.dataset.fit === 'pending' && fitChip(existing, card, caption)) existing.dataset.fit = 'done';
+      if (existing.dataset.fit === 'pending' && fitChip(existing, card, caption, price)) existing.dataset.fit = 'done';
       continue;
     }
     existing?.remove();
@@ -45,7 +46,7 @@ export function renderBadges(
     if (item.rare) card.setAttribute(RARE_ATTR, '');
     const chip = createChip(item, ctx);
     chip.dataset.rolensKey = renderKey(item);
-    chip.dataset.fit = fitChip(chip, card, caption) ? 'done' : 'pending';
+    chip.dataset.fit = fitChip(chip, card, caption, price) ? 'done' : 'pending';
     if (!chip.isConnected) (caption ?? card).append(chip);
   }
 }

@@ -49,6 +49,17 @@ describe('chip placement', () => {
     expect(host.style.right).toBe('10px');
   });
 
+  it('lines a row chip up with the price, whatever the name does', () => {
+    box(card, 0, 100, 330, 60);
+    box(thumb, 10, 110, 40, 40);
+    box(caption, 64, 108, 240, 22);
+    const price = document.createElement('span');
+    box(price, 64, 134, 70, 18);
+    fitChip(host, card, caption, price);
+    // Price line centre is 43px into the row; the 22px chip is centred on it.
+    expect(host.style.top).toBe('32px');
+  });
+
   it('centres a row chip when there is no room under the name', () => {
     box(card, 0, 0, 330, 40);
     box(thumb, 10, 4, 32, 32);
