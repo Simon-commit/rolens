@@ -21,7 +21,15 @@ RoLens will never:
 - Collect analytics or send any data about you anywhere.
 
 All requests to Roblox are made from [`src/content/roblox-api.ts`](src/content/roblox-api.ts), which
-contains only GET requests. Any change to that file should be reviewed with this list in mind.
+contains only GET requests. These are the only Roblox endpoints it calls:
+
+| Endpoint                                                                | Used for                                          | Sends your session |
+| ----------------------------------------------------------------------- | ------------------------------------------------- | ------------------ |
+| `GET trades.roblox.com/v1/trades/{inbound,outbound,completed,inactive}` | Matching each row in the Trades list to its trade | Yes                |
+| `GET trades.roblox.com/v2/trades/{id}` (or `/v1/trades/{id}`)           | The items and Robux in a trade shown in the list  | Yes                |
+| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory              | No                 |
+
+The two trades endpoints are called only while trade list previews are turned on. Any change to that file should be reviewed with this list in mind.
 
 Any change to `permissions` or `host_permissions` in `src/manifest.json` is listed in the
 changelog and requires a stated justification in its pull request.
