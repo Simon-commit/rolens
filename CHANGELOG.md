@@ -5,6 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-09-27
+
+### Added
+
+- Outbound trade tools above the outbound Trades list. "Cancel invalid" finds trades offering items you no longer own, which Roblox leaves open although they can never complete; "Cancel all" lists every outbound trade. Both open a review of the exact trades, with the items no longer owned marked, and nothing is cancelled until you confirm. Trades are then cancelled one at a time, with progress, and the tools can be turned off in the popup.
+
+### Security
+
+- RoLens can now cancel trades. This is its first request that changes anything on Roblox: `POST trades.roblox.com/v1/trades/{id}/decline`, sent with your session and Roblox's anti-forgery token, only for outbound trades you confirmed. It never runs automatically. Ownership is checked with Roblox's public inventory API (`inventory.roblox.com`), without cookies, never with Rolimon's scans.
+
 ## [0.7.2] - 2026-09-27
 
 ### Added

@@ -32,6 +32,11 @@ export interface Settings {
    * pending. Reads outbound trades with the user's own session, read-only.
    */
   warnDuplicateTrades: boolean;
+  /**
+   * Tools above the outbound Trades list to cancel trades that offer items the user no
+   * longer owns, or all outbound trades. Nothing is cancelled without confirmation.
+   */
+  showCancelTools: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -59,6 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showProfileValue: true,
   showTradePreviews: true,
   warnDuplicateTrades: true,
+  showCancelTools: true,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
@@ -81,6 +87,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'showProfileValue',
     'showTradePreviews',
     'warnDuplicateTrades',
+    'showCancelTools',
     'compactNumbers',
     'showUsd',
     'useRolimons',

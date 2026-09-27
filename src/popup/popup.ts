@@ -117,6 +117,7 @@ function renderToggles(): void {
       | 'showTradeTotals'
       | 'showTradePreviews'
       | 'warnDuplicateTrades'
+      | 'showCancelTools'
       | 'showProfileValue'
       | 'showItemPanel'
       | 'showUsd'

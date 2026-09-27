@@ -1,17 +1,22 @@
 /*
- * The only code in RoLens that talks to Roblox. Every call is a read-only GET:
+ * The only code in RoLens that talks to Roblox:
  *
  *   thumbnails.roblox.com  item images and avatar headshots for the inventory panel and trade
  *                          proofs; public, sent without cookies
- *   trades.roblox.com      the trades you can already see on the Trades page, for value
- *                          previews; sent with your Roblox session, as the page itself does
+ *   inventory.roblox.com   your limiteds, to find outbound trades offering items you no longer
+ *                          own; public, sent without cookies
+ *   trades.roblox.com      the trades you can already see on the Trades page (GET, with your
+ *                          session, as the page itself does), and declining your own outbound
+ *                          trades (POST), only after you confirm the exact list in RoLens
  *
- * RoLens never sends, accepts, declines or counters a trade, never changes anything on
- * your account, and never sends any of this data anywhere else. Requests run one at a
- * time, only for what is on screen, and stop for a while if Roblox asks them to.
+ * declineTrade() is the only call that changes anything. It is used only by the cancel
+ * outbound trades tool, never automatically. RoLens never sends, accepts or counters a
+ * trade, and never sends any of this data anywhere else. Requests run one at a time and
+ * stop for a while if Roblox asks them to.
  */
 
 const THUMBNAILS = 'https://thumbnails.roblox.com/v1/assets';
+const INVENTORY = 'https://inventory.roblox.com/v1/users';
 const TRADES = 'https://trades.roblox.com';
 /** Gap between trade requests. Roblox rate-limits the trades API tightly. */
 export const TRADE_REQUEST_GAP_MS = 1_200;
@@ -130,6 +135,8 @@ export interface TradeSide {
   /** Each item's name as Roblox gives it, in the same order; empty where Roblox gives none. */
   names: string[];
   robux: number;
+  /** Each copy's own id (user asset id) where Roblox gives it, in the same order. */
+  instanceIds?: (number | null)[];
 }
 
 export interface TradeOffers {
@@ -225,16 +232,21 @@ const nameOf = (...values: unknown[]): string => {
   return typeof found === 'string' ? found.trim() : '';
 };
 
-/** Ids and names of the entries that have an id. */
+/** Ids and names of the entries that have an id, with each copy's own id when Roblox gives any. */
 function readItems(
   entries: unknown,
-  read: (entry: Record<string, unknown>) => { id: number | null; name: string },
-): { itemIds: number[]; names: string[] } {
+  read: (entry: Record<string, unknown>) => { id: number | null; name: string; instance: number | null },
+): { itemIds: number[]; names: string[]; instanceIds?: (number | null)[] } {
   const list = (Array.isArray(entries) ? entries : [])
     .filter(isRecord)
     .map(read)
-    .filter((entry): entry is { id: number; name: string } => entry.id !== null);
-  return { itemIds: list.map((entry) => entry.id), names: list.map((entry) => entry.name) };
+    .filter((entry): entry is { id: number; name: string; instance: number | null } => entry.id !== null);
+  const instanceIds = list.map((entry) => entry.instance);
+  return {
+    itemIds: list.map((entry) => entry.id),
+    names: list.map((entry) => entry.name),
+    ...(instanceIds.some((id) => id !== null) ? { instanceIds } : {}),
+  };
 }
 
 /** v1: `offers[].userAssets[].assetId`. */
@@ -242,7 +254,11 @@ function sidesV1(body: Record<string, unknown>): Side[] | null {
   if (!Array.isArray(body.offers)) return null;
   return body.offers.filter(isRecord).map((offer) => ({
     userId: isRecord(offer.user) ? positiveInt(offer.user.id) : null,
-    ...readItems(offer.userAssets, (asset) => ({ id: positiveInt(asset.assetId), name: nameOf(asset.name) })),
+    ...readItems(offer.userAssets, (asset) => ({
+      id: positiveInt(asset.assetId),
+      name: nameOf(asset.name),
+      instance: positiveInt(asset.id),
+    })),
     robux: positiveInt(offer.robux) ?? 0,
   }));
 }
@@ -255,7 +271,11 @@ function sidesV2(body: Record<string, unknown>): Side[] | null {
     userId: isRecord(offer.user) ? positiveInt(offer.user.id) : null,
     ...readItems(offer.items, (item) => {
       const target = isRecord(item.itemTarget) ? item.itemTarget : {};
-      return { id: positiveInt(Number(target.targetId)), name: nameOf(item.itemName, item.name, target.name) };
+      return {
+        id: positiveInt(Number(target.targetId)),
+        name: nameOf(item.itemName, item.name, target.name),
+        instance: positiveInt(item.userAssetId) ?? positiveInt(target.userAssetId),
+      };
     }),
     robux: positiveInt(offer.robux) ?? 0,
   }));
@@ -269,6 +289,90 @@ export function parseTradeOffers(body: unknown, myUserId: number): TradeOffers |
   if (mine === -1) return null;
   const give = sides[mine]!;
   const receive = sides[1 - mine]!;
-  const side = ({ itemIds, names, robux }: Side): TradeSide => ({ itemIds, names, robux });
+  const side = ({ itemIds, names, robux, instanceIds }: Side): TradeSide => ({
+    itemIds,
+    names,
+    robux,
+    ...(instanceIds ? { instanceIds } : {}),
+  });
   return { give: side(give), receive: side(receive) };
+}
+
+/* Cancelling outbound trades ---------------------------------------------------------- */
+
+export type DeclineResult = 'declined' | 'failed' | 'limited';
+
+let csrfToken: string | null = null;
+
+/** Roblox's anti-forgery token, from the page or from Roblox's reply when it has changed. */
+function pageCsrfToken(): string | null {
+  return csrfToken ?? document.querySelector('meta[name="csrf-token"]')?.getAttribute('data-token') ?? null;
+}
+
+async function postDecline(tradeId: number, fetchFn: typeof fetch): Promise<Response> {
+  const token = pageCsrfToken();
+  return fetchFn(`${TRADES}/v1/trades/${tradeId}/decline`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(token ? { 'X-CSRF-TOKEN': token } : {}) },
+  });
+}
+
+/**
+ * Declines (cancels) one of the signed-in user's own outbound trades. The only request in
+ * RoLens that changes anything; called only after the user confirms the list of trades.
+ */
+export async function declineTrade(tradeId: number, fetchFn: typeof fetch = fetch): Promise<DeclineResult> {
+  const result = await throttled(async (): Promise<DeclineResult> => {
+    let response = await postDecline(tradeId, fetchFn);
+    // Roblox answers 403 with a fresh token when the page's token has expired; retry once with it.
+    const fresh = response.headers.get('x-csrf-token');
+    if (response.status === 403 && fresh) {
+      csrfToken = fresh;
+      response = await postDecline(tradeId, fetchFn);
+    }
+    if (response.status === 429) {
+      blockedUntil = Date.now() + TRADE_BACKOFF_MS;
+      return 'limited';
+    }
+    return response.ok ? 'declined' : 'failed';
+  });
+  if (result === null) return Date.now() < blockedUntil ? 'limited' : 'failed';
+  return result;
+}
+
+export interface OwnedItem {
+  /** The copy's own id (Roblox's user asset id). */
+  instanceId: number | null;
+  assetId: number;
+}
+
+/**
+ * The user's limiteds, read from Roblox's public inventory API without cookies. Null when
+ * the inventory cannot be read, for example because it is private.
+ */
+export async function fetchCollectibles(userId: number, fetchFn: typeof fetch = fetch): Promise<OwnedItem[] | null> {
+  const owned: OwnedItem[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 50; page += 1) {
+    const url = `${INVENTORY}/${userId}/assets/collectibles?limit=100&sortOrder=Asc${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+    let body: unknown;
+    try {
+      const response = await fetchFn(url, { credentials: 'omit', headers: { Accept: 'application/json' } });
+      if (!response.ok) return null;
+      body = await response.json();
+    } catch {
+      return null;
+    }
+    if (!isRecord(body) || !Array.isArray(body.data)) return null;
+    for (const entry of body.data) {
+      if (!isRecord(entry)) continue;
+      const assetId = positiveInt(entry.assetId);
+      if (assetId) owned.push({ assetId, instanceId: positiveInt(entry.userAssetId) });
+    }
+    cursor = typeof body.nextPageCursor === 'string' && body.nextPageCursor ? body.nextPageCursor : null;
+    if (!cursor) return owned;
+    await new Promise((done) => setTimeout(done, 400));
+  }
+  return owned;
 }

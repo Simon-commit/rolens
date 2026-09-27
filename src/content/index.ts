@@ -11,6 +11,7 @@ import { TRADE_CACHE_KEY, TradeCache } from '../core/trade-cache';
 import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
 import { activeTradeList, renderTradeList, resetTradeList } from './trade-list';
 import { createProof } from './proof';
+import { renderCancelTools } from './cancel-trades';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
 import { applyThemePreference, detectTheme } from './ui/shadow';
@@ -116,6 +117,16 @@ async function update(): Promise<void> {
       resolveNames: (names) => store.resolveNames(names, findByName),
       tradeCache,
       idForName: (name) => store.idForName(name),
+    });
+  }
+  if (settings.showCancelTools) {
+    renderCancelTools(ctx, {
+      ...valuer,
+      tradeCache,
+      afterCancel: () => {
+        resetTradeList();
+        resetDuplicateTrade();
+      },
     });
   }
   if (settings.warnDuplicateTrades) {
