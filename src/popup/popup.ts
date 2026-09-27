@@ -1,6 +1,6 @@
 import { formatAge } from '../core/format';
 import { send, type CacheStatus } from '../core/messages';
-import { normaliseSettings, type Settings } from '../core/settings';
+import { normaliseSettings, type Settings, type ThemePreference } from '../core/settings';
 import { STALE_AFTER_MS } from '../core/cache';
 import { PROVIDERS } from '../providers';
 
@@ -104,6 +104,38 @@ function renderRate(): void {
   });
 }
 
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function applyTheme(): void {
+  const dark = settings.theme === 'dark' || (settings.theme === 'auto' && systemDark.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+}
+
+function renderTheme(): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]');
+  const notes: Record<ThemePreference, string> = {
+    auto: 'Follows Roblox and your system',
+    light: 'Always light',
+    dark: 'Always dark',
+  };
+  const paint = () => {
+    for (const button of buttons) {
+      button.setAttribute('aria-checked', String(button.dataset.themeChoice === settings.theme));
+    }
+    $('#theme-note').textContent = notes[settings.theme];
+    applyTheme();
+  };
+  for (const button of buttons) {
+    button.addEventListener(
+      'click',
+      () => void save({ theme: button.dataset.themeChoice as ThemePreference }).then(paint),
+    );
+  }
+  systemDark.addEventListener('change', applyTheme);
+  paint();
+  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('ready')));
+}
+
 async function refreshStatus(): Promise<void> {
   renderStatus(await send({ type: 'rolens:getStatus' }).catch(() => undefined));
 }
@@ -111,6 +143,7 @@ async function refreshStatus(): Promise<void> {
 async function main(): Promise<void> {
   const stored = await chrome.storage.sync.get('settings');
   settings = normaliseSettings(stored.settings);
+  renderTheme();
   renderSources();
   renderToggles();
   renderFormat();

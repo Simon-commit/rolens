@@ -5,7 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-27
+
 ### Added
+
+- Theme switch (Auto, Light, Dark) in the popup; widgets and the popup cross-fade between themes.
+- Per-side totals next to each side's heading on the trades page.
+
+### Changed
+
+- The trade analysis is now a single compact bar that expands for details, and remembers whether it's open.
 
 - Redesigned interface: value chips with hover cards, a trade analysis card with balance bar and copyable summary, a full item page card, and a new popup. Widgets use Shadow DOM, follow Roblox's theme and use the bundled Inter typeface (SIL Open Font License).
 - Rare items are highlighted on item cards, chips, the item page and in trades.

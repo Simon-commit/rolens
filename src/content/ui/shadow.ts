@@ -1,3 +1,4 @@
+import type { ThemePreference } from '../../core/settings';
 import { ROLENS_ATTR } from '../dom';
 import tokens from './tokens.css?raw';
 
@@ -23,6 +24,23 @@ export function detectTheme(doc: Document = document): Theme {
   return 'light';
 }
 
+let preference: ThemePreference = 'auto';
+
+/** The theme widgets should use: the user's choice, or Roblox's own when set to auto. */
+export function resolveTheme(): Theme {
+  return preference === 'auto' ? detectTheme() : preference;
+}
+
+/**
+ * Switches every RoLens widget on the page to the preferred theme in place, so the
+ * colour transition animates instead of the widgets being rebuilt.
+ */
+export function applyThemePreference(next: ThemePreference, root: ParentNode = document): void {
+  preference = next;
+  const theme = resolveTheme();
+  for (const host of root.querySelectorAll<HTMLElement>(`[${ROLENS_ATTR}]`)) host.dataset.theme = theme;
+}
+
 /**
  * Creates an isolated widget: a host element carrying RoLens's marker attribute,
  * with an open Shadow DOM holding the design tokens and the widget's own styles.
@@ -34,7 +52,7 @@ export function createWidget(
 ): { host: HTMLElement; root: ShadowRoot } {
   const host = document.createElement(tag);
   host.setAttribute(ROLENS_ATTR, kind);
-  host.dataset.theme = detectTheme();
+  host.dataset.theme = resolveTheme();
   const root = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = tokens + css;

@@ -26,11 +26,12 @@ ships is in this repository.
 ## Features
 
 - **Value chips** on every limited across Roblox: value, USD, and markers for rare and projected items. Hover or focus a chip for a full card with RAP, demand, trend and how RAP compares with value.
-- **Trade analysis** on the trades page: net value, a win/loss verdict with percentage, a balance bar, value, RAP and USD per side, warnings for projected items, and a one-click summary to paste into Discord.
+- **Trade analysis** on the trades page in one compact line: win/loss verdict with percentage, net value, RAP and USD difference, warnings, a balance strip and a one-click summary for Discord. Expand it for per-side detail; each side's heading also shows its total.
 - **Item page card** on catalog pages: value, USD with confidence, RAP, demand meter, trend, rare and hyped tags, and a link to the item on Rolimon's.
 - **Rare items stand out**: an iridescent outline on the item's card and a rare marker on its chip.
 - **USD values**: shown from a USD source when one is connected (with its confidence and range), or from your own rate in USD per 1,000 value.
-- **Designed to fit Roblox**: follows Roblox's light and dark theme, uses a bundled Inter typeface, respects reduced motion, and is keyboard accessible. Every widget is isolated in Shadow DOM, so it can't break Roblox's layout.
+- **Light and dark themes** with a smooth cross-fade: follow Roblox automatically, or pick one in the popup.
+- **Designed to fit Roblox**: uses a bundled Inter typeface, respects reduced motion, and is keyboard accessible. Every widget is isolated in Shadow DOM, so it can't break Roblox's layout.
 
 RoUtility support is planned; see [Data sources](#data-sources).
 

@@ -8,6 +8,11 @@ describe('normaliseSettings', () => {
     expect(normaliseSettings('junk')).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('accepts known themes only', () => {
+    expect(normaliseSettings({ theme: 'dark' }).theme).toBe('dark');
+    expect(normaliseSettings({ theme: 'neon' }).theme).toBe('auto');
+  });
+
   it('accepts a sane USD rate only', () => {
     expect(normaliseSettings({ usdRate: 3.5 }).usdRate).toBe(3.5);
     expect(normaliseSettings({ usdRate: -1 }).usdRate).toBeNull();

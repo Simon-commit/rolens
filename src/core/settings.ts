@@ -1,6 +1,12 @@
 import type { SourceId } from './types';
 
+export type ThemePreference = 'auto' | 'light' | 'dark';
+
 export interface Settings {
+  /** Widget and popup theme. "auto" follows Roblox's theme on roblox.com and the system in the popup. */
+  theme: ThemePreference;
+  /** Whether the trade analysis bar is expanded to show per-side details. */
+  tradeDetails: boolean;
   source: SourceId;
   /** Value badges on item cards across Roblox. */
   showBadges: boolean;
@@ -20,6 +26,8 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  theme: 'auto',
+  tradeDetails: false,
   source: 'rolimons',
   showBadges: true,
   showTradeTotals: true,
@@ -35,6 +43,8 @@ export function normaliseSettings(stored: unknown): Settings {
   if (typeof stored !== 'object' || stored === null) return result;
   const raw = stored as Record<string, unknown>;
   if (raw.source === 'rolimons' || raw.source === 'routility') result.source = raw.source;
+  if (raw.theme === 'auto' || raw.theme === 'light' || raw.theme === 'dark') result.theme = raw.theme;
+  if (typeof raw.tradeDetails === 'boolean') result.tradeDetails = raw.tradeDetails;
   for (const key of ['showBadges', 'showTradeTotals', 'showItemPanel', 'compactNumbers', 'showUsd'] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }

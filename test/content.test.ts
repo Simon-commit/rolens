@@ -5,7 +5,7 @@ import { renderItemPanel } from '../src/content/item-panel';
 import { findTradeOffers, renderTradeSummary } from '../src/content/trade-summary';
 import type { RenderContext } from '../src/content/ui/context';
 import { buildHoverCard } from '../src/content/ui/hover-card';
-import { detectTheme } from '../src/content/ui/shadow';
+import { applyThemePreference, detectTheme } from '../src/content/ui/shadow';
 import { tradeSummaryText } from '../src/content/ui/trade-card';
 import { DEFAULT_SETTINGS } from '../src/core/settings';
 import { balanceTrade, totalSide } from '../src/core/trade';
@@ -127,15 +127,40 @@ describe('trade card', () => {
     expect(text).toContain('+1,700');
     expect(text).toContain('Win +73.9%');
     expect(text).toContain('+$6.80');
-    expect(text).toContain('1 rare');
-    expect(text).toContain('Projected item');
-    expect(text).toContain('1 without data');
+    expect(text).toContain('2,300 → 4,000');
+    expect(text).toContain('Projected');
+    expect(card?.shadowRoot?.querySelector('.flag--rare')?.getAttribute('aria-label')).toBe(
+      '1 rare item in this trade',
+    );
     expect(card?.nextElementSibling?.classList.contains('trade-list-detail-offer')).toBe(true);
+  });
+
+  it('adds a compact total beside each side heading', () => {
+    renderTradeSummary(document, lookup, ctx);
+    const totals = [...document.querySelectorAll('.trade-list-detail-offer-header [data-rolens="side-total"]')];
+    expect(totals.map((node) => node.shadowRoot?.querySelector('.t')?.textContent)).toEqual([
+      '2,300RAP 1,800',
+      '4,000RAP 5,000',
+    ]);
+    renderTradeSummary(document, lookup, ctx);
+    expect(document.querySelectorAll('[data-rolens="side-total"]')).toHaveLength(2);
+  });
+
+  it('starts collapsed, expands on click and remembers the choice', () => {
+    const saved: boolean[] = [];
+    renderTradeSummary(document, lookup, { ...ctx, saveTradeDetails: (open) => saved.push(open) });
+    const wrap = document.querySelector('[data-rolens="trade"]')?.shadowRoot?.querySelector('.wrap');
+    expect(wrap?.classList.contains('is-open')).toBe(false);
+    const toggle = wrap?.querySelector<HTMLButtonElement>('button[aria-expanded]');
+    toggle?.click();
+    expect(wrap?.classList.contains('is-open')).toBe(true);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(saved).toEqual([true]);
   });
 
   it('leaves USD out when any item lacks an estimate', () => {
     renderTradeSummary(document, lookup, ctx);
-    expect(shadowText(document.querySelector('[data-rolens="trade"]'))).not.toContain('USD');
+    expect(shadowText(document.querySelector('[data-rolens="trade"]'))).not.toContain('$');
   });
 
   it('writes a plain-text summary for sharing', () => {
@@ -188,5 +213,16 @@ describe('theme', () => {
     document.body.className = 'light-theme';
     expect(detectTheme()).toBe('light');
     document.body.className = '';
+  });
+
+  it('switches existing widgets in place when the user picks a theme', () => {
+    setBody(tradePage);
+    renderBadges(findItemCards(document), lookup, ctx);
+    const chip = document.querySelector<HTMLElement>('[data-rolens="badge"]');
+    applyThemePreference('dark');
+    expect(chip?.dataset.theme).toBe('dark');
+    applyThemePreference('light');
+    expect(chip?.dataset.theme).toBe('light');
+    applyThemePreference('auto');
   });
 });

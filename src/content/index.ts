@@ -8,7 +8,7 @@ import { renderItemPanel } from './item-panel';
 import { catalogIdFromPath } from './selectors';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
-import { detectTheme } from './ui/shadow';
+import { applyThemePreference, detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
 
 const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
@@ -23,7 +23,12 @@ async function update(): Promise<void> {
   if (pageItemId !== null) ids.add(pageItemId);
   await store.load(ids);
 
-  const ctx: RenderContext = { settings, provider: resolveProvider(settings.source), status: store.status };
+  const ctx: RenderContext = {
+    settings,
+    provider: resolveProvider(settings.source),
+    status: store.status,
+    saveTradeDetails,
+  };
   const lookup = (id: number) => store.peek(id);
   if (settings.showBadges) renderBadges(cards, lookup, ctx);
   if (pageItemId !== null) {
@@ -31,6 +36,18 @@ async function update(): Promise<void> {
     if (item) renderItemPanel(document, item, ctx);
   }
   if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
+}
+
+function saveTradeDetails(expanded: boolean): void {
+  settings = { ...settings, tradeDetails: expanded };
+  void chrome.storage.sync.set({ settings });
+}
+
+/** Settings that widgets update in place, without being rebuilt. */
+const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails']);
+
+function onlyLiveKeysChanged(prev: Settings, next: Settings): boolean {
+  return (Object.keys(next) as (keyof Settings)[]).every((key) => LIVE_KEYS.has(key) || prev[key] === next[key]);
 }
 
 function schedule(): void {
@@ -49,20 +66,22 @@ function start(): void {
     if (relevant) schedule();
   }).observe(document.body, { childList: true, subtree: true });
 
-  // Re-render when Roblox switches between light and dark theme.
+  // Follow Roblox's own light/dark switch when the theme is set to auto.
   let theme = detectTheme();
   new MutationObserver(() => {
     if (detectTheme() === theme) return;
     theme = detectTheme();
-    removeOwnNodes(document);
-    schedule();
+    applyThemePreference(settings.theme);
   }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync' && changes.settings) {
       const next = normaliseSettings(changes.settings.newValue);
-      if (next.source !== settings.source) store.clear();
+      const prev = settings;
       settings = next;
+      if (next.theme !== prev.theme) applyThemePreference(next.theme);
+      if (onlyLiveKeysChanged(prev, next)) return;
+      if (next.source !== prev.source) store.clear();
     } else if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('snapshot:'))) {
       store.clear();
     } else {
@@ -77,5 +96,6 @@ function start(): void {
 
 void chrome.storage.sync.get('settings').then(({ settings: stored }) => {
   settings = normaliseSettings(stored);
+  applyThemePreference(settings.theme);
   start();
 });

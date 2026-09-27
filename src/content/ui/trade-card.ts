@@ -5,58 +5,67 @@ import { formatUsd, formatUsdDelta } from '../../core/usd';
 import { el } from '../dom';
 import { pill } from './atoms';
 import type { RenderContext } from './context';
-import { glyph, icon } from './icons';
+import { glyph, icon, type IconName } from './icons';
 import { sourceLine } from './item-details';
 import { createWidget } from './shadow';
 
+/*
+ * The trade analysis is a single 44px bar by default, so it never pushes the trade
+ * down. The verdict, net value and warnings are all in that one line; per-side detail
+ * slides open on demand and the choice is remembered.
+ */
 const css = `
-:host { display: block; margin: 18px 0 14px; }
-.card {
-  padding: 16px 18px;
-  border-radius: var(--rl-radius-lg);
+:host { display: block; margin: 14px 0 12px; }
+.wrap {
+  position: relative; overflow: hidden;
+  border-radius: var(--rl-radius);
   border: 1px solid var(--rl-border);
   background: var(--rl-bg-raised);
-  box-shadow: var(--rl-shadow);
+  box-shadow: var(--rl-shadow-sm);
   animation: rl-rise 0.3s ease both;
 }
-.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.head .source { font-size: 11px; color: var(--rl-text-3); }
-.verdict { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 12px; }
-.delta { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-.sub { margin-top: 6px; font-size: 12px; color: var(--rl-text-2); }
-.card[data-verdict='win'] .delta { color: var(--rl-win); }
-.card[data-verdict='loss'] .delta { color: var(--rl-loss); }
-.verdict .rl-pill { height: 24px; padding: 0 10px; font-size: 12px; }
-
-.bar { position: relative; display: flex; height: 8px; gap: 3px; margin: 4px 0 14px; }
-.bar span { border-radius: 999px; transition: flex-grow 0.4s ease; min-width: 6px; }
-.bar .give { background: var(--rl-surface-2); }
-.bar .get { background: linear-gradient(90deg, var(--rl-brand-a), var(--rl-brand-b)); }
-.card[data-verdict='loss'] .bar .get { background: var(--rl-loss); opacity: 0.85; }
-.bar::after {
-  content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px;
-  margin-left: -1px; border-radius: 1px; background: var(--rl-text-3); opacity: 0.35;
+.bar { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 6px 0 12px; min-width: 0; }
+.bar .rl-pill { height: 22px; font-size: 11.5px; padding: 0 8px; }
+.delta { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+.wrap[data-verdict='win'] .delta { color: var(--rl-win); }
+.wrap[data-verdict='loss'] .delta { color: var(--rl-loss); }
+.meta { font-size: 12px; color: var(--rl-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.spacer { flex: 1; }
+.flags { display: flex; gap: 4px; flex: none; }
+.flag {
+  display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 6px;
+  border-radius: 999px; font-size: 11px; font-weight: 650; background: var(--rl-surface); color: var(--rl-text-2);
 }
+.flag .rl-icon { width: 12px; height: 12px; }
+.flag--rare { background: var(--rl-rare-soft); color: var(--rl-rare-text); }
+.flag--warn { background: var(--rl-warn-soft); color: var(--rl-warn); }
+.btn {
+  display: grid; place-items: center; flex: none; width: 30px; height: 30px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--rl-text-3); cursor: pointer;
+}
+.btn:hover { background: var(--rl-surface); color: var(--rl-text); }
+.btn:focus-visible { outline: 2px solid var(--rl-accent); outline-offset: 1px; }
+.btn.is-done { color: var(--rl-win); }
+.chev { transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1); }
+.wrap.is-open .chev { transform: rotate(180deg); }
 
-.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.side { padding: 12px; border-radius: var(--rl-radius); background: var(--rl-surface); min-width: 0; }
-.side .total { margin: 4px 0 8px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.balance { position: absolute; left: 0; right: 0; bottom: 0; display: flex; height: 2px; }
+.balance .give { background: var(--rl-surface-2); }
+.balance .get { background: linear-gradient(90deg, var(--rl-brand-a), var(--rl-brand-b)); }
+.wrap[data-verdict='loss'] .balance .get { background: var(--rl-loss); }
+
+.details { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s cubic-bezier(0.2, 0, 0, 1); }
+.wrap.is-open .details { grid-template-rows: 1fr; }
+.details > div { overflow: hidden; }
+.inner { padding: 2px 12px 14px; }
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.side { padding: 10px 12px; border-radius: 10px; background: var(--rl-surface); min-width: 0; }
+.side .total { margin: 2px 0 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--rl-text-2); line-height: 1.7; }
 .row b { font-weight: 600; color: var(--rl-text); }
 .row .usd { color: var(--rl-accent); }
-
-.foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
-.notes { display: flex; flex-wrap: wrap; gap: 6px; }
-.copy {
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
-  border-radius: 8px; border: 1px solid var(--rl-border-strong);
-  background: transparent; color: var(--rl-text-2);
-  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-}
-.copy:hover { color: var(--rl-text); background: var(--rl-surface); }
-.copy:focus-visible { outline: 2px solid var(--rl-accent); outline-offset: 2px; }
-.copy.is-done { color: var(--rl-win); border-color: var(--rl-win); }
+.source { margin-top: 10px; font-size: 11px; color: var(--rl-text-3); }
+@media (max-width: 560px) { .meta { display: none; } }
 `;
 
 export interface TradeSide {
@@ -87,6 +96,13 @@ export function tradeSummaryText(view: TradeView, compact: boolean): string {
   ].join('\n');
 }
 
+function flag(iconName: IconName, text: string, title: string, variant?: 'rare' | 'warn'): HTMLElement {
+  const node = el('span', variant ? `flag flag--${variant}` : 'flag', icon(iconName), text);
+  node.title = title;
+  node.setAttribute('aria-label', title);
+  return node;
+}
+
 function sideBlock(label: string, total: number, rap: number, side: TradeSide, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
   const rare = side.items.filter((item) => item.rare).length;
@@ -101,6 +117,23 @@ function sideBlock(label: string, total: number, rap: number, side: TradeSide, c
   );
 }
 
+function iconButton(name: IconName, label: string): HTMLButtonElement {
+  const button = el('button', 'btn', icon(name));
+  button.type = 'button';
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  return button;
+}
+
+function chevron(): SVGSVGElement {
+  const svg = icon('flat', 'rl-icon chev');
+  svg.replaceChildren();
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M6 9l6 6 6-6');
+  svg.append(path);
+  return svg;
+}
+
 export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
   const { balance } = view;
@@ -108,68 +141,118 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
   const pct = percentChange(balance.valueDelta, balance.give.value);
   const usdDelta = view.give.usd !== null && view.receive.usd !== null ? view.receive.usd - view.give.usd : null;
   const { host, root } = createWidget('trade', css, 'section');
+  host.setAttribute('aria-label', 'RoLens trade analysis');
 
-  const totalValue = balance.give.value + balance.receive.value;
-  const giveShare = totalValue === 0 ? 1 : balance.give.value / totalValue;
-
-  const notes: HTMLElement[] = [];
+  const flags: HTMLElement[] = [];
   const rare = [...view.give.items, ...view.receive.items].filter((item) => item.rare).length;
-  if (rare) notes.push(pill(`${rare} rare`, 'rare', 'gem'));
-  if (balance.give.hasProjected || balance.receive.hasProjected) notes.push(pill('Projected item', 'warn', 'warning'));
+  if (rare) flags.push(flag('gem', String(rare), `${rare} rare item${rare > 1 ? 's' : ''} in this trade`, 'rare'));
+  if (balance.give.hasProjected || balance.receive.hasProjected) {
+    flags.push(flag('warning', 'Projected', 'Contains an item with projected (manipulated) RAP', 'warn'));
+  }
   const unknown = balance.give.unknownIds.length + balance.receive.unknownIds.length;
-  if (unknown) notes.push(pill(`${unknown} without data`, undefined, 'help'));
+  if (unknown) flags.push(flag('help', String(unknown), `${unknown} item(s) without value data, not counted`));
 
-  const copy = el('button', 'copy', icon('copy'), 'Copy summary');
-  copy.type = 'button';
+  const copy = iconButton('copy', 'Copy trade summary');
   copy.addEventListener('click', () => {
     void navigator.clipboard.writeText(tradeSummaryText(view, compact)).then(() => {
       copy.classList.add('is-done');
-      copy.replaceChildren(icon('check'), 'Copied');
+      copy.replaceChildren(icon('check'));
       window.setTimeout(() => {
         copy.classList.remove('is-done');
-        copy.replaceChildren(icon('copy'), 'Copy summary');
+        copy.replaceChildren(icon('copy'));
       }, 1600);
     });
   });
 
-  const card = el(
+  const toggle = el('button', 'btn', chevron());
+  toggle.type = 'button';
+  toggle.setAttribute('aria-label', 'Show trade details');
+
+  const meta = [
+    `${formatRobux(balance.give.value, compact)} → ${formatRobux(balance.receive.value, compact)}`,
+    `${formatDelta(balance.rapDelta, compact)} RAP`,
+    usdDelta === null ? null : formatUsdDelta(usdDelta, compact),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const wrap = el(
     'div',
-    'card',
-    el('div', 'head', el('span', 'rl-brand', glyph(16), 'RoLens'), el('span', 'source', sourceLine(ctx))),
+    'wrap',
     el(
       'div',
-      'verdict',
-      el(
-        'div',
-        '',
-        el('div', 'rl-eyebrow', 'Net value'),
-        el('div', 'delta', formatDelta(balance.valueDelta, compact)),
-        el(
-          'div',
-          'sub',
-          `${formatDelta(balance.rapDelta, compact)} RAP`,
-          usdDelta === null ? '' : ` · ${formatUsdDelta(usdDelta, compact)}`,
-        ),
-      ),
+      'bar',
+      glyph(16),
       pill(
         `${verdict === 'win' ? 'Win' : verdict === 'loss' ? 'Loss' : 'Even'}${pct === null ? '' : ` ${formatPercent(pct)}`}`,
         verdict === 'even' ? undefined : verdict,
       ),
+      el('span', 'delta', formatDelta(balance.valueDelta, compact)),
+      el('span', 'meta', meta),
+      el('span', 'spacer'),
+      el('span', 'flags', ...flags),
+      copy,
+      toggle,
     ),
-    el('div', 'bar', el('span', 'give'), el('span', 'get')),
     el(
       'div',
-      'sides',
-      sideBlock('You give', balance.give.value, balance.give.rap, view.give, ctx),
-      sideBlock('You get', balance.receive.value, balance.receive.rap, view.receive, ctx),
+      'details',
+      el(
+        'div',
+        '',
+        el(
+          'div',
+          'inner',
+          el(
+            'div',
+            'sides',
+            sideBlock('You give', balance.give.value, balance.give.rap, view.give, ctx),
+            sideBlock('You get', balance.receive.value, balance.receive.rap, view.receive, ctx),
+          ),
+          el('div', 'source', `Values from ${sourceLine(ctx)}`),
+        ),
+      ),
     ),
-    el('div', 'foot', el('div', 'notes', ...notes), copy),
+    el('div', 'balance', el('span', 'give'), el('span', 'get')),
   );
-  card.dataset.verdict = verdict;
-  const [give, get] = card.querySelectorAll<HTMLElement>('.bar span');
+  wrap.dataset.verdict = verdict;
+
+  const setOpen = (open: boolean) => {
+    wrap.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.title = open ? 'Hide details' : 'Show details';
+  };
+  setOpen(ctx.settings.tradeDetails);
+  toggle.addEventListener('click', () => {
+    const open = !wrap.classList.contains('is-open');
+    setOpen(open);
+    ctx.saveTradeDetails?.(open);
+  });
+
+  const total = balance.give.value + balance.receive.value;
+  const giveShare = total === 0 ? 0.5 : balance.give.value / total;
+  const [give, get] = wrap.querySelectorAll<HTMLElement>('.balance span');
   give!.style.flexGrow = String(giveShare);
   get!.style.flexGrow = String(1 - giveShare);
-  root.append(card);
+
+  root.append(wrap);
   host.dataset.verdict = verdict;
+  return host;
+}
+
+/** A small total shown beside each side's heading, e.g. "2,300 · RAP 1,800". */
+export function createSideTotal(total: number, rap: number, ctx: RenderContext): HTMLElement {
+  const compact = ctx.settings.compactNumbers;
+  const { host, root } = createWidget(
+    'side-total',
+    `:host { display: inline-block; margin-left: 10px; vertical-align: middle; }
+     .t { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px 0 4px;
+          border-radius: 999px; background: var(--rl-surface); font-size: 12px; font-weight: 650; }
+     .t .rl-glyph { width: 14px; height: 14px; }
+     .rap { color: var(--rl-text-3); font-weight: 550; }`,
+  );
+  root.append(
+    el('span', 't', glyph(14), formatRobux(total, compact), el('span', 'rap', `RAP ${formatRobux(rap, compact)}`)),
+  );
   return host;
 }

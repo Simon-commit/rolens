@@ -7,4 +7,6 @@ export interface RenderContext {
   settings: Settings;
   provider: ValueProvider;
   status: CacheStatus | null;
+  /** Remembers whether the trade bar is expanded. Absent in tests. */
+  saveTradeDetails?: (expanded: boolean) => void;
 }

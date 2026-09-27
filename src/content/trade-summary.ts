@@ -4,7 +4,7 @@ import { totalUsd } from '../core/usd';
 import { findItemCards } from './badges';
 import { SELECTORS } from './selectors';
 import type { RenderContext } from './ui/context';
-import { createTradeCard, type TradeView } from './ui/trade-card';
+import { createSideTotal, createTradeCard, type TradeView } from './ui/trade-card';
 
 export interface TradeOffers {
   give: { element: Element; ids: number[] };
@@ -39,6 +39,7 @@ export function renderTradeSummary(
   const existing = root.querySelector<HTMLElement>('[data-rolens="trade"]');
   if (!offers) {
     existing?.remove();
+    for (const node of root.querySelectorAll('[data-rolens="side-total"]')) node.remove();
     return null;
   }
   const find = (id: number) => lookup(id) ?? undefined;
@@ -53,6 +54,14 @@ export function renderTradeSummary(
   const signature = JSON.stringify([offers.give.ids, offers.receive.ids, view.balance.valueDelta, view.give.usd]);
   if (existing?.dataset.signature === signature) return view.balance;
   existing?.remove();
+  for (const [side, totals] of [
+    [offers.give, view.balance.give],
+    [offers.receive, view.balance.receive],
+  ] as const) {
+    side.element.querySelector('[data-rolens="side-total"]')?.remove();
+    const header = side.element.querySelector(SELECTORS.tradeOfferHeader);
+    header?.append(createSideTotal(totals.value, totals.rap, ctx));
+  }
   const card = createTradeCard(view, ctx);
   card.dataset.signature = signature;
   const firstOffer = [offers.give.element, offers.receive.element].sort((a, b) =>
