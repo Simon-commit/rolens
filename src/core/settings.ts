@@ -10,6 +10,8 @@ export interface Settings {
   darkRoblox: boolean;
   /** Whether the trade analysis bar is expanded to show per-side details. */
   tradeDetails: boolean;
+  /** The item page card is folded to a one-line bar. */
+  itemCardCollapsed: boolean;
   /** Value badges on item cards across Roblox. */
   showBadges: boolean;
   /** Totals and win/loss on the trades page. */
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'auto',
   darkRoblox: false,
   tradeDetails: false,
+  itemCardCollapsed: false,
   showBadges: true,
   showTradeTotals: true,
   showItemPanel: true,
@@ -61,6 +64,7 @@ export function normaliseSettings(stored: unknown): Settings {
   const raw = stored as Record<string, unknown>;
   if (raw.theme === 'auto' || raw.theme === 'light' || raw.theme === 'dark') result.theme = raw.theme;
   if (typeof raw.tradeDetails === 'boolean') result.tradeDetails = raw.tradeDetails;
+  if (typeof raw.itemCardCollapsed === 'boolean') result.itemCardCollapsed = raw.itemCardCollapsed;
   for (const key of [
     'showBadges',
     'showTradeTotals',

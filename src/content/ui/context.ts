@@ -8,6 +8,8 @@ export interface RenderContext {
   status: CacheStatus | null;
   /** Remembers whether the trade bar is expanded. Absent in tests. */
   saveTradeDetails?: (expanded: boolean) => void;
+  /** Remembers whether the item page card is folded. Absent in tests. */
+  saveItemCard?: (collapsed: boolean) => void;
 }
 
 /** Changes whenever anything a widget shows for this item changes, so it gets rebuilt. */

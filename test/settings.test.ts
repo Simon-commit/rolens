@@ -50,3 +50,11 @@ describe('sources', () => {
     expect(normaliseSettings({ useRolimons: false })).toMatchObject({ useRolimons: false, useRoutility: true });
   });
 });
+
+describe('item card', () => {
+  it('opens by default and keeps a stored collapsed choice', () => {
+    expect(normaliseSettings({}).itemCardCollapsed).toBe(false);
+    expect(normaliseSettings({ itemCardCollapsed: true }).itemCardCollapsed).toBe(true);
+    expect(normaliseSettings({ itemCardCollapsed: 'yes' }).itemCardCollapsed).toBe(false);
+  });
+});

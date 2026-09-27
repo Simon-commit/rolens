@@ -5,6 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-09-27
+
+### Added
+
+- The RoLens card on item pages can be collapsed to a single line showing the value and USD estimate. Select the close control to collapse it and the line to expand it again. The choice is remembered across item pages.
+
+### Changed
+
+- The item page card now lines up with the item title, keeping Roblox's spacing from the item image.
+
 ## [0.6.3] - 2026-09-27
 
 ### Changed

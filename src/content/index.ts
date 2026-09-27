@@ -83,6 +83,7 @@ async function update(): Promise<void> {
     settings,
     status: store.status,
     saveTradeDetails,
+    saveItemCard,
   };
   const lookup = (id: number) => store.peek(id);
   if (settings.showBadges) renderBadges(cards, lookup, ctx);
@@ -118,6 +119,11 @@ async function update(): Promise<void> {
   }
 }
 
+function saveItemCard(collapsed: boolean): void {
+  settings = { ...settings, itemCardCollapsed: collapsed };
+  void chrome.storage.sync.set({ settings });
+}
+
 function saveTradeDetails(expanded: boolean): void {
   settings = { ...settings, tradeDetails: expanded };
   void chrome.storage.sync.set({ settings });
@@ -127,7 +133,7 @@ function saveTradeDetails(expanded: boolean): void {
  * Settings that need no redraw: the theme is applied to widgets in place, dark Roblox is
  * handled by early.js, and the trade bar's open state is read when it is next drawn.
  */
-const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails', 'darkRoblox']);
+const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails', 'itemCardCollapsed', 'darkRoblox']);
 
 function onlyLiveKeysChanged(prev: Settings, next: Settings): boolean {
   return (Object.keys(next) as (keyof Settings)[]).every((key) => LIVE_KEYS.has(key) || prev[key] === next[key]);

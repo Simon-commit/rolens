@@ -117,4 +117,18 @@ export function renderItemPanel(root: ParentNode, item: ItemValue, ctx: RenderCo
     hero.style.gridColumn = '1 / -1';
   }
   if (anchor.nextElementSibling !== hero) anchor.after(hero);
+  alignWithTitle(hero, findItemTitle(root));
+}
+
+/**
+ * Lines the card up with the item's title. Roblox indents the title from the edge of its
+ * column, which is what keeps it clear of the item image; the card keeps the same gap.
+ */
+function alignWithTitle(hero: HTMLElement, title: Element | null): void {
+  if (!title) return;
+  hero.style.removeProperty('margin-left');
+  const indent = Math.round(title.getBoundingClientRect().left - hero.getBoundingClientRect().left);
+  if (indent <= 0 || indent >= 80) return;
+  const current = parseFloat(getComputedStyle(hero).marginLeft) || 0;
+  hero.style.marginLeft = `${Math.round(current + indent)}px`;
 }
