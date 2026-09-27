@@ -5,6 +5,20 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-27
+
+### Added
+
+- Rolimon's can now be turned off, so RoLens can run on RoUtility alone. Either source can be disabled, and at least one always remains enabled.
+- GitHub mark beside the GitHub link in the popup.
+
+### Changed
+
+- New extension icon, matching the RoLens mark used on Roblox.
+- All user-facing text, hover explanations and documentation revised for a consistent, formal tone.
+- More space between the last marker and the edge of value chips.
+- The shared trade summary now lists the sources used.
+
 ## [0.3.1] - 2026-09-27
 
 ### Added

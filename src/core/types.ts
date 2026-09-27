@@ -26,6 +26,12 @@ export interface UsdEstimate {
 
 /** What RoUtility adds on top of the main value source. */
 export interface RoutilityData {
+  /** Item details, used when RoUtility is the only source. */
+  name: string | null;
+  acronym: string | null;
+  rap: number | null;
+  demand: Demand | null;
+  trend: Trend | null;
   /** RoUtility's own value in Robux, for comparing with the main source. */
   value: number | null;
   usd: number | null;

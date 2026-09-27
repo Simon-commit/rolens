@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RoLens: Roblox Trade Values",
   "short_name": "RoLens",
-  "description": "See Rolimon's values, RoUtility USD estimates, RAP, demand and trade win/loss right on Roblox. Open source, no account access.",
+  "description": "Item values, USD estimates and trade analysis from Rolimon's and RoUtility, directly on Roblox. Open source, with no account access.",
   "version": "0.0.0",
   "minimum_chrome_version": "116",
   "icons": {

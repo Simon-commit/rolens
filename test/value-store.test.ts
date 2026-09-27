@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ItemsResponse } from '../src/core/messages';
 import { ValueStore } from '../src/content/value-store';
-import { item } from './fixtures/items';
+import { item, routilityData } from './fixtures/items';
 
 const status = (itemCount: number) => ({ source: 'rolimons' as const, fetchedAt: 1, itemCount, error: null });
 
@@ -39,20 +39,7 @@ describe('ValueStore', () => {
     await store.load([1, 2, 50]);
     const routility = vi.fn(async (ids: number[]) => ({
       items: Object.fromEntries(
-        ids.map((id) => [
-          id,
-          {
-            value: 1200,
-            usd: 4,
-            rate: null,
-            confidence: 'medium' as const,
-            confidenceReason: null,
-            rare: true,
-            projected: false,
-            hyped: false,
-            copies: null,
-          },
-        ]),
+        ids.map((id) => [id, routilityData({ value: 1200, usd: 4, confidence: 'medium', rare: true })]),
       ),
       status: { lastSuccess: 1, error: null, blockedUntil: null },
     }));
@@ -62,5 +49,26 @@ describe('ValueStore', () => {
     expect(store.peek(1)?.rare).toBe(true);
     expect(await store.loadRoutility([1, 2], routility)).toBe(false);
     expect(routility).toHaveBeenCalledOnce();
+  });
+
+  it("runs on RoUtility alone when Rolimon's is off", async () => {
+    const rolimons = vi.fn(async (): Promise<ItemsResponse> => ({ items: {}, status: status(100) }));
+    const store = new ValueStore(rolimons);
+    store.useRolimons = false;
+    await store.load([1, 2]);
+    expect(rolimons).not.toHaveBeenCalled();
+    const routility = vi.fn(async (ids: number[]) => ({
+      items: {
+        [ids[0]!]: routilityData({ name: 'Solo Hat', rap: 900, value: 1000, usd: 3, demand: 'high' }),
+        [ids[1]!]: null,
+      },
+      status: { lastSuccess: 1, error: null, blockedUntil: null },
+    }));
+    expect(await store.loadRoutility([1, 2], routility)).toBe(true);
+    expect(routility.mock.calls[0]?.[0]).toEqual([1, 2]);
+    expect(store.peek(1)).toMatchObject({ name: 'Solo Hat', value: 1000, rap: 900, demand: 'high' });
+    expect(store.peek(1)?.usd?.value).toBe(3);
+    expect(store.peek(1)?.routility).toBeUndefined();
+    expect(store.peek(2)).toBeNull();
   });
 });

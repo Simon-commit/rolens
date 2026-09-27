@@ -348,6 +348,28 @@ footer a {
 footer a:hover {
   color: var(--accent);
 }
+footer .github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+footer .github svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.section-note {
+  margin: 8px 4px 0;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.setting:has(input:disabled) {
+  cursor: not-allowed;
+}
+input[role='switch']:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* Appearance switch */
 .theme-switch button {
@@ -388,4 +410,8 @@ footer a:hover {
 .badge.is-bad {
   background: color-mix(in srgb, var(--bad) 14%, transparent);
   color: var(--bad);
+}
+
+[hidden] {
+  display: none !important;
 }

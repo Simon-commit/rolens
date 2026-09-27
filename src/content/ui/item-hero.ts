@@ -75,8 +75,10 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
   const links = el(
     'div',
     'links',
-    ctx.provider.itemUrl ? externalLink(ctx.provider.label, ctx.provider.itemUrl(item.id)) : null,
-    item.routility ? externalLink('RoUtility', routilityItemPage(item.id)) : null,
+    ctx.settings.useRolimons && ctx.provider.itemUrl
+      ? externalLink(ctx.provider.label, ctx.provider.itemUrl(item.id))
+      : null,
+    item.routility || !ctx.settings.useRolimons ? externalLink('RoUtility', routilityItemPage(item.id)) : null,
   );
 
   const usd = usdStat(item, ctx);
@@ -95,14 +97,14 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
       el(
         'div',
         '',
-        el('div', 'rl-eyebrow', item.value === null ? 'RAP (unvalued)' : 'Value'),
+        el('div', 'rl-eyebrow', item.value === null ? 'RAP (no value)' : 'Value'),
         el('div', 'big', formatRobux(effectiveValue(item), compact)),
-        el('div', 'big-note', rapInsight(item) ?? (item.value === null ? 'No community value yet' : '')),
+        el('div', 'big-note', rapInsight(item) ?? (item.value === null ? 'No published value available' : '')),
       ),
       usd ? el('div', 'usd-block', usd) : null,
     ),
     el('div', 'strip', rapStat(item, ctx), routilityStat(item, ctx), demandStat(item), trendStat(item)),
-    el('div', 'foot', `Data from ${sourceLine(ctx, Boolean(item.routility))}`),
+    el('div', 'foot', sourceLine(ctx, Boolean(item.routility))),
   );
   root.append(card);
   return host;

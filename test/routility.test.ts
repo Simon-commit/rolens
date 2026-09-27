@@ -37,6 +37,11 @@ const skotn = {
 describe('parseRoutilityItem', () => {
   it('parses the real response', () => {
     expect(parseRoutilityItem(skotn, 439945661)).toEqual({
+      name: 'Silver King of the Night',
+      acronym: 'SKOTN',
+      rap: 387196,
+      demand: 'amazing',
+      trend: 'stable',
       value: 500000,
       usd: 1400,
       rate: null,

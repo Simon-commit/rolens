@@ -1,25 +1,25 @@
 # Security policy
 
-RoLens exists to be an extension people can trust, so security reports are the highest priority.
+RoLens is built to be an extension people can trust, and security reports are treated as the highest priority.
 
 ## Reporting a vulnerability
 
-Please report privately through [GitHub security advisories](https://github.com/Simon-commit/rolens/security/advisories/new).
+Please report vulnerabilities privately through [GitHub security advisories](https://github.com/Simon-commit/rolens/security/advisories/new).
 Do not open a public issue for security problems.
 
-Include what you found, how to reproduce it, and the version (see `chrome://extensions`).
-You'll get a reply within a few days.
+Please include a description of the issue, steps to reproduce it and the version number (shown at `chrome://extensions`).
+You can expect a response within a few days.
 
-## What RoLens will never do
+## Commitments
 
 - Read Roblox cookies or session tokens, or call Roblox APIs on your behalf.
 - Send, accept or decline trades.
 - Load or run code from the network.
 - Collect analytics or send any data about you anywhere.
 
-Any change to `permissions` or `host_permissions` in `src/manifest.json` is called out in the
-changelog and needs a clear reason in its pull request.
+Any change to `permissions` or `host_permissions` in `src/manifest.json` is listed in the
+changelog and requires a stated justification in its pull request.
 
 ## Supported versions
 
-Only the latest release receives fixes.
+Security fixes are provided for the latest release only.

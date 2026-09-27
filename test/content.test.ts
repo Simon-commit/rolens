@@ -10,7 +10,7 @@ import { tradeSummaryText } from '../src/content/ui/trade-card';
 import { DEFAULT_SETTINGS } from '../src/core/settings';
 import { balanceTrade, totalSide } from '../src/core/trade';
 import { rolimons } from '../src/providers/rolimons';
-import { item } from './fixtures/items';
+import { item, routilityData } from './fixtures/items';
 import { itemPage, tradePage } from './fixtures/trade-page';
 
 const table = new Map([
@@ -116,7 +116,7 @@ describe('RoUtility in the UI', () => {
     value: 100_000,
     rap: 90_000,
     usd: { value: 350, confidence: 'high', origin: 'routility', rate: 3.5 },
-    routility: {
+    routility: routilityData({
       value: 130_000,
       usd: 350,
       rate: 3.5,
@@ -126,7 +126,7 @@ describe('RoUtility in the UI', () => {
       projected: false,
       hyped: false,
       copies: 1200,
-    },
+    }),
   });
 
   it('shows USD with confidence, the second value and a disagreement warning', () => {
@@ -138,7 +138,7 @@ describe('RoUtility in the UI', () => {
     expect(text).toContain('RoUtility value130K+30%');
     expect(text).toContain('Sources disagree');
     expect(text).toContain('1,200');
-    expect(text).toContain("Rolimon's & RoUtility");
+    expect(text).toContain("Source: Rolimon's and RoUtility");
   });
 
   it('does not warn when the sources roughly agree', () => {
@@ -171,7 +171,7 @@ describe('trade card', () => {
     expect(text).toContain('2,300 → 4,000');
     expect(text).toContain('Projected');
     expect(card?.shadowRoot?.querySelector('.flag--rare')?.getAttribute('aria-label')).toBe(
-      'Rare items. 1 item in this trade is rare, with few copies in circulation.',
+      'Rare items. 1 item in this trade is classified as rare, with a limited number of copies in circulation.',
     );
     expect(card?.shadowRoot?.querySelector('.usd-delta')?.classList.contains('is-loss')).toBe(false);
     expect(card?.nextElementSibling?.classList.contains('trade-list-detail-offer')).toBe(true);
@@ -194,7 +194,7 @@ describe('trade card', () => {
     projected?.dispatchEvent(new MouseEvent('mouseenter'));
     const tip = document.querySelector('[data-rolens="tooltip"]')?.shadowRoot?.querySelector('.tip');
     expect(tip?.textContent).toContain('Projected RAP');
-    expect(tip?.textContent).toContain('inflated sales');
+    expect(tip?.textContent).toContain('above-market sales');
     expect(projected?.tabIndex).toBe(0);
   });
 
@@ -240,10 +240,10 @@ describe('trade card', () => {
     );
     expect(text).toBe(
       [
-        'Give: VH, Unvalued Hat (2,300)',
-        'Get: Projected Hat (4,000)',
+        'Offering: VH, Unvalued Hat (2,300)',
+        'Receiving: Projected Hat (4,000)',
         'Net: +1,700 value (+73.9%), +3,200 RAP',
-        'Values: Rolimons via RoLens',
+        "Values: Rolimon's, via RoLens",
       ].join('\n'),
     );
   });

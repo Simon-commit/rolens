@@ -1,5 +1,5 @@
 import type { CacheStatus, ItemsResponse, RoutilityResponse } from '../core/messages';
-import { withRoutility } from '../core/routility';
+import { itemFromRoutility, withRoutility } from '../core/routility';
 import type { ItemValue, RoutilityData } from '../core/types';
 
 type Transport = (ids: number[]) => Promise<ItemsResponse | undefined>;
@@ -16,21 +16,29 @@ export class ValueStore {
   private pending = new Set<number>();
   private batch: Promise<void> | null = null;
   status: CacheStatus | null = null;
+  /** False when Rolimon's is off: items then come from RoUtility alone. */
+  useRolimons = true;
 
   constructor(private readonly transport: Transport) {}
 
   /** The item with any RoUtility data layered on; null if it's not a limited. */
   peek(id: number): ItemValue | null | undefined {
+    if (!this.useRolimons) {
+      const data = this.routility.get(id);
+      return data ? itemFromRoutility(id, data) : data;
+    }
     const item = this.known.get(id);
     return item ? withRoutility(item, this.routility.get(id)) : item;
   }
 
   /**
-   * Fetches RoUtility data for known limiteds among `ids` that haven't been asked
-   * about yet in this tab. Resolves true when new data arrived.
+   * Fetches RoUtility data for ids that haven't been asked about yet in this tab: known
+   * limiteds when Rolimon's is on, otherwise every id. Resolves true when new data arrived.
    */
   async loadRoutility(ids: Iterable<number>, transport: RoutilityTransport): Promise<boolean> {
-    const wanted = [...ids].filter((id) => this.known.get(id) && !this.routilityRequested.has(id));
+    const wanted = [...ids].filter(
+      (id) => (!this.useRolimons || this.known.get(id)) && !this.routilityRequested.has(id),
+    );
     if (wanted.length === 0) return false;
     for (const id of wanted) this.routilityRequested.add(id);
     const response = await transport(wanted).catch(() => undefined);
@@ -50,6 +58,7 @@ export class ValueStore {
 
   /** Resolves once every id has been looked up (or the lookup failed). */
   async load(ids: Iterable<number>): Promise<void> {
+    if (!this.useRolimons) return;
     for (const id of ids) if (!this.known.has(id)) this.pending.add(id);
     if (this.pending.size === 0) return;
     this.batch ??= Promise.resolve().then(() => this.flush());

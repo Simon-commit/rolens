@@ -38,3 +38,13 @@ describe('isRequest', () => {
     expect(isRequest(null)).toBe(false);
   });
 });
+
+describe('sources', () => {
+  it('always keeps at least one source on', () => {
+    expect(normaliseSettings({ useRolimons: false, useRoutility: false })).toMatchObject({
+      useRolimons: true,
+      useRoutility: false,
+    });
+    expect(normaliseSettings({ useRolimons: false })).toMatchObject({ useRolimons: false, useRoutility: true });
+  });
+});

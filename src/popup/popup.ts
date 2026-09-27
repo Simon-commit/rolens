@@ -17,51 +17,90 @@ function renderStatus(status: CacheStatus | undefined): void {
   const card = $('#status-card');
   const title = $('#status');
   const sub = $('#status-sub');
+  $('#refresh').hidden = !settings.useRolimons;
   if (!status) {
     card.dataset.state = 'error';
-    title.textContent = 'Background worker unavailable';
-    sub.textContent = 'Try reloading the extension.';
+    title.textContent = 'Service unavailable';
+    sub.textContent = 'Please reload the extension.';
+    return;
+  }
+  if (!settings.useRolimons) {
+    const routility = status.routility;
+    title.textContent = 'RoUtility values';
+    if (routility?.blockedUntil || (routility?.error && !routility.lastSuccess)) {
+      sub.textContent = 'RoUtility is not responding';
+      card.dataset.state = 'error';
+    } else {
+      sub.textContent = routility?.lastSuccess
+        ? `Updated ${formatAge(routility.lastSuccess)}`
+        : 'Values load as you browse Roblox';
+      card.dataset.state = routility?.lastSuccess ? 'fresh' : 'stale';
+    }
     return;
   }
   const label = PROVIDERS[status.source].label;
   if (status.fetchedAt) {
-    title.textContent = `${status.itemCount.toLocaleString()} items tracked`;
+    title.textContent = `${status.itemCount.toLocaleString('en-US')} items tracked`;
     sub.textContent = status.error
-      ? `Refresh failed: ${status.error}`
-      : `${label} · updated ${formatAge(status.fetchedAt)}`;
+      ? `Update failed: ${status.error}`
+      : `${label} · Updated ${formatAge(status.fetchedAt)}`;
     card.dataset.state = status.error ? 'error' : Date.now() - status.fetchedAt > STALE_AFTER_MS ? 'stale' : 'fresh';
   } else {
-    title.textContent = status.error ? 'Could not load values' : 'No data yet';
-    sub.textContent = status.error ?? `Waiting for ${label}`;
+    title.textContent = status.error ? 'Values could not be loaded' : 'Loading values';
+    sub.textContent = status.error ?? `Connecting to ${label}`;
     card.dataset.state = status.error ? 'error' : 'stale';
   }
+}
+
+function paintBadge(badge: HTMLElement, text: string, tone: string, title = ''): void {
+  badge.textContent = text;
+  badge.className = `badge ${tone}`.trim();
+  badge.title = title;
+}
+
+function renderRolimonsStatus(status: CacheStatus | undefined): void {
+  const badge = $('#rolimons-badge');
+  if (!settings.useRolimons) paintBadge(badge, 'Off', 'is-soon');
+  else if (status?.error && !status.fetchedAt)
+    paintBadge(badge, 'Unavailable', 'is-bad', `Last error: ${status.error}`);
+  else if (status?.fetchedAt) paintBadge(badge, 'Connected', '');
+  else paintBadge(badge, 'Connecting', 'is-soon');
 }
 
 function renderRoutilityStatus(status: CacheStatus | undefined): void {
   const badge = $('#routility-badge');
   const routility = status?.routility;
-  let text = 'Ready';
-  let tone = 'is-soon';
-  if (!settings.useRoutility) {
-    text = 'Off';
-  } else if (routility?.blockedUntil || (routility?.error && !routility.lastSuccess)) {
-    text = 'Blocked';
-    tone = 'is-bad';
-  } else if (routility?.lastSuccess) {
-    text = 'Connected';
-    tone = '';
-  }
-  badge.textContent = text;
-  badge.className = `badge ${tone}`.trim();
-  badge.title = routility?.error ? `Last error: ${routility.error}` : '';
+  const title = routility?.error ? `Last error: ${routility.error}` : '';
+  if (!settings.useRoutility) paintBadge(badge, 'Off', 'is-soon');
+  else if (routility?.blockedUntil || (routility?.error && !routility.lastSuccess)) {
+    paintBadge(badge, 'Blocked', 'is-bad', title);
+  } else if (routility?.lastSuccess) paintBadge(badge, 'Connected', '', title);
+  else paintBadge(badge, 'Ready', 'is-soon', title);
 }
 
+/** Two source switches; whichever is the only one left on can't be turned off. */
 function renderSources(): void {
-  const input = $<HTMLInputElement>('#use-routility');
-  input.checked = settings.useRoutility;
-  input.addEventListener('change', () => {
-    void save({ useRoutility: input.checked }).then(refreshStatus);
-  });
+  const inputs = [...document.querySelectorAll<HTMLInputElement>('input[data-source]')];
+  const paint = () => {
+    const onCount = inputs.filter((input) => settings[input.dataset.source as 'useRolimons' | 'useRoutility']).length;
+    for (const input of inputs) {
+      input.checked = settings[input.dataset.source as 'useRolimons' | 'useRoutility'];
+      input.disabled = input.checked && onCount === 1;
+      input.title = input.disabled ? 'At least one source must remain enabled' : '';
+    }
+    $('#source-note').hidden = onCount > 1;
+    $('#usd-note').textContent = settings.useRoutility
+      ? 'RoUtility estimates, with your own rate as a fallback'
+      : 'Calculated from your own rate';
+  };
+  for (const input of inputs) {
+    input.addEventListener('change', () => {
+      void save({ [input.dataset.source as 'useRolimons' | 'useRoutility']: input.checked })
+        .then(paint)
+        .then(refreshStatus);
+    });
+  }
+  paint();
 }
 
 function renderToggles(): void {
@@ -78,7 +117,7 @@ function renderFormat(): void {
     for (const button of buttons) {
       button.setAttribute('aria-checked', String((button.dataset.format === 'compact') === settings.compactNumbers));
     }
-    $('#format-example').textContent = settings.compactNumbers ? 'Short, easy to scan' : 'Every digit';
+    $('#format-example').textContent = settings.compactNumbers ? 'Abbreviated for quick reading' : 'Full figures';
   };
   for (const button of buttons) {
     button.addEventListener('click', () => {
@@ -109,9 +148,9 @@ function applyTheme(): void {
 function renderTheme(): void {
   const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]');
   const notes: Record<ThemePreference, string> = {
-    auto: 'Follows Roblox and your system',
-    light: 'Always light',
-    dark: 'Always dark',
+    auto: 'Matches Roblox and your system',
+    light: 'Light at all times',
+    dark: 'Dark at all times',
   };
   const paint = () => {
     for (const button of buttons) {
@@ -134,6 +173,7 @@ function renderTheme(): void {
 async function refreshStatus(): Promise<void> {
   const status = await send({ type: 'rolens:getStatus' }).catch(() => undefined);
   renderStatus(status);
+  renderRolimonsStatus(status);
   renderRoutilityStatus(status);
 }
 

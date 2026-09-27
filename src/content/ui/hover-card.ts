@@ -74,7 +74,7 @@ export function buildHoverCard(item: ItemValue, ctx: RenderContext): HTMLElement
       el(
         'div',
         '',
-        el('div', 'rl-eyebrow', item.value === null ? 'RAP (unvalued)' : 'Value'),
+        el('div', 'rl-eyebrow', item.value === null ? 'RAP (no value)' : 'Value'),
         el('div', 'big', formatRobux(effectiveValue(item), compact)),
       ),
     ),

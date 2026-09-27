@@ -1,4 +1,24 @@
-import type { ItemValue } from '../../src/core/types';
+import type { ItemValue, RoutilityData } from '../../src/core/types';
+
+export function routilityData(overrides: Partial<RoutilityData> = {}): RoutilityData {
+  return {
+    name: null,
+    acronym: null,
+    rap: null,
+    demand: null,
+    trend: null,
+    value: null,
+    usd: null,
+    rate: null,
+    confidence: null,
+    confidenceReason: null,
+    rare: false,
+    projected: false,
+    hyped: false,
+    copies: null,
+    ...overrides,
+  };
+}
 
 /** Trimmed Rolimons response. Rows copied from the live API, plus edge cases. */
 export const rolimonsResponse = {

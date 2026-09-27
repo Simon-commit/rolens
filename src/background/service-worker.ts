@@ -34,9 +34,13 @@ const routility = new RoutilityCache(fetch.bind(globalThis), {
   },
 });
 
-async function currentCache(): Promise<ValueCache> {
+async function currentSettings(): Promise<Settings> {
   const { settings } = await chrome.storage.sync.get('settings');
-  const provider = resolveProvider(normaliseSettings(settings as Partial<Settings> | undefined).source);
+  return normaliseSettings(settings as Partial<Settings> | undefined);
+}
+
+async function currentCache(): Promise<ValueCache> {
+  const provider = resolveProvider((await currentSettings()).source);
   let cache = caches.get(provider.id);
   if (!cache) {
     cache = new ValueCache(
@@ -67,7 +71,8 @@ async function handle(request: Request): Promise<ItemsResponse | RoutilityRespon
       await cache.refresh(true);
       return cache.status();
     case 'rolens:getStatus':
-      await cache.get();
+      // With Rolimon's turned off, report status without downloading its table.
+      if ((await currentSettings()).useRolimons) await cache.get();
       return { ...cache.status(), routility: routility.status() };
   }
 }

@@ -90,15 +90,15 @@ function verdictOf(delta: number): 'win' | 'loss' | 'even' {
 }
 
 /** Plain-text summary for pasting into Discord or a trade ad. */
-export function tradeSummaryText(view: TradeView, compact: boolean): string {
+export function tradeSummaryText(view: TradeView, compact: boolean, sources = "Rolimon's"): string {
   const names = (items: ItemValue[]) => items.map((item) => item.acronym || item.name).join(', ') || 'nothing';
   const { balance } = view;
   const pct = percentChange(balance.valueDelta, balance.give.value);
   return [
-    `Give: ${names(view.give.items)} (${formatRobux(balance.give.value, compact)})`,
-    `Get: ${names(view.receive.items)} (${formatRobux(balance.receive.value, compact)})`,
+    `Offering: ${names(view.give.items)} (${formatRobux(balance.give.value, compact)})`,
+    `Receiving: ${names(view.receive.items)} (${formatRobux(balance.receive.value, compact)})`,
     `Net: ${formatDelta(balance.valueDelta, compact)} value${pct === null ? '' : ` (${formatPercent(pct)})`}, ${formatDelta(balance.rapDelta, compact)} RAP`,
-    'Values: Rolimons via RoLens',
+    `Values: ${sources}, via RoLens`,
   ].join('\n');
 }
 
@@ -157,7 +157,7 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
         String(rare),
         [
           'Rare items',
-          `${plural(rare, 'item')} in this trade ${rare === 1 ? 'is' : 'are'} rare, with few copies in circulation.`,
+          `${plural(rare, 'item')} in this trade ${rare === 1 ? 'is' : 'are'} classified as rare, with a limited number of copies in circulation.`,
         ],
         'rare',
       ),
@@ -168,7 +168,10 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
       flag(
         'warning',
         'Projected',
-        ['Projected RAP', 'An item here has a RAP pushed up by a few inflated sales. Trust its value, not its RAP.'],
+        [
+          'Projected RAP',
+          'This trade includes an item whose RAP has been inflated by recent above-market sales. Its value is a more reliable measure than its RAP.',
+        ],
         'warn',
       ),
     );
@@ -182,7 +185,7 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
         String(disagree),
         [
           'Sources disagree',
-          `Rolimon's and RoUtility value ${plural(disagree, 'item')} 15% or more apart. Check ${disagree === 1 ? 'it' : 'them'} before accepting.`,
+          `Rolimon's and RoUtility differ by 15% or more on ${plural(disagree, 'item')}. We recommend reviewing ${disagree === 1 ? 'it' : 'them'} on both sources before accepting this trade.`,
         ],
         'warn',
       ),
@@ -193,21 +196,31 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
     flags.push(
       flag('help', String(unknown), [
         'No value data',
-        `${plural(unknown, 'item')} ${unknown === 1 ? 'has' : 'have'} no value yet and ${unknown === 1 ? "isn't" : "aren't"} counted in the totals.`,
+        `${plural(unknown, 'item')} ${unknown === 1 ? 'has' : 'have'} no published value and ${unknown === 1 ? 'is' : 'are'} excluded from the totals.`,
       ]),
     );
   }
 
   const copy = iconButton('copy', 'Copy trade summary');
   copy.addEventListener('click', () => {
-    void navigator.clipboard.writeText(tradeSummaryText(view, compact)).then(() => {
-      copy.classList.add('is-done');
-      copy.replaceChildren(icon('check'));
-      window.setTimeout(() => {
-        copy.classList.remove('is-done');
-        copy.replaceChildren(icon('copy'));
-      }, 1600);
-    });
+    void navigator.clipboard
+      .writeText(
+        tradeSummaryText(
+          view,
+          compact,
+          [ctx.settings.useRolimons ? "Rolimon's" : null, ctx.settings.useRoutility ? 'RoUtility' : null]
+            .filter(Boolean)
+            .join(' and '),
+        ),
+      )
+      .then(() => {
+        copy.classList.add('is-done');
+        copy.replaceChildren(icon('check'));
+        window.setTimeout(() => {
+          copy.classList.remove('is-done');
+          copy.replaceChildren(icon('copy'));
+        }, 1600);
+      });
   });
 
   const toggle = el('button', 'btn', chevron());
@@ -254,16 +267,16 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
           el(
             'div',
             'sides',
-            sideBlock('You give', balance.give.value, balance.give.rap, view.give, ctx),
-            sideBlock('You get', balance.receive.value, balance.receive.rap, view.receive, ctx),
+            sideBlock('You offer', balance.give.value, balance.give.rap, view.give, ctx),
+            sideBlock('You receive', balance.receive.value, balance.receive.rap, view.receive, ctx),
           ),
           el(
             'div',
             'source',
-            `Values from ${sourceLine(
+            sourceLine(
               ctx,
               allItems.some((item) => item.routility),
-            )}`,
+            ),
           ),
         ),
       ),

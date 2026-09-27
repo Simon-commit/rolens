@@ -12,7 +12,7 @@
         <img src="icons/icon-48.png" alt="" width="32" height="32" />
         <div>
           <h1>RoLens</h1>
-          <p>Trade values, right where you trade</p>
+          <p>Item values and trade analysis for Roblox</p>
         </div>
       </div>
       <div class="status" id="status-card">
@@ -60,8 +60,11 @@
           </div>
           <label class="setting">
             <span
-              ><b>Dark Roblox</b
-              ><small>Makes roblox.com dark in this browser. Your Roblox account setting stays as it is.</small></span
+              ><b>Dark mode for Roblox</b
+              ><small
+                >Applies a dark appearance to roblox.com in this browser. Your Roblox account settings are not
+                affected.</small
+              ></span
             >
             <input type="checkbox" role="switch" data-setting="darkRoblox" />
           </label>
@@ -72,22 +75,24 @@
         <h2 id="show-title">On Roblox</h2>
         <div class="list">
           <label class="setting">
-            <span><b>Value chips</b><small>On every limited, with a hover card</small></span>
+            <span
+              ><b>Value chips</b><small>Value and USD on every limited item, with full details on hover</small></span
+            >
             <input type="checkbox" role="switch" data-setting="showBadges" />
           </label>
           <label class="setting">
-            <span><b>Trade analysis</b><small>Net value, balance and summary on trades</small></span>
+            <span><b>Trade analysis</b><small>Net value, balance and a shareable summary on every trade</small></span>
             <input type="checkbox" role="switch" data-setting="showTradeTotals" />
           </label>
           <label class="setting">
-            <span><b>Item page card</b><small>Full stats on catalog pages</small></span>
+            <span><b>Item page card</b><small>Complete market data on catalog item pages</small></span>
             <input type="checkbox" role="switch" data-setting="showItemPanel" />
           </label>
         </div>
       </section>
 
       <section aria-labelledby="money-title">
-        <h2 id="money-title">Numbers &amp; USD</h2>
+        <h2 id="money-title">Numbers and USD</h2>
         <div class="list">
           <div class="setting">
             <span><b>Number style</b><small id="format-example"></small></span>
@@ -97,11 +102,13 @@
             </div>
           </div>
           <label class="setting">
-            <span><b>Show USD</b><small id="usd-note">From RoUtility, or your rate as a fallback</small></span>
+            <span
+              ><b>Show USD</b><small id="usd-note">RoUtility estimates, with your own rate as a fallback</small></span
+            >
             <input type="checkbox" role="switch" data-setting="showUsd" />
           </label>
           <label class="setting" for="usd-rate">
-            <span><b>Fallback rate</b><small>USD per 1,000 value, for items RoUtility doesn't price.</small></span>
+            <span><b>Fallback rate</b><small>USD per 1,000 value, applied when no estimate is available</small></span>
             <span class="money-input">
               <span aria-hidden="true">$</span>
               <input id="usd-rate" type="number" inputmode="decimal" min="0" max="999" step="0.1" placeholder="—" />
@@ -113,30 +120,41 @@
       <section aria-labelledby="source-title">
         <h2 id="source-title">Sources</h2>
         <div class="list">
-          <div class="setting">
+          <label class="setting" for="use-rolimons">
             <span class="source-left">
               <span class="source-mark source-mark--rolimons" aria-hidden="true">R</span>
-              <span><b>Rolimon's</b><small>Values, RAP, demand, trend</small></span>
+              <span
+                ><b>Rolimon's <span id="rolimons-badge" class="badge is-soon">Ready</span></b
+                ><small>Values, RAP, demand and trend</small></span
+              >
             </span>
-            <span class="badge">Connected</span>
-          </div>
+            <input id="use-rolimons" type="checkbox" role="switch" data-source="useRolimons" />
+          </label>
           <label class="setting" for="use-routility">
             <span class="source-left">
               <span class="source-mark source-mark--routility" aria-hidden="true">U</span>
               <span
                 ><b>RoUtility <span id="routility-badge" class="badge is-soon">Ready</span></b
-                ><small>USD, confidence and a second value</small></span
+                ><small>USD estimates, confidence and an independent value</small></span
               >
             </span>
-            <input id="use-routility" type="checkbox" role="switch" />
+            <input id="use-routility" type="checkbox" role="switch" data-source="useRoutility" />
           </label>
         </div>
+        <p class="section-note" id="source-note">At least one source must remain enabled.</p>
       </section>
     </main>
 
     <footer>
       <span>Open source · No account access · No tracking</span>
-      <a href="https://github.com/Simon-commit/rolens" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="github" href="https://github.com/Simon-commit/rolens" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+          />
+        </svg>
+        GitHub
+      </a>
     </footer>
     <script src="popup.js"></script>
   </body>

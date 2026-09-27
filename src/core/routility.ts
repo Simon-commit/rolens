@@ -1,4 +1,4 @@
-import type { Confidence, ItemValue, RoutilityData } from './types';
+import type { Confidence, Demand, ItemValue, RoutilityData, Trend } from './types';
 
 /**
  * RoUtility per-item details. There's no documented API; this is the endpoint
@@ -35,11 +35,24 @@ export function parseConfidence(value: unknown): Confidence | null {
   return pct >= 70 ? 'high' : pct >= 40 ? 'medium' : 'low';
 }
 
+const DEMANDS: readonly Demand[] = ['terrible', 'low', 'normal', 'high', 'amazing'];
+const TRENDS: readonly Trend[] = ['lowering', 'unstable', 'stable', 'raising', 'fluctuating'];
+
+function word<T extends string>(options: readonly T[], value: unknown): T | null {
+  const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return options.find((option) => option === lower) ?? null;
+}
+
 export function parseRoutilityItem(body: unknown, expectedId: number): RoutilityData | null {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return null;
   const raw = body as Record<string, unknown>;
   if (Number(raw.item_id) !== expectedId) return null;
   return {
+    name: text(raw.item_name),
+    acronym: text(raw.item_acronym, 20),
+    rap: num(raw.item_rap),
+    demand: word(DEMANDS, raw.item_demand),
+    trend: word(TRENDS, raw.item_trend),
     value: num(raw.item_value),
     usd: num(raw.item_usd),
     rate: num(raw.item_rate),
@@ -62,16 +75,42 @@ export function withRoutility(item: ItemValue, data: RoutilityData | null | unde
     projected: item.projected || data.projected,
     hyped: item.hyped || data.hyped,
   };
-  if (data.usd !== null && data.usd > 0) {
-    merged.usd = {
-      value: data.usd,
-      confidence: data.confidence,
-      origin: 'routility',
-      ...(data.confidenceReason ? { reason: data.confidenceReason } : {}),
-      ...(data.rate !== null ? { rate: data.rate } : {}),
-    };
-  }
+  const usd = usdEstimate(data);
+  if (usd) merged.usd = usd;
   return merged;
+}
+
+function usdEstimate(data: RoutilityData): ItemValue['usd'] {
+  if (data.usd === null || data.usd <= 0) return undefined;
+  return {
+    value: data.usd,
+    confidence: data.confidence,
+    origin: 'routility',
+    ...(data.confidenceReason ? { reason: data.confidenceReason } : {}),
+    ...(data.rate !== null ? { rate: data.rate } : {}),
+  };
+}
+
+/**
+ * An item built from RoUtility alone, for when Rolimon's is turned off. Null when
+ * RoUtility has neither a value nor a RAP for it.
+ */
+export function itemFromRoutility(id: number, data: RoutilityData): ItemValue | null {
+  if (data.value === null && data.rap === null) return null;
+  const usd = usdEstimate(data);
+  return {
+    id,
+    name: data.name ?? `Item ${id}`,
+    acronym: data.acronym ?? '',
+    rap: data.rap ?? 0,
+    value: data.value,
+    demand: data.demand,
+    trend: data.trend,
+    projected: data.projected,
+    hyped: data.hyped,
+    rare: data.rare,
+    ...(usd ? { usd } : {}),
+  };
 }
 
 /** Share by which RoUtility's value differs from the main value; null when either is missing. */

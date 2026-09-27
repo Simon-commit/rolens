@@ -21,6 +21,7 @@ async function update(): Promise<void> {
   const pageItemId = settings.showItemPanel ? catalogIdFromPath(location.pathname) : null;
   const ids = new Set(cards.values());
   if (pageItemId !== null) ids.add(pageItemId);
+  store.useRolimons = settings.useRolimons;
   await store.load(ids);
 
   const ctx: RenderContext = {
@@ -86,7 +87,13 @@ function start(): void {
       settings = next;
       if (next.theme !== prev.theme) applyThemePreference(next.theme);
       if (onlyLiveKeysChanged(prev, next)) return;
-      if (next.source !== prev.source) store.clear();
+      if (
+        next.source !== prev.source ||
+        next.useRolimons !== prev.useRolimons ||
+        next.useRoutility !== prev.useRoutility
+      ) {
+        store.clear();
+      }
     } else if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('snapshot:'))) {
       store.clear();
     } else {

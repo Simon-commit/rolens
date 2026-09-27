@@ -23,6 +23,8 @@ export interface Settings {
   compactNumbers: boolean;
   /** Show USD estimates where available. */
   showUsd: boolean;
+  /** Use Rolimon's values. At least one of the two sources is always on. */
+  useRolimons: boolean;
   /** Fetch USD, confidence and a second value from RoUtility for items on screen. */
   useRoutility: boolean;
   /**
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showItemPanel: true,
   compactNumbers: true,
   showUsd: true,
+  useRolimons: true,
   useRoutility: true,
   usdRate: null,
 };
@@ -60,11 +63,13 @@ export function normaliseSettings(stored: unknown): Settings {
     'showItemPanel',
     'compactNumbers',
     'showUsd',
+    'useRolimons',
     'useRoutility',
     'darkRoblox',
   ] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }
+  if (!result.useRolimons && !result.useRoutility) result.useRolimons = true;
   if (typeof raw.usdRate === 'number' && Number.isFinite(raw.usdRate) && raw.usdRate > 0 && raw.usdRate < 1000) {
     result.usdRate = raw.usdRate;
   }

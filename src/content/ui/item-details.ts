@@ -26,11 +26,11 @@ export function demandStat(item: ItemValue): HTMLElement {
 
 /** What each price trend means, shown when hovering the trend. */
 export const TREND_TIPS: Record<Trend, string> = {
-  raising: 'Recent sales have been going up in price.',
-  lowering: 'Recent sales have been going down in price.',
-  stable: 'Recent sales stay close to the same price.',
-  unstable: 'Recent sales swing a lot in price, so the value is less certain.',
-  fluctuating: 'The price moves up and down from sale to sale, so expect some spread around the value.',
+  raising: 'Recent sale prices are trending upward.',
+  lowering: 'Recent sale prices are trending downward.',
+  stable: 'Recent sale prices have remained consistent.',
+  unstable: 'Recent sale prices vary significantly, so the value carries more uncertainty.',
+  fluctuating: 'Sale prices move up and down between sales. Expect some variation around the value.',
 };
 
 export function trendStat(item: ItemValue): HTMLElement {
@@ -62,7 +62,8 @@ export function usdStat(item: ItemValue, ctx: RenderContext): HTMLElement | null
     ? `${usd.confidence.charAt(0).toUpperCase()}${usd.confidence.slice(1)} confidence`
     : null;
   const rate = usd.rate ? `$${usd.rate.toFixed(2)}/1K` : null;
-  const note = usd.origin === 'rate' ? 'At your rate' : [confidence, range, rate].filter(Boolean).join(' · ') || null;
+  const note =
+    usd.origin === 'rate' ? 'Based on your rate' : [confidence, range, rate].filter(Boolean).join(' · ') || null;
   if (note) node.append(el('div', 'stat-note', note));
   if (usd.reason) node.title = usd.reason;
   return node;
@@ -110,20 +111,26 @@ export function rapInsight(item: ItemValue): string | null {
 export function flagPills(item: ItemValue): HTMLElement[] {
   const pills: HTMLElement[] = [];
   if (item.rare) {
-    pills.push(attachTip(pill('Rare', 'rare', 'gem'), 'Rare', 'Few copies of this item are in circulation.'));
+    pills.push(
+      attachTip(pill('Rare', 'rare', 'gem'), 'Rare', 'A limited number of copies of this item are in circulation.'),
+    );
   }
   if (item.projected) {
     pills.push(
       attachTip(
         pill('Projected', 'warn', 'warning'),
         'Projected RAP',
-        'A few inflated sales pushed the RAP up. Trust the value, not the RAP.',
+        "Recent above-market sales have inflated this item's RAP. Its value is a more reliable measure.",
       ),
     );
   }
   if (item.hyped) {
     pills.push(
-      attachTip(pill('Hyped', undefined, 'flame'), 'Hyped', 'Demand is high right now and the price may not last.'),
+      attachTip(
+        pill('Hyped', undefined, 'flame'),
+        'Hyped',
+        'This item is in unusually high demand. Its current price may not be sustained.',
+      ),
     );
   }
   if (sourcesDisagree(item)) {
@@ -132,7 +139,7 @@ export function flagPills(item: ItemValue): HTMLElement[] {
       attachTip(
         pill('Sources disagree', 'warn', 'split'),
         'Sources disagree',
-        `RoUtility values this item ${signedPercent(diff)} compared with Rolimon's. Check it before trading.`,
+        `RoUtility's value differs from Rolimon's by ${signedPercent(diff)}. We recommend reviewing both sources before trading this item.`,
       ),
     );
   }
@@ -140,8 +147,9 @@ export function flagPills(item: ItemValue): HTMLElement[] {
 }
 
 export function sourceLine(ctx: RenderContext, withRoutility = false): string {
-  const age = ctx.status?.fetchedAt ? ` · ${formatAge(ctx.status.fetchedAt)}` : '';
-  return `${ctx.provider.label}${withRoutility ? ' & RoUtility' : ''}${age}`;
+  if (!ctx.settings.useRolimons) return 'Source: RoUtility';
+  const age = ctx.status?.fetchedAt ? ` · Updated ${formatAge(ctx.status.fetchedAt)}` : '';
+  return `Source: ${ctx.provider.label}${withRoutility ? ' and RoUtility' : ''}${age}`;
 }
 
 /** Styles for the blocks above, included by widgets that use them. */
