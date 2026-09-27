@@ -12,6 +12,25 @@ html[data-rolens-dark] body:not(.dark-theme) {
   background-color: #191b1d !important;
 }
 
+/* Chip placements chosen by chip-fit.ts when the default spot would be clipped. */
+[data-rolens-anchor] {
+  position: relative;
+}
+[data-rolens='badge'][data-placement='overlay'] {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  margin: 0;
+  max-width: calc(100% - 12px);
+}
+[data-rolens='badge'][data-placement='below'] {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
 [data-rolens-rare] {
   --rolens-rare-glow:
     0 0 0 2px rgba(245, 184, 61, 0.9), 0 0 0 5px rgba(232, 121, 249, 0.14), 0 6px 20px -4px rgba(245, 184, 61, 0.45);

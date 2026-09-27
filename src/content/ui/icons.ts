@@ -33,7 +33,7 @@ export function icon(name: IconName, className = 'rl-icon'): SVGSVGElement {
 
 let glyphCount = 0;
 
-/** The RoLens mark: a lens over a rising line, on the brand gradient. */
+/** The RoLens mark: a lens around a rising chevron, on the brand gradient. */
 export function glyph(size = 16): SVGSVGElement {
   const id = `rl-g${glyphCount++}`;
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -65,22 +65,22 @@ export function glyph(size = 16): SVGSVGElement {
   tile.setAttribute('rx', '6.5');
   tile.setAttribute('fill', `url(#${id})`);
   const lens = document.createElementNS(SVG_NS, 'circle');
-  lens.setAttribute('cx', '10.5');
-  lens.setAttribute('cy', '10.5');
-  lens.setAttribute('r', '5.2');
+  lens.setAttribute('cx', '10.4');
+  lens.setAttribute('cy', '10.4');
+  lens.setAttribute('r', '5.4');
   const handle = document.createElementNS(SVG_NS, 'path');
-  handle.setAttribute('d', 'M14.4 14.4 18.5 18.5');
+  handle.setAttribute('d', 'M14.6 14.6 18.4 18.4');
   const line = document.createElementNS(SVG_NS, 'path');
-  line.setAttribute('d', 'M8 12l1.8-2 1.4 1.2 1.8-2.5');
+  line.setAttribute('d', 'M8.2 11.6 10.4 9.4 12.6 11.6');
   for (const part of [lens, handle, line]) {
     part.setAttribute('fill', 'none');
     part.setAttribute('stroke', '#fff');
     part.setAttribute('stroke-linecap', 'round');
     part.setAttribute('stroke-linejoin', 'round');
   }
-  lens.setAttribute('stroke-width', '2.2');
-  handle.setAttribute('stroke-width', '2.6');
-  line.setAttribute('stroke-width', '1.6');
+  lens.setAttribute('stroke-width', '2.4');
+  handle.setAttribute('stroke-width', '2.8');
+  line.setAttribute('stroke-width', '2');
   svg.append(defs, tile, lens, handle, line);
   return svg;
 }

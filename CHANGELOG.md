@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-27
+
+### Changed
+
+- Redesigned RoLens mark: a bolder lens around a rising chevron, used for the extension icon and on Roblox.
+- Value chips now measure the space available and choose the cleanest position: under the item's text, or over the thumbnail in fixed-height tiles. They are no longer clipped or overlapped on the trade creation page, in either inventory or in the offer lists.
+- A slightly smaller chip is used in narrow cards so it never runs edge to edge.
+
 ## [0.4.0] - 2026-09-27
 
 ### Added

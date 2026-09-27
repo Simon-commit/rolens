@@ -106,3 +106,50 @@
 .chip.is-rare .flag--rare {
   color: var(--rl-rare-text);
 }
+
+/* Over a thumbnail (fixed-height tiles): stacked, translucent, value above USD. */
+:host([data-placement='overlay']) .chip {
+  display: inline-grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: start;
+  align-items: center;
+  column-gap: 5px;
+  height: auto;
+  max-width: 100%;
+  padding: 4px 8px 4px 5px;
+  row-gap: 1px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rl-bg-raised) 86%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 11.5px;
+}
+:host([data-placement='overlay']) .sep {
+  display: none;
+}
+:host([data-placement='overlay']) .usd {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  font-size: 11px;
+}
+:host([data-placement='overlay']) .flag:last-child {
+  margin-right: 0;
+}
+
+/* Narrow cards: same chip, a little smaller, so it never runs edge to edge. */
+:host([data-size='compact']) .chip {
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px 0 3px;
+  font-size: 11px;
+}
+:host([data-size='compact']) .chip .rl-glyph {
+  width: 13px;
+  height: 13px;
+}
+:host([data-size='compact']) .label {
+  font-size: 9px;
+}
+:host([data-size='compact']) .flag:last-child {
+  margin-right: 3px;
+}

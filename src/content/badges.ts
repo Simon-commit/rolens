@@ -1,4 +1,5 @@
 import type { ItemValue } from '../core/types';
+import { fitChip } from './chip-fit';
 import { isOwnNode, ROLENS_ATTR } from './dom';
 import { catalogIdFromHref, SELECTORS } from './selectors';
 import { createChip } from './ui/chip';
@@ -32,14 +33,19 @@ export function renderBadges(
   for (const [card, id] of cards) {
     const existing = card.querySelector<HTMLElement>(':scope [data-rolens="badge"]');
     const item = lookup(id);
-    if (item && existing?.dataset.rolensKey === renderKey(item)) continue;
+    const caption = card.querySelector(SELECTORS.cardCaption);
+    if (item && existing?.dataset.rolensKey === renderKey(item)) {
+      // Cards that weren't laid out yet (hidden tabs, virtualised lists) get placed once visible.
+      if (existing.dataset.fit === 'pending' && fitChip(existing, card, caption)) existing.dataset.fit = 'done';
+      continue;
+    }
     existing?.remove();
     card.removeAttribute(RARE_ATTR);
     if (!item) continue;
     if (item.rare) card.setAttribute(RARE_ATTR, '');
-    const caption = card.querySelector(SELECTORS.cardCaption);
     const chip = createChip(item, ctx);
     chip.dataset.rolensKey = renderKey(item);
-    (caption ?? card).append(chip);
+    chip.dataset.fit = fitChip(chip, card, caption) ? 'done' : 'pending';
+    if (!chip.isConnected) (caption ?? card).append(chip);
   }
 }

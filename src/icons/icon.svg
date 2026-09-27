@@ -8,8 +8,8 @@
   </defs>
   <rect width="128" height="128" rx="34.7" fill="url(#g)"/>
   <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="56" cy="56" r="27.7" stroke-width="11.7"/>
-    <path d="M76.8 76.8 98.7 98.7" stroke-width="13.9"/>
-    <path d="M42.7 64 52.3 53.3 59.7 59.7 69.3 46.4" stroke-width="8.5"/>
+    <circle cx="55.5" cy="55.5" r="28.8" stroke-width="12.8"/>
+    <path d="M77.9 77.9 98.1 98.1" stroke-width="14.9"/>
+    <path d="M43.7 61.9 55.5 50.1 67.2 61.9" stroke-width="10.7"/>
   </g>
 </svg>
