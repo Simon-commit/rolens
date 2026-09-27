@@ -63,6 +63,23 @@
   color: var(--rl-accent);
   font-weight: 600;
 }
+/* Calculated from the fallback rate rather than published by RoUtility: shown in a
+   neutral tone with a dotted underline, and explained on hover. */
+.usd.is-estimate {
+  color: var(--rl-text-2);
+  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent);
+  text-underline-offset: 2px;
+  cursor: help;
+  outline: none;
+}
+.chip.is-narrow .sep,
+.chip.is-narrow .usd {
+  display: none;
+}
+/* RAP-only items: one quiet line. */
+.chip.is-unvalued .value {
+  color: var(--rl-text-2);
+}
 .flag {
   display: inline-flex;
 }
@@ -96,11 +113,13 @@
   grid-template-columns: repeat(5, auto);
   justify-content: start;
   align-items: center;
-  column-gap: 4px;
+  /* Gaps come from margins, so columns a chip doesn't use take up no space. */
+  column-gap: 0;
   row-gap: 1px;
   height: auto;
-  max-width: 100%;
-  padding: 4px 7px 4px 5px;
+  /* Sized by its contents; shrinkToFit() abbreviates figures when they don't fit. */
+  max-width: none;
+  padding: 4px 8px 4px 5px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--rl-bg-raised) 86%, transparent);
   backdrop-filter: blur(8px);
@@ -110,8 +129,18 @@
 :host([data-placement='overlay']) .sep {
   display: none;
 }
+:host([data-placement='overlay']) .chip > :not(.rl-glyph) {
+  margin-left: 4px;
+}
 :host([data-placement='overlay']) .label {
   font-size: 9px;
+}
+/* A single-line overlay (RAP only, or USD hidden) is a pill like the others. */
+:host([data-placement='overlay']) .chip:not(:has(.usd)),
+:host([data-placement='overlay']) .chip.is-narrow {
+  display: inline-flex;
+  padding: 3px 8px 3px 5px;
+  border-radius: 999px;
 }
 :host([data-placement='overlay']) .usd {
   grid-row: 2;

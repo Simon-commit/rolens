@@ -56,7 +56,20 @@ describe('value chips', () => {
     expect(shadowText(document.querySelector('[data-rolens="badge"]'))).not.toContain('$');
     removeOwnNodes(document);
     renderBadges(findItemCards(document), lookup, withRate);
-    expect(shadowText(document.querySelector('[data-rolens="badge"]'))).toContain('$6.00');
+    expect(shadowText(document.querySelector('[data-rolens="badge"]'))).toContain('≈$6');
+  });
+
+  it('marks fallback-rate USD as an estimate and explains it', () => {
+    renderBadges(findItemCards(document), lookup, withRate);
+    const usd = document.querySelector('[data-rolens="badge"]')?.shadowRoot?.querySelector('.usd');
+    expect(usd?.classList.contains('is-estimate')).toBe(true);
+    expect(usd?.getAttribute('aria-label')).toContain('prevailing market reference');
+  });
+
+  it('keeps RAP-only chips to one line without USD', () => {
+    renderBadges(findItemCards(document), lookup, withRate);
+    const chip = document.querySelectorAll('[data-rolens="badge"]')[1];
+    expect(shadowText(chip)).toBe('RAP800');
   });
 
   it('is idempotent so the MutationObserver settles', () => {
@@ -89,7 +102,7 @@ describe('hover card', () => {
       .join(' ');
     expect(text).toContain('Projected Hat');
     expect(text).toContain('RAP is 25% above value');
-    expect(text).toContain('$16.00');
+    expect(text).toContain('≈$16');
     expect(text).toContain('Rare');
     expect(text).toContain('Projected');
   });
@@ -103,8 +116,8 @@ describe('hover card', () => {
     const text = buildHoverCard(withUsd, ctx)
       .map((node) => node.textContent)
       .join(' ');
-    expect(text).toContain('$42.00');
-    expect(text).toContain('$38.00–$46.00');
+    expect(text).toContain('$42');
+    expect(text).toContain('$38–$46');
     expect(text).toContain('High confidence');
   });
 });

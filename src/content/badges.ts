@@ -1,8 +1,8 @@
 import type { ItemValue } from '../core/types';
-import { fitChip } from './chip-fit';
+import { fitChip, roomFor } from './chip-fit';
 import { isOwnNode, ROLENS_ATTR } from './dom';
 import { catalogIdFromHref, SELECTORS } from './selectors';
-import { createChip } from './ui/chip';
+import { createChip, shrinkToFit } from './ui/chip';
 import { renderKey, type RenderContext } from './ui/context';
 
 /** Marks an item card whose item is rare, so page-level CSS can outline it. */
@@ -38,6 +38,7 @@ export function renderBadges(
     if (item && existing?.dataset.rolensKey === renderKey(item)) {
       // Cards that weren't laid out yet (hidden tabs, virtualised lists) get placed once visible.
       if (existing.dataset.fit === 'pending' && fitChip(existing, card, caption, price)) existing.dataset.fit = 'done';
+      if (existing.dataset.fit === 'done') refit(existing, card, price);
       continue;
     }
     existing?.remove();
@@ -48,5 +49,24 @@ export function renderBadges(
     chip.dataset.rolensKey = renderKey(item);
     chip.dataset.fit = fitChip(chip, card, caption, price) ? 'done' : 'pending';
     if (!chip.isConnected) (caption ?? card).append(chip);
+    if (chip.dataset.fit === 'done') refit(chip, card, price);
+  }
+}
+
+/**
+ * Keeps a placed chip within its room. The room changes when Roblox adds its selection
+ * check to a tile, and the chip's width changes once RoLens's font has loaded, so this
+ * re-measures only when either has changed.
+ */
+function refit(chip: HTMLElement, card: Element, price: Element | null): void {
+  const room = roomFor(chip, card, price);
+  const key = `${Math.round(room)}:${document.fonts?.status ?? ''}`;
+  if (chip.dataset.room === key) return;
+  chip.dataset.room = key;
+  shrinkToFit(chip, room);
+  if (document.fonts && document.fonts.status !== 'loaded') {
+    void document.fonts.ready.then(() => {
+      if (chip.isConnected) refit(chip, card, price);
+    });
   }
 }

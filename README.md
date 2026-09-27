@@ -29,8 +29,8 @@ the permissions it needs, and every line of shipped code is published in this re
 - **Trade analysis** in a single compact bar on the trades page: verdict and percentage, net value, RAP and USD difference (shown in red when negative), warnings, a balance indicator and a one-click shareable summary. The bar expands to show per-side detail, and each side's heading shows its own total.
 - **Item page card** on catalog pages with value, USD and confidence, RAP, demand, trend and tags, with links to the item on each enabled source.
 - **Two data sources.** Rolimon's and RoUtility can be used together or individually. With both enabled, RoLens shows RoUtility's value beside Rolimon's and flags items where the two differ by 15% or more.
-- **USD estimates** from RoUtility, with confidence where RoUtility provides it. A personal rate can be set as a fallback for items without an estimate.
-- **Rare item highlighting** with an iridescent outline on the item card and a marker on its chip.
+- **USD estimates** from RoUtility, with confidence where RoUtility provides it. A fallback rate can be set for items without an estimate; figures calculated from it are clearly marked as estimates.
+- **Rare item highlighting** with a quiet gold outline on the item card and a marker on its chip.
 - **Explanations on hover** for every warning, tag and price trend.
 - **Light and dark themes** that follow Roblox automatically or can be set manually, with smooth transitions.
 - **Dark mode for Roblox**, an optional setting that applies Roblox's own dark appearance to roblox.com in your browser, without changing your Roblox account settings.

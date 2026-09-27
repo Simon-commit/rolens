@@ -33,7 +33,8 @@ describe('totalUsd', () => {
 describe('formatUsd', () => {
   it('formats small, medium and large amounts', () => {
     expect(formatUsd(0.85)).toBe('$0.85');
-    expect(formatUsd(42)).toBe('$42.00');
+    expect(formatUsd(42)).toBe('$42');
+    expect(formatUsd(1.5)).toBe('$1.50');
     expect(formatUsd(1290)).toBe('$1,290');
     expect(formatUsd(12_500)).toBe('$12.5K');
     expect(formatUsd(12_500, false)).toBe('$12,500');

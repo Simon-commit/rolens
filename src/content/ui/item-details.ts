@@ -44,11 +44,29 @@ export function trendStat(item: ItemValue): HTMLElement {
   return node;
 }
 
+/** Title and formal explanation for a USD figure calculated from the fallback rate. */
+export function rateTip(rate: number): [string, string] {
+  return [
+    'Estimated USD value',
+    `RoUtility does not publish a USD estimate for this item. This figure is calculated at your fallback rate of ${formatUsd(rate, false)} per 1,000 value. A rate of $3 per 1,000 value is widely recognised as the prevailing market reference for limited items. It should be regarded as indicative only.`,
+  ];
+}
+
 /** USD estimate with its confidence, or null when there is none to show. */
 export function usdStat(item: ItemValue, ctx: RenderContext): HTMLElement | null {
   const usd = usdFor(item, ctx.settings);
   if (!usd) return null;
   const compact = ctx.settings.compactNumbers;
+  if (usd.origin === 'rate') {
+    const node = stat('USD', el('span', 'usd is-estimate', `≈${formatUsd(usd.value, compact)}`));
+    const note = el('span', 'stat-note', 'Estimate at fallback rate');
+    node.append(
+      ctx.settings.usdRate === null
+        ? note
+        : attachTip(el('span', 'tip-anchor', note), ...rateTip(ctx.settings.usdRate)),
+    );
+    return node;
+  }
   const range =
     usd.low !== undefined && usd.high !== undefined
       ? `${formatUsd(usd.low, compact)}–${formatUsd(usd.high, compact)}`
@@ -62,8 +80,7 @@ export function usdStat(item: ItemValue, ctx: RenderContext): HTMLElement | null
     ? `${usd.confidence.charAt(0).toUpperCase()}${usd.confidence.slice(1)} confidence`
     : null;
   const rate = usd.rate ? `$${usd.rate.toFixed(2)}/1K` : null;
-  const note =
-    usd.origin === 'rate' ? 'Based on your rate' : [confidence, range, rate].filter(Boolean).join(' · ') || null;
+  const note = [confidence, range, rate].filter(Boolean).join(' · ') || null;
   if (note) node.append(el('div', 'stat-note', note));
   if (usd.reason) node.title = usd.reason;
   return node;
@@ -162,10 +179,13 @@ export const detailsCss = `
 }
 .stat-text { overflow: hidden; text-overflow: ellipsis; }
 .stat-note { margin-top: 3px; font-size: 11px; color: var(--rl-text-3); }
+.stat > .tip-anchor { display: flex; margin-top: 3px; }
+.tip-anchor > .stat-note { margin-top: 0; text-decoration: underline dotted; text-underline-offset: 2px; }
 .stat[data-tone='win'] .stat-value { color: var(--rl-win); }
 .stat[data-tone='loss'] .stat-value { color: var(--rl-loss); }
 .stat[data-tone='warn'] .stat-value { color: var(--rl-warn); }
 .usd { color: var(--rl-accent); }
+.usd.is-estimate { color: var(--rl-text-2); text-decoration: underline dotted; text-underline-offset: 2px; }
 .stat-diff { font-size: 11px; font-weight: 600; color: var(--rl-text-3); }
 .stat[data-tone='warn'] .stat-diff { color: var(--rl-warn); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }

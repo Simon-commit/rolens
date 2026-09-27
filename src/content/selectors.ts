@@ -10,6 +10,8 @@ export const SELECTORS = {
   card: '.trade-request-item, .item-card-container, .item-card, .list-item, li',
   /** The card's caption (name and price); used to place the chip clear of the name. */
   cardCaption: '.item-card-caption, .item-card-name-link, .item-card-name, .item-name',
+  /** The remove button Roblox shows on hover at the right of each row in a trade offer. */
+  rowAction: '.trade-request-item-remove, [class*="item-remove"]',
   /** Roblox's own Robux amounts, used to match its digit grouping (e.g. "14.186"). */
   robuxAmount: '.text-robux-tile, .text-robux, .text-robux-lg',
   /** One side of a trade on the trades page. */

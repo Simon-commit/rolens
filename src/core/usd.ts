@@ -33,11 +33,12 @@ const usdCompact = new Intl.NumberFormat('en-US', {
 const usdSmall = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
 const usdWhole = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
-/** $0.85, $42, $1,290, or $12.5K when compact. */
+/** $0.85, $42, $54 (never $54.00), $1,290, or $12.5K when compact. */
 export function formatUsd(amount: number, compact = true): string {
   const abs = Math.abs(amount);
   if (compact && abs >= 10_000) return localiseDigits(usdCompact.format(amount));
-  return localiseDigits(abs < 100 ? usdSmall.format(amount) : usdWhole.format(amount));
+  const whole = abs >= 100 || Math.round(abs * 100) % 100 === 0;
+  return localiseDigits(whole ? usdWhole.format(amount) : usdSmall.format(amount));
 }
 
 export function formatUsdDelta(amount: number, compact = true): string {

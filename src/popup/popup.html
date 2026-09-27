@@ -108,10 +108,16 @@
             <input type="checkbox" role="switch" data-setting="showUsd" />
           </label>
           <label class="setting" for="usd-rate">
-            <span><b>Fallback rate</b><small>USD per 1,000 value, applied when no estimate is available</small></span>
+            <span
+              ><b>Fallback rate</b
+              ><small
+                >USD per 1,000 value, applied when RoUtility has no estimate. $3 is the prevailing market
+                reference.</small
+              ></span
+            >
             <span class="money-input">
               <span aria-hidden="true">$</span>
-              <input id="usd-rate" type="number" inputmode="decimal" min="0" max="999" step="0.1" placeholder="—" />
+              <input id="usd-rate" type="number" inputmode="decimal" min="0" max="999" step="0.1" placeholder="3" />
             </span>
           </label>
         </div>

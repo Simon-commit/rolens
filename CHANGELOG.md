@@ -5,6 +5,19 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-09-27
+
+### Changed
+
+- USD figures calculated from the fallback rate are marked as estimates (≈, neutral colour, dotted underline) and explained on hover, including the $3 per 1,000 market reference.
+- Whole USD amounts are shown without decimals ($54 instead of $54.00).
+- Chips for items with RAP only are a single line; their USD figure is in the hover card.
+
+### Fixed
+
+- Chips in the trade offer lists no longer cover Roblox's remove button.
+- Chips over item tiles size to their content, so the rare marker and large full figures stay inside the chip. When full figures do not fit, the chip switches to abbreviated figures rather than overflowing.
+
 ## [0.4.3] - 2026-09-27
 
 ### Changed

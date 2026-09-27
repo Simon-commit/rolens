@@ -60,6 +60,21 @@ describe('chip placement', () => {
     expect(host.style.top).toBe('32px');
   });
 
+  it("keeps row chips clear of Roblox's remove button", () => {
+    box(card, 0, 100, 330, 60);
+    box(thumb, 10, 110, 40, 40);
+    const remove = document.createElement('button');
+    remove.className = 'trade-request-item-remove';
+    card.prepend(remove);
+    box(remove, 284, 114, 32, 32);
+    fitChip(host, card, caption);
+    expect(host.style.right).toBe('54px');
+    // Hidden until hover: space is still kept for it.
+    box(remove, 0, 0, 0, 0);
+    fitChip(host, card, caption);
+    expect(host.style.right).toBe('50px');
+  });
+
   it('centres a row chip when there is no room under the name', () => {
     box(card, 0, 0, 330, 40);
     box(thumb, 10, 4, 32, 32);

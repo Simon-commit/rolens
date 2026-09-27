@@ -19,8 +19,10 @@ html[data-rolens-dark] body:not(.dark-theme) {
   left: 6px;
   z-index: 2;
   margin: 0;
-  /* Leaves room for Roblox's selection checkbox in the top-right corner. */
-  max-width: calc(100% - 44px);
+  /* The chip keeps its natural width; shrinkToFit() (chip.ts) keeps it clear of Roblox's
+     selection checkbox by abbreviating figures instead of clipping them. */
+  max-width: none;
+  white-space: nowrap;
 }
 [data-rolens='badge'][data-placement='row'] {
   position: absolute;
