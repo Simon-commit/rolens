@@ -58,6 +58,7 @@ const common = {
 
 const builds = [
   { ...common, entryPoints: ['src/background/service-worker.ts'], outfile: 'dist/background.js', format: 'esm' },
+  { ...common, entryPoints: ['src/content/early.ts'], outfile: 'dist/early.js', format: 'iife' },
   { ...common, entryPoints: ['src/content/index.ts'], outfile: 'dist/content.js', format: 'iife' },
   { ...common, entryPoints: ['src/popup/popup.ts'], outfile: 'dist/popup.js', format: 'iife' },
 ];

@@ -5,6 +5,11 @@ export type ThemePreference = 'auto' | 'light' | 'dark';
 export interface Settings {
   /** Widget and popup theme. "auto" follows Roblox's theme on roblox.com and the system in the popup. */
   theme: ThemePreference;
+  /**
+   * Makes roblox.com dark in this browser by switching the page to Roblox's own dark
+   * styles. It never touches the Roblox account's theme setting.
+   */
+  darkRoblox: boolean;
   /** Whether the trade analysis bar is expanded to show per-side details. */
   tradeDetails: boolean;
   source: SourceId;
@@ -29,6 +34,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'auto',
+  darkRoblox: false,
   tradeDetails: false,
   source: 'rolimons',
   showBadges: true,
@@ -55,6 +61,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'compactNumbers',
     'showUsd',
     'useRoutility',
+    'darkRoblox',
   ] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }

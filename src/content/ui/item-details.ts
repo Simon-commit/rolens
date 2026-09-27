@@ -1,11 +1,12 @@
 import { formatAge, formatDemand, formatRobux, formatTrend } from '../../core/format';
 import { DISAGREEMENT_THRESHOLD, valueDisagreement } from '../../core/routility';
-import { demandLevel, type ItemValue } from '../../core/types';
+import { demandLevel, type ItemValue, type Trend } from '../../core/types';
 import { formatUsd, usdFor } from '../../core/usd';
 import { el } from '../dom';
 import { confidenceDots, demandMeter, pill, TREND_ICON, TREND_TONE } from './atoms';
 import type { RenderContext } from './context';
 import { icon } from './icons';
+import { attachTip } from './tooltip';
 
 /** Building blocks shared by the hover card and the item page panel. */
 
@@ -23,12 +24,22 @@ export function demandStat(item: ItemValue): HTMLElement {
   return stat('Demand', demandMeter(demandLevel(item.demand)), el('span', 'stat-text', formatDemand(item.demand)));
 }
 
+/** What each price trend means, shown when hovering the trend. */
+export const TREND_TIPS: Record<Trend, string> = {
+  raising: 'Recent sales have been going up in price.',
+  lowering: 'Recent sales have been going down in price.',
+  stable: 'Recent sales stay close to the same price.',
+  unstable: 'Recent sales swing a lot in price, so the value is less certain.',
+  fluctuating: 'The price moves up and down from sale to sale, so expect some spread around the value.',
+};
+
 export function trendStat(item: ItemValue): HTMLElement {
-  const node = stat(
-    'Trend',
-    item.trend ? icon(TREND_ICON[item.trend]) : null,
-    el('span', 'stat-text', formatTrend(item.trend)),
-  );
+  const trendIcon = item.trend ? icon(TREND_ICON[item.trend]) : null;
+  const text = el('span', 'stat-text', formatTrend(item.trend));
+  const value = item.trend
+    ? attachTip(el('span', 'tip-anchor', trendIcon, text), `Trend: ${formatTrend(item.trend)}`, TREND_TIPS[item.trend])
+    : text;
+  const node = stat('Trend', value);
   if (item.trend) node.dataset.tone = TREND_TONE[item.trend];
   return node;
 }
@@ -98,10 +109,33 @@ export function rapInsight(item: ItemValue): string | null {
 
 export function flagPills(item: ItemValue): HTMLElement[] {
   const pills: HTMLElement[] = [];
-  if (item.rare) pills.push(pill('Rare', 'rare', 'gem'));
-  if (item.projected) pills.push(pill('Projected', 'warn', 'warning'));
-  if (item.hyped) pills.push(pill('Hyped', undefined, 'flame'));
-  if (sourcesDisagree(item)) pills.push(pill('Sources disagree', 'warn', 'wave'));
+  if (item.rare) {
+    pills.push(attachTip(pill('Rare', 'rare', 'gem'), 'Rare', 'Few copies of this item are in circulation.'));
+  }
+  if (item.projected) {
+    pills.push(
+      attachTip(
+        pill('Projected', 'warn', 'warning'),
+        'Projected RAP',
+        'A few inflated sales pushed the RAP up. Trust the value, not the RAP.',
+      ),
+    );
+  }
+  if (item.hyped) {
+    pills.push(
+      attachTip(pill('Hyped', undefined, 'flame'), 'Hyped', 'Demand is high right now and the price may not last.'),
+    );
+  }
+  if (sourcesDisagree(item)) {
+    const diff = valueDisagreement(item)!;
+    pills.push(
+      attachTip(
+        pill('Sources disagree', 'warn', 'split'),
+        'Sources disagree',
+        `RoUtility values this item ${signedPercent(diff)} compared with Rolimon's. Check it before trading.`,
+      ),
+    );
+  }
   return pills;
 }
 
@@ -127,4 +161,7 @@ export const detailsCss = `
 .stat-diff { font-size: 11px; font-weight: 600; color: var(--rl-text-3); }
 .stat[data-tone='warn'] .stat-diff { color: var(--rl-warn); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tip-anchor { display: inline-flex; align-items: center; gap: 6px; min-width: 0; cursor: help; outline: none; border-radius: 6px; }
+.flags .rl-pill { cursor: help; outline: none; }
+.tip-anchor:focus-visible, .flags .rl-pill:focus-visible { box-shadow: 0 0 0 2px var(--rl-accent); }
 `;

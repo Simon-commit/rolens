@@ -5,6 +5,19 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-27
+
+### Added
+
+- Hover explanations on every warning and tag (rare, projected RAP, sources disagree, no value data) and on the price trend.
+- "Dark Roblox" option: switches roblox.com to Roblox's own dark styles in this browser only. The Roblox account setting is not changed.
+
+### Changed
+
+- A USD loss on the trade bar is shown in red.
+- "Sources disagree" has its own icon, so it no longer looks like the fluctuating price trend.
+- More space between the last marker and the edge of value chips.
+
 ## [0.3.0] - 2026-09-27
 
 ### Added

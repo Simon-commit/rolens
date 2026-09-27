@@ -92,7 +92,10 @@ export function buildHoverCard(item: ItemValue, ctx: RenderContext): HTMLElement
     flags.length ? el('div', 'flags', ...flags) : null,
     el('div', 'foot', el('span', '', sourceLine(ctx, Boolean(item.routility))), el('span', '', 'RoLens')),
   ];
-  return nodes.filter((node): node is HTMLElement => node !== null);
+  const result = nodes.filter((node): node is HTMLElement => node !== null);
+  // The hover card is itself a tooltip that can't be pointed at, so its tags stay out of the tab order.
+  for (const node of result) for (const tip of node.querySelectorAll('[data-tip]')) tip.removeAttribute('tabindex');
+  return result;
 }
 
 function position(card: HTMLElement, host: HTMLElement, anchor: DOMRect): void {

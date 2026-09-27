@@ -3,6 +3,15 @@
  * outlines rare items' cards, using RoLens's own attribute. The font is registered in fonts.ts.
  */
 
+/* Optional dark Roblox (see roblox-dark.ts): stays dark while the page loads, before Roblox's own dark styles apply. */
+html[data-rolens-dark] {
+  color-scheme: dark;
+  background-color: #191b1d;
+}
+html[data-rolens-dark] body:not(.dark-theme) {
+  background-color: #191b1d !important;
+}
+
 [data-rolens-rare] {
   --rolens-rare-glow:
     0 0 0 2px rgba(245, 184, 61, 0.9), 0 0 0 5px rgba(232, 121, 249, 0.14), 0 6px 20px -4px rgba(245, 184, 61, 0.45);

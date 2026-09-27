@@ -171,9 +171,31 @@ describe('trade card', () => {
     expect(text).toContain('2,300 → 4,000');
     expect(text).toContain('Projected');
     expect(card?.shadowRoot?.querySelector('.flag--rare')?.getAttribute('aria-label')).toBe(
-      '1 rare item in this trade',
+      'Rare items. 1 item in this trade is rare, with few copies in circulation.',
     );
+    expect(card?.shadowRoot?.querySelector('.usd-delta')?.classList.contains('is-loss')).toBe(false);
     expect(card?.nextElementSibling?.classList.contains('trade-list-detail-offer')).toBe(true);
+  });
+
+  it('shows a USD loss in red', () => {
+    const cheapGet = new Map(table);
+    cheapGet.set(3, item({ id: 3, name: 'Cheap Hat', rap: 100, value: 100 }));
+    renderTradeSummary(document, (id) => cheapGet.get(id) ?? null, withRate);
+    const usd = document.querySelector('[data-rolens="trade"]')?.shadowRoot?.querySelector('.usd-delta');
+    expect(usd?.textContent?.startsWith('−$')).toBe(true);
+    expect(usd?.classList.contains('is-loss')).toBe(true);
+  });
+
+  it('explains each warning in a tooltip on hover', () => {
+    renderTradeSummary(document, lookup, ctx);
+    const projected = document
+      .querySelector('[data-rolens="trade"]')
+      ?.shadowRoot?.querySelector<HTMLElement>('.flag--warn');
+    projected?.dispatchEvent(new MouseEvent('mouseenter'));
+    const tip = document.querySelector('[data-rolens="tooltip"]')?.shadowRoot?.querySelector('.tip');
+    expect(tip?.textContent).toContain('Projected RAP');
+    expect(tip?.textContent).toContain('inflated sales');
+    expect(projected?.tabIndex).toBe(0);
   });
 
   it('adds a compact total beside each side heading', () => {

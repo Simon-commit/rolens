@@ -66,7 +66,7 @@ function renderSources(): void {
 
 function renderToggles(): void {
   for (const input of document.querySelectorAll<HTMLInputElement>('input[data-setting]')) {
-    const key = input.dataset.setting as 'showBadges' | 'showTradeTotals' | 'showItemPanel' | 'showUsd';
+    const key = input.dataset.setting as 'showBadges' | 'showTradeTotals' | 'showItemPanel' | 'showUsd' | 'darkRoblox';
     input.checked = settings[key];
     input.addEventListener('change', () => void save({ [key]: input.checked }));
   }

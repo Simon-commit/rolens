@@ -8,6 +8,7 @@ import type { RenderContext } from './context';
 import { glyph, icon, type IconName } from './icons';
 import { sourceLine, sourcesDisagree } from './item-details';
 import { createWidget } from './shadow';
+import { attachTip } from './tooltip';
 
 /*
  * The trade analysis is a single 44px bar by default, so it never pushes the trade
@@ -30,6 +31,7 @@ const css = `
 .wrap[data-verdict='win'] .delta { color: var(--rl-win); }
 .wrap[data-verdict='loss'] .delta { color: var(--rl-loss); }
 .usd-delta { font-size: 13px; font-weight: 650; color: var(--rl-accent); white-space: nowrap; }
+.usd-delta.is-loss { color: var(--rl-loss); }
 .meta { font-size: 12px; color: var(--rl-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .spacer { flex: 1; }
 .flags { display: flex; gap: 4px; flex: none; }
@@ -37,6 +39,9 @@ const css = `
   display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 6px;
   border-radius: 999px; font-size: 11px; font-weight: 650; background: var(--rl-surface); color: var(--rl-text-2);
 }
+.flag { cursor: help; outline: none; transition: filter 0.15s ease; }
+.flag:hover, .flag:focus-visible { filter: brightness(0.95) saturate(1.3); }
+.flag:focus-visible { box-shadow: 0 0 0 2px var(--rl-accent); }
 .flag .rl-icon { width: 12px; height: 12px; }
 .flag--rare { background: var(--rl-rare-soft); color: var(--rl-rare-text); }
 .flag--warn { background: var(--rl-warn-soft); color: var(--rl-warn); }
@@ -97,12 +102,11 @@ export function tradeSummaryText(view: TradeView, compact: boolean): string {
   ].join('\n');
 }
 
-function flag(iconName: IconName, text: string, title: string, variant?: 'rare' | 'warn'): HTMLElement {
-  const node = el('span', variant ? `flag flag--${variant}` : 'flag', icon(iconName), text);
-  node.title = title;
-  node.setAttribute('aria-label', title);
-  return node;
+function flag(iconName: IconName, text: string, tip: [string, string], variant?: 'rare' | 'warn'): HTMLElement {
+  return attachTip(el('span', variant ? `flag flag--${variant}` : 'flag', icon(iconName), text), ...tip);
 }
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function sideBlock(label: string, total: number, rap: number, side: TradeSide, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
@@ -146,19 +150,53 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
 
   const flags: HTMLElement[] = [];
   const rare = [...view.give.items, ...view.receive.items].filter((item) => item.rare).length;
-  if (rare) flags.push(flag('gem', String(rare), `${rare} rare item${rare > 1 ? 's' : ''} in this trade`, 'rare'));
+  if (rare) {
+    flags.push(
+      flag(
+        'gem',
+        String(rare),
+        [
+          'Rare items',
+          `${plural(rare, 'item')} in this trade ${rare === 1 ? 'is' : 'are'} rare, with few copies in circulation.`,
+        ],
+        'rare',
+      ),
+    );
+  }
   if (balance.give.hasProjected || balance.receive.hasProjected) {
-    flags.push(flag('warning', 'Projected', 'Contains an item with projected (manipulated) RAP', 'warn'));
+    flags.push(
+      flag(
+        'warning',
+        'Projected',
+        ['Projected RAP', 'An item here has a RAP pushed up by a few inflated sales. Trust its value, not its RAP.'],
+        'warn',
+      ),
+    );
   }
   const allItems = [...view.give.items, ...view.receive.items];
   const disagree = allItems.filter(sourcesDisagree).length;
   if (disagree) {
     flags.push(
-      flag('wave', String(disagree), `Rolimon's and RoUtility disagree on ${disagree} item(s) by 15% or more`, 'warn'),
+      flag(
+        'split',
+        String(disagree),
+        [
+          'Sources disagree',
+          `Rolimon's and RoUtility value ${plural(disagree, 'item')} 15% or more apart. Check ${disagree === 1 ? 'it' : 'them'} before accepting.`,
+        ],
+        'warn',
+      ),
     );
   }
   const unknown = balance.give.unknownIds.length + balance.receive.unknownIds.length;
-  if (unknown) flags.push(flag('help', String(unknown), `${unknown} item(s) without value data, not counted`));
+  if (unknown) {
+    flags.push(
+      flag('help', String(unknown), [
+        'No value data',
+        `${plural(unknown, 'item')} ${unknown === 1 ? 'has' : 'have'} no value yet and ${unknown === 1 ? "isn't" : "aren't"} counted in the totals.`,
+      ]),
+    );
+  }
 
   const copy = iconButton('copy', 'Copy trade summary');
   copy.addEventListener('click', () => {
@@ -195,7 +233,9 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
         verdict === 'even' ? undefined : verdict,
       ),
       el('span', 'delta', formatDelta(balance.valueDelta, compact)),
-      usdDelta === null ? null : el('span', 'usd-delta', formatUsdDelta(usdDelta, compact)),
+      usdDelta === null
+        ? null
+        : el('span', usdDelta < 0 ? 'usd-delta is-loss' : 'usd-delta', formatUsdDelta(usdDelta, compact)),
       el('span', 'meta', meta),
       el('span', 'spacer'),
       el('span', 'flags', ...flags),

@@ -49,7 +49,7 @@ function saveTradeDetails(expanded: boolean): void {
 }
 
 /** Settings that widgets update in place, without being rebuilt. */
-const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails']);
+const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails', 'darkRoblox']);
 
 function onlyLiveKeysChanged(prev: Settings, next: Settings): boolean {
   return (Object.keys(next) as (keyof Settings)[]).every((key) => LIVE_KEYS.has(key) || prev[key] === next[key]);

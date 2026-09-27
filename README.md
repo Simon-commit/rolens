@@ -31,6 +31,8 @@ ships is in this repository.
 - **Rare items stand out**: an iridescent outline on the item's card and a rare marker on its chip.
 - **USD values from RoUtility** with a confidence meter, plus RoUtility's own value beside Rolimon's and a **"sources disagree"** warning when they differ by 15% or more. Items RoUtility doesn't price can use your own fallback rate.
 - **Light and dark themes** with a smooth cross-fade: follow Roblox automatically, or pick one in the popup.
+- **Dark Roblox**: an optional switch that makes roblox.com itself dark in your browser, without changing your Roblox account settings.
+- **Hover explanations** on every warning, tag and price trend.
 - **Designed to fit Roblox**: uses a bundled Inter typeface, respects reduced motion, and is keyboard accessible. Every widget is isolated in Shadow DOM, so it can't break Roblox's layout.
 
 ## Safety

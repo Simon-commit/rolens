@@ -66,6 +66,10 @@
 .flag {
   display: inline-flex;
 }
+/* Keeps the last marker clear of the chip's rounded (and, on rare items, gradient) edge. */
+.flag:last-child {
+  margin-right: 3px;
+}
 .flag .rl-icon {
   width: 12px;
   height: 12px;
