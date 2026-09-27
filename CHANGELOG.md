@@ -5,6 +5,21 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-27
+
+### Added
+
+- Inbound trade alerts. While Chrome is open, RoLens checks your inbound trades about once a minute and tells you about new ones on your phone and in Discord (through a webhook, with an optional mention of your Discord account), through the free, open source ntfy app, or with a Chrome notification. Filters set a minimum value received, gain and gain in percent, and trades with a rare item can always alert. Trades already waiting when alerts are turned on never alert. Set them up on the new alerts page, opened from the popup, which also sends a test alert and shows when trades were last checked.
+
+### Changed
+
+- The popup has a Trade alerts section, and its footer no longer says "View only", since RoLens can now cancel outbound trades you confirm.
+
+### Security
+
+- New optional permissions, each requested only when you turn on the part of alerts that needs it and removed when you turn it off: `alarms` and `https://trades.roblox.com/*` (checking inbound trades), `notifications` (Chrome notifications), `https://discord.com/*` (your webhook) and `https://ntfy.sh/*` (your topic). The Content Security Policy allows those three hosts for the same reason.
+- Alerts are the first data RoLens sends off your device: only to the webhook or topic you entered, and only the trader's username, the items with their values and the totals. See PRIVACY.md.
+
 ## [0.7.3] - 2026-09-27
 
 ### Added

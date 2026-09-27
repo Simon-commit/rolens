@@ -7,7 +7,19 @@ import {
   type PlayerResponse,
   type Request,
   type RoutilityResponse,
+  type TestAlertResponse,
 } from '../core/messages';
+import { ALERT_ALARM, ALERTS_KEY, testAlert } from '../core/alerts';
+import { itemFromRoutility, withRoutility } from '../core/routility';
+import { sourceNames, enabledSources } from '../core/sources';
+import {
+  checkInbound,
+  deliver,
+  openTradesOnClick,
+  readAlerts,
+  syncAlertSchedule,
+  type AlertValues,
+} from './inbound-alerts';
 import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
 import { TRADE_CACHE_KEY } from '../core/trade-cache';
@@ -64,7 +76,12 @@ function nameIndex(snapshot: ValueSnapshot): Map<string, number | null> {
 
 async function handle(
   request: Request,
-): Promise<ItemsResponse | NamesResponse | RoutilityResponse | PlayerResponse | CacheStatus> {
+): Promise<ItemsResponse | NamesResponse | RoutilityResponse | PlayerResponse | TestAlertResponse | CacheStatus> {
+  if (request.type === 'rolens:testAlert') {
+    const alerts = await readAlerts();
+    const sent = alerts.desktop || Boolean(alerts.discordWebhook || alerts.ntfyTopic);
+    return { sent, failures: sent ? await deliver(testAlert(await alertValues.sources()), alerts) : [] };
+  }
   if (request.type === 'rolens:getRoutility') {
     return { items: await routility.get(request.ids), status: routility.status() };
   }
@@ -130,4 +147,64 @@ chrome.commands.onCommand.addListener((command) => {
     const settings = await currentSettings();
     await chrome.storage.sync.set({ settings: { ...settings, hideSerials: !settings.hideSerials } });
   })();
+});
+
+/* Inbound trade alerts (see inbound-alerts.ts). Off until the user turns them on. */
+const alertValues: AlertValues = {
+  async lookup(ids, names) {
+    const settings = await currentSettings();
+    const found = new Map<number, ItemValue>();
+    const extra = settings.useRoutility ? await routility.get(ids) : {};
+    if (!settings.useRolimons) {
+      for (const id of ids) {
+        const data = extra[id];
+        const item = data ? itemFromRoutility(id, data) : null;
+        if (item) found.set(id, item);
+      }
+      return found;
+    }
+    const snapshot = await values.get();
+    if (!snapshot) return found;
+    ids.forEach((id, i) => {
+      let item = snapshot.items[id];
+      const name = names[i];
+      if (!item && name) {
+        const match = nameIndex(snapshot).get(normaliseName(name));
+        if (match) item = snapshot.items[match];
+      }
+      if (item) found.set(id, withRoutility(item, extra[item.id] ?? extra[id]));
+    });
+    return found;
+  },
+  async sources() {
+    return sourceNames(enabledSources(await currentSettings()));
+  },
+};
+
+let alarmsBound = false;
+let notificationsBound = false;
+
+/** Optional APIs only exist once their permission is granted, so listeners are added when they appear. */
+function bindAlertListeners(): void {
+  if (chrome.alarms && !alarmsBound) {
+    alarmsBound = true;
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === ALERT_ALARM) void checkInbound(alertValues);
+    });
+  }
+  if (chrome.notifications && !notificationsBound) {
+    notificationsBound = true;
+    openTradesOnClick();
+  }
+}
+
+bindAlertListeners();
+void syncAlertSchedule();
+chrome.permissions.onAdded.addListener(() => {
+  bindAlertListeners();
+  void syncAlertSchedule();
+});
+chrome.permissions.onRemoved.addListener(() => void syncAlertSchedule());
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes[ALERTS_KEY]) void syncAlertSchedule();
 });

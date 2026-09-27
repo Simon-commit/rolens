@@ -6,7 +6,8 @@
  *   inventory.roblox.com   your limiteds, to find outbound trades offering items you no longer
  *                          own; public, sent without cookies
  *   trades.roblox.com      the trades you can already see on the Trades page (GET, with your
- *                          session, as the page itself does), and declining your own outbound
+ *                          session, as the page itself does), including new inbound trades for
+ *                          alerts from the service worker, and declining your own outbound
  *                          trades (POST), only after you confirm the exact list in RoLens
  *
  * declineTrade() is the only call that changes anything. It is used only by the cancel
@@ -282,11 +283,23 @@ function sidesV2(body: Record<string, unknown>): Side[] | null {
 }
 
 export function parseTradeOffers(body: unknown, myUserId: number): TradeOffers | null {
+  return parseSides(body, (sides) => sides.findIndex((side) => side.userId === myUserId));
+}
+
+/** Like parseTradeOffers, for when only the other player is known (inbound alerts). */
+export function parseTradeOffersWith(body: unknown, partnerId: number): TradeOffers | null {
+  return parseSides(body, (sides) => {
+    const theirs = sides.findIndex((side) => side.userId === partnerId);
+    return theirs === -1 ? -1 : 1 - theirs;
+  });
+}
+
+function parseSides(body: unknown, mineOf: (sides: Side[]) => number): TradeOffers | null {
   if (!isRecord(body)) return null;
   const sides = sidesV2(body) ?? sidesV1(body);
   if (!sides || sides.length !== 2) return null;
-  const mine = sides.findIndex((side) => side.userId === myUserId);
-  if (mine === -1) return null;
+  const mine = mineOf(sides);
+  if (mine !== 0 && mine !== 1) return null;
   const give = sides[mine]!;
   const receive = sides[1 - mine]!;
   const side = ({ itemIds, names, robux, instanceIds }: Side): TradeSide => ({
@@ -297,6 +310,28 @@ export function parseTradeOffers(body: unknown, myUserId: number): TradeOffers |
   });
   return { give: side(give), receive: side(receive) };
 }
+
+/** The items in a trade from another player, for inbound alerts (read-only, with the session). */
+export function fetchTradeOffersWith(
+  tradeId: number,
+  partnerId: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<TradeOffers | null> {
+  return throttled(async () => {
+    try {
+      return parseTradeOffersWith(await getJson(`${TRADES}/${detailsVersion}/trades/${tradeId}`, fetchFn), partnerId);
+    } catch (error) {
+      if (detailsVersion === 'v2' && Date.now() >= blockedUntil) {
+        detailsVersion = 'v1';
+        return parseTradeOffersWith(await getJson(`${TRADES}/v1/trades/${tradeId}`, fetchFn), partnerId);
+      }
+      throw error;
+    }
+  });
+}
+
+/** True while Roblox has asked RoLens to slow down. */
+export const tradesPaused = () => Date.now() < blockedUntil;
 
 /* Cancelling outbound trades ---------------------------------------------------------- */
 

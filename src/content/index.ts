@@ -9,7 +9,7 @@ import { renderProfile, resetProfiles } from './profile';
 import { bundleIdFromPath, catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
 import { TRADE_CACHE_KEY, TradeCache } from '../core/trade-cache';
 import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
-import { activeTradeList, renderTradeList, resetTradeList } from './trade-list';
+import { activeTradeList, renderTradeList, resetTradeList, signedInUserId } from './trade-list';
 import { createProof } from './proof';
 import { renderCancelTools } from './cancel-trades';
 import { renderTradeSummary } from './trade-summary';
@@ -59,6 +59,8 @@ function matchRobloxNumbers(): boolean {
   const found = detectSeparators(samples);
   if (!found) return false;
   separatorsFromPage = true;
+  // Inbound alerts format numbers the way Roblox shows them to this user.
+  void chrome.storage.local.set({ numberFormat: found });
   const current = numberSeparators();
   if (current.group === found.group && current.decimal === found.decimal) return false;
   setNumberSeparators(found.group, found.decimal);
@@ -182,8 +184,18 @@ function schedule(): void {
   requestAnimationFrame(() => void update());
 }
 
+/** Tells inbound alerts which Roblox account is signed in, so another account's trades are never treated as new. */
+function recordSignedInUser(): void {
+  const me = signedInUserId();
+  if (me === null) return;
+  void chrome.storage.local.get('robloxUserId').then(({ robloxUserId }) => {
+    if (robloxUserId !== me) void chrome.storage.local.set({ robloxUserId: me });
+  });
+}
+
 function start(): void {
   registerFont();
+  recordSignedInUser();
   // Until Roblox's own prices are on the page, follow the browser's language.
   setNumberLocale(navigator.language || document.documentElement.lang);
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.

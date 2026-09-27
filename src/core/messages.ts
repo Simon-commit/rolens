@@ -10,7 +10,8 @@ export type Request =
   | { type: 'rolens:findByName'; names: string[] }
   | { type: 'rolens:getStatus' }
   | { type: 'rolens:refresh' }
-  | { type: 'rolens:clearCache' };
+  | { type: 'rolens:clearCache' }
+  | { type: 'rolens:testAlert' };
 
 export interface CacheStatus {
   source: SourceId;
@@ -24,6 +25,13 @@ export interface CacheStatus {
 export interface RoutilityResponse {
   items: Record<string, RoutilityData | null>;
   status: RoutilityStatus;
+}
+
+/** Destinations a test alert could not reach; empty when all were reached. */
+export interface TestAlertResponse {
+  failures: string[];
+  /** False when no destination is set up. */
+  sent: boolean;
 }
 
 /** A player's inventory, or why it couldn't be fetched. */
@@ -51,12 +59,21 @@ export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems'
       ? RoutilityResponse
       : R extends { type: 'rolens:getPlayer' }
         ? PlayerResponse
-        : CacheStatus;
+        : R extends { type: 'rolens:testAlert' }
+          ? TestAlertResponse
+          : CacheStatus;
 
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
   const { type, ids } = message as { type?: unknown; ids?: unknown };
-  if (type === 'rolens:getStatus' || type === 'rolens:refresh' || type === 'rolens:clearCache') return true;
+  if (
+    type === 'rolens:getStatus' ||
+    type === 'rolens:refresh' ||
+    type === 'rolens:clearCache' ||
+    type === 'rolens:testAlert'
+  ) {
+    return true;
+  }
   if (type === 'rolens:findByName') {
     const { names } = message as { names?: unknown };
     return (
