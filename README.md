@@ -39,6 +39,7 @@ RoUtility support is planned; see [Data sources](#data-sources).
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No account access         | RoLens never reads cookies, never calls Roblox APIs, and has no `cookies` permission.                                                                                 |
 | Minimal permissions       | Only `storage`, plus network access to `api.rolimons.com`. See [`src/manifest.json`](src/manifest.json).                                                              |
+| Can't phone home          | A strict Content Security Policy lets extension pages connect only to `api.rolimons.com`.                                                                             |
 | No remote code            | Manifest V3 forbids it, and the build ships unminified bundles you can read.                                                                                          |
 | No markup injection       | Remote data is only ever written with `textContent`. Lint rules ban `innerHTML`, `eval` and friends ([`eslint.config.js`](eslint.config.js)), and a test checks this. |
 | No analytics, no tracking | There is no telemetry code. See [PRIVACY.md](PRIVACY.md).                                                                                                             |
