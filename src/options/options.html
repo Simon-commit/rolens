@@ -22,6 +22,14 @@
       <section aria-labelledby="alerts-title">
         <h2 id="alerts-title">Alerts</h2>
         <div class="list">
+          <div class="setting status-row" id="check-row" data-state="off">
+            <span
+              ><b id="check-status">Alerts are off</b
+              ><small id="check-detail">Turn them on to be notified of new inbound trades.</small></span
+            >
+            <button id="turn-on" type="button" class="text-button primary">Turn on</button>
+            <button id="check-now" type="button" class="text-button" hidden>Check now</button>
+          </div>
           <label class="setting">
             <span
               ><b>Alert me about new inbound trades</b
@@ -33,10 +41,6 @@
             >
             <input id="enabled" type="checkbox" role="switch" />
           </label>
-          <div class="setting status-row" id="check-row" hidden>
-            <span><b id="check-status">Waiting for the first check</b><small id="check-detail"></small></span>
-            <button id="check-now" type="button" class="text-button">Check now</button>
-          </div>
         </div>
       </section>
 
@@ -115,8 +119,8 @@
           </div>
         </div>
         <p class="section-note">
-          Discord and ntfy receive only what the alert shows: the trader's username, the items with their values and the
-          totals. Nothing is sent until you save a destination.
+          Saving a destination also turns alerts on. Discord and ntfy receive only what the alert shows: the trader's
+          username, the items with their values and the totals. Nothing is sent until you save a destination.
         </p>
       </section>
 

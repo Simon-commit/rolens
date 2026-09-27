@@ -40,28 +40,52 @@ function note(selector: string, text: string, tone?: 'good' | 'bad'): void {
   node.className = `field-note${tone ? ` is-${tone}` : ''}`;
 }
 
+const ALERT_PERMISSIONS: chrome.permissions.Permissions = { permissions: ['alarms'], origins: [ROBLOX_TRADES_ORIGIN] };
+
+/**
+ * A destination's permissions, plus what alerts themselves need while they are off, so one
+ * Chrome prompt covers both and saving a destination turns alerts on.
+ */
+function withAlerts(needed: chrome.permissions.Permissions): chrome.permissions.Permissions {
+  if (alerts.enabled) return needed;
+  return {
+    permissions: [...(needed.permissions ?? []), ...ALERT_PERMISSIONS.permissions!],
+    origins: [...(needed.origins ?? []), ...ALERT_PERMISSIONS.origins!],
+  };
+}
+
+/** Turns alerts on once their permissions are granted. */
+async function turnOn(): Promise<void> {
+  if (alerts.enabled) return;
+  // Start fresh: trades already waiting are not new, whatever happened while alerts were off.
+  await chrome.storage.local.remove(ALERT_STATE_KEY);
+  await save({ enabled: true });
+  $<HTMLInputElement>('#enabled').checked = true;
+  await renderState();
+}
+
+async function requestAndTurnOn(): Promise<boolean> {
+  // Requested from the click itself, as Chrome requires.
+  if (!(await request(ALERT_PERMISSIONS))) return false;
+  await turnOn();
+  return true;
+}
+
 function renderSwitches(): void {
   const enabled = $<HTMLInputElement>('#enabled');
   enabled.checked = alerts.enabled;
   enabled.addEventListener('change', () => {
     void (async () => {
       if (enabled.checked) {
-        // Requested from the click itself, as Chrome requires.
-        const granted = await request({ permissions: ['alarms'], origins: [ROBLOX_TRADES_ORIGIN] });
-        if (!granted) {
-          enabled.checked = false;
-          return;
-        }
-        // Start fresh: trades already waiting are not new, whatever happened while alerts were off.
-        await chrome.storage.local.remove(ALERT_STATE_KEY);
-        await save({ enabled: true });
-      } else {
-        await save({ enabled: false });
-        await release({ origins: [ROBLOX_TRADES_ORIGIN] });
+        if (!(await requestAndTurnOn())) enabled.checked = false;
+        return;
       }
+      await save({ enabled: false });
+      await release({ origins: [ROBLOX_TRADES_ORIGIN] });
       void renderState();
     })();
   });
+  $('#turn-on').addEventListener('click', () => void requestAndTurnOn());
 
   const desktop = $<HTMLInputElement>('#desktop');
   void chrome.permissions.contains({ permissions: ['notifications'] }).then((granted) => {
@@ -69,11 +93,12 @@ function renderSwitches(): void {
   });
   desktop.addEventListener('change', () => {
     void (async () => {
-      if (desktop.checked && !(await request({ permissions: ['notifications'] }))) {
+      if (desktop.checked && !(await request(withAlerts({ permissions: ['notifications'] })))) {
         desktop.checked = false;
         return;
       }
       await save({ desktop: desktop.checked });
+      if (desktop.checked) await turnOn();
       if (!desktop.checked) await release({ permissions: ['notifications'] });
     })();
   });
@@ -106,10 +131,11 @@ function renderDiscord(): void {
         user.value = '';
         return note('#discord-note', 'Discord alerts are off.');
       }
-      if (!(await request({ origins: [DISCORD_ORIGIN] }))) {
+      if (!(await request(withAlerts({ origins: [DISCORD_ORIGIN] })))) {
         return note('#discord-note', 'Chrome did not allow RoLens to reach Discord.', 'bad');
       }
       await save({ discordWebhook: canonical, discordUserId: id });
+      await turnOn();
       webhook.value = canonical;
       note(
         '#discord-note',
@@ -146,10 +172,11 @@ function renderNtfy(): void {
       if (!isNtfyTopic(value)) {
         return note('#ntfy-note', 'Use 6 to 64 letters, digits, dashes or underscores.', 'bad');
       }
-      if (!(await request({ origins: [NTFY_ORIGIN] }))) {
+      if (!(await request(withAlerts({ origins: [NTFY_ORIGIN] })))) {
         return note('#ntfy-note', 'Chrome did not allow RoLens to reach ntfy.sh.', 'bad');
       }
       await save({ ntfyTopic: value });
+      await turnOn();
       note('#ntfy-note', `Saved. Subscribe to "${value}" in the ntfy app.`, 'good');
     })();
   });
@@ -219,14 +246,20 @@ function renderCheckNow(): void {
 
 async function renderState(): Promise<void> {
   const row = $('#check-row');
-  row.hidden = !alerts.enabled;
-  if (!alerts.enabled) return;
+  const title = $('#check-status');
+  const detail = $('#check-detail');
+  $('#turn-on').hidden = alerts.enabled;
+  $('#check-now').hidden = !alerts.enabled;
+  if (!alerts.enabled) {
+    row.dataset.state = 'off';
+    title.textContent = 'Alerts are off';
+    detail.textContent = 'Turn them on to be notified of new inbound trades.';
+    return;
+  }
   const stored = await chrome.storage.local.get(ALERT_STATE_KEY);
   const state = stored[ALERT_STATE_KEY] as
     | { lastCheck?: number | null; lastAlert?: number | null; lastError?: string | null; lastResult?: CheckResult }
     | undefined;
-  const title = $('#check-status');
-  const detail = $('#check-detail');
   if (state?.lastError) {
     row.dataset.state = 'error';
     title.textContent = 'Needs attention';

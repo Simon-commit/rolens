@@ -221,9 +221,11 @@ async function renderAlerts(): Promise<void> {
     ? failing
       ? 'Needs attention: open Manage for details'
       : `On · ${channels.length ? channels.join(', ') : 'no destination set'}`
-    : 'Notifies you of new inbound trades on your phone, Discord or desktop';
+    : channels.length
+      ? 'Off · turn alerts on to start receiving them'
+      : 'Notifies you of new inbound trades on your phone, Discord or desktop';
   const open = $<HTMLButtonElement>('#alerts-open');
-  open.textContent = alerts.enabled ? 'Manage' : 'Set up';
+  open.textContent = alerts.enabled || channels.length ? 'Manage' : 'Set up';
   open.addEventListener('click', () => void chrome.runtime.openOptionsPage());
 }
 

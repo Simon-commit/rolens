@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-27
+
+### Changed
+
+- The alerts page opens with the alert status and, while alerts are off, a Turn on button. Saving a Discord webhook or ntfy topic, or turning on Chrome notifications, now also turns alerts on, in the same Chrome permission prompt. The popup says when a destination is set up but alerts are off.
+
 ## [0.8.1] - 2026-09-27
 
 ### Fixed

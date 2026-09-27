@@ -94,6 +94,10 @@ body.options footer {
 .status-row[data-state='error'] b::before {
   background: var(--bad);
 }
+.status-row[data-state='off'] {
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+}
+.status-row[data-state='off'] b::before,
 .status-row[data-state='waiting'] b::before {
   background: var(--text-3);
 }
@@ -103,4 +107,18 @@ body.options footer {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-2);
+}
+.text-button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.text-button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+[data-theme='dark'] .text-button.primary {
+  color: #04221a;
+}
+.status-row .text-button[hidden] {
+  display: none;
 }
