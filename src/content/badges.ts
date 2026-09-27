@@ -2,21 +2,71 @@ import type { ItemValue } from '../core/types';
 import { fitChip, roomFor } from './chip-fit';
 import { RARE_ATTR, ROLENS_ATTR } from './attrs';
 import { isOwnNode } from './dom';
-import { catalogIdFromHref, SELECTORS } from './selectors';
+import { itemRefFromHref, SELECTORS } from './selectors';
 import { createChip, shrinkToFit } from './ui/chip';
 import { renderKey, type RenderContext } from './ui/context';
 
-/** Maps each item card on the page to the item id it shows. */
-export function findItemCards(root: ParentNode): Map<Element, number> {
-  const cards = new Map<Element, number>();
+/**
+ * Finds limiteds whose Roblox id is not the one Rolimon's tracks, such as classic faces
+ * that Roblox now sells as heads and bundles, so they can be matched by name instead.
+ */
+export interface NameMatcher {
+  lookup: (id: number) => ItemValue | null | undefined;
+  /** A number when one limited has this name, null when none or several do, undefined when not yet asked. */
+  idForName: (name: string) => number | null | undefined;
+}
+
+let matcher: NameMatcher | null = null;
+
+/** Turns name matching on for every later scan. */
+export function useNameMatcher(next: NameMatcher | null): void {
+  matcher = next;
+}
+
+function looksLimited(card: Element): boolean {
+  return Boolean(card.querySelector(SELECTORS.limitedMark) || card.closest(SELECTORS.limitedOnly));
+}
+
+function cardName(card: Element, link: Element): string {
+  const text = card.querySelector(SELECTORS.cardName)?.textContent ?? link.getAttribute('title') ?? link.textContent;
+  return (text ?? '').replace(/\s+/g, ' ').trim();
+}
+
+interface Scan {
+  cards: Map<Element, number>;
+  /** Names of limited cards that have not been looked up yet. */
+  pending: Set<string>;
+}
+
+function scan(root: ParentNode): Scan {
+  const result: Scan = { cards: new Map(), pending: new Set() };
   for (const link of root.querySelectorAll<HTMLAnchorElement>(SELECTORS.itemLink)) {
     if (isOwnNode(link) || link.closest(`[${ROLENS_ATTR}]`)) continue;
-    const id = catalogIdFromHref(link.getAttribute('href') ?? '', location.href);
-    if (id === null) continue;
+    const ref = itemRefFromHref(link.getAttribute('href') ?? '', location.href);
+    if (!ref) continue;
     const card = link.closest(SELECTORS.card) ?? link;
-    if (!cards.has(card)) cards.set(card, id);
+    if (result.cards.has(card)) continue;
+    let id: number | null = ref.kind === 'catalog' ? ref.id : null;
+    const unknown = id === null || matcher?.lookup(id) === null;
+    if (matcher && unknown && looksLimited(card)) {
+      const name = cardName(card, link);
+      const match = name ? matcher.idForName(name) : null;
+      if (typeof match === 'number') id = match;
+      else if (match === undefined && name) result.pending.add(name);
+    }
+    if (id !== null) result.cards.set(card, id);
   }
-  return cards;
+  return result;
+}
+
+/** Maps each item card on the page to the item id it shows. */
+export function findItemCards(root: ParentNode): Map<Element, number> {
+  return scan(root).cards;
+}
+
+/** Names of limited cards that could not be matched by id and have not been looked up by name yet. */
+export function pendingNames(root: ParentNode): string[] {
+  return [...scan(root).pending];
 }
 
 /**

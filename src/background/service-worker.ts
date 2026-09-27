@@ -3,10 +3,12 @@ import {
   isRequest,
   type CacheStatus,
   type ItemsResponse,
+  type NamesResponse,
   type PlayerResponse,
   type Request,
   type RoutilityResponse,
 } from '../core/messages';
+import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
 import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
@@ -47,7 +49,21 @@ async function currentSettings(): Promise<Settings> {
   return normaliseSettings(settings);
 }
 
-async function handle(request: Request): Promise<ItemsResponse | RoutilityResponse | PlayerResponse | CacheStatus> {
+/** The name index for the current snapshot, rebuilt only when the snapshot changes. */
+const nameIndexes = new WeakMap<ValueSnapshot, Map<string, number | null>>();
+
+function nameIndex(snapshot: ValueSnapshot): Map<string, number | null> {
+  let index = nameIndexes.get(snapshot);
+  if (!index) {
+    index = buildNameIndex(snapshot.items);
+    nameIndexes.set(snapshot, index);
+  }
+  return index;
+}
+
+async function handle(
+  request: Request,
+): Promise<ItemsResponse | NamesResponse | RoutilityResponse | PlayerResponse | CacheStatus> {
   if (request.type === 'rolens:getRoutility') {
     return { items: await routility.get(request.ids), status: routility.status() };
   }
@@ -64,6 +80,19 @@ async function handle(request: Request): Promise<ItemsResponse | RoutilityRespon
       for (const id of request.ids) {
         const item = snapshot?.items[id];
         if (item) items[id] = item;
+      }
+      return { items, status: values.status() };
+    }
+    case 'rolens:findByName': {
+      const snapshot = await values.get();
+      const items: Record<string, ItemValue> = {};
+      if (snapshot) {
+        const index = nameIndex(snapshot);
+        for (const name of request.names) {
+          const id = index.get(normaliseName(name));
+          const item = id ? snapshot.items[id] : undefined;
+          if (item) items[name] = item;
+        }
       }
       return { items, status: values.status() };
     }

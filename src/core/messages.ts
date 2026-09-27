@@ -7,6 +7,7 @@ export type Request =
   | { type: 'rolens:getItems'; ids: number[] }
   | { type: 'rolens:getRoutility'; ids: number[] }
   | { type: 'rolens:getPlayer'; userId: number }
+  | { type: 'rolens:findByName'; names: string[] }
   | { type: 'rolens:getStatus' }
   | { type: 'rolens:refresh' };
 
@@ -32,18 +33,37 @@ export interface ItemsResponse {
   status: CacheStatus;
 }
 
+/** Items found by name, keyed by the name as it was asked. Names that match no limited, or several, are left out. */
+export interface NamesResponse {
+  items: Record<string, ItemValue>;
+  status: CacheStatus;
+}
+
+export const MAX_NAMES = 200;
+const MAX_NAME_LENGTH = 200;
+
 export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems' }
   ? ItemsResponse
-  : R extends { type: 'rolens:getRoutility' }
-    ? RoutilityResponse
-    : R extends { type: 'rolens:getPlayer' }
-      ? PlayerResponse
-      : CacheStatus;
+  : R extends { type: 'rolens:findByName' }
+    ? NamesResponse
+    : R extends { type: 'rolens:getRoutility' }
+      ? RoutilityResponse
+      : R extends { type: 'rolens:getPlayer' }
+        ? PlayerResponse
+        : CacheStatus;
 
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
   const { type, ids } = message as { type?: unknown; ids?: unknown };
   if (type === 'rolens:getStatus' || type === 'rolens:refresh') return true;
+  if (type === 'rolens:findByName') {
+    const { names } = message as { names?: unknown };
+    return (
+      Array.isArray(names) &&
+      names.length <= MAX_NAMES &&
+      names.every((name) => typeof name === 'string' && name.length > 0 && name.length <= MAX_NAME_LENGTH)
+    );
+  }
   if (type === 'rolens:getPlayer') {
     const { userId } = message as { userId?: unknown };
     return typeof userId === 'number' && Number.isSafeInteger(userId) && userId > 0;

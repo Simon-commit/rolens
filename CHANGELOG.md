@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-27
+
+### Fixed
+
+- Faces now show values again, on item pages, in trades and everywhere else. Roblox now sells classic faces as heads and bundles under new ids, which Rolimon's does not track, so RoLens matches these limiteds by their exact name. A name shared by two limiteds is never guessed.
+- The item page card now appears on every limited, always directly under the creator line and above the price, including on pages that finish loading late.
+- In the inventory, "Show more" appears only while items remain, whatever filter or search is applied. The rare filter is hidden when a player owns no rare items.
+
 ## [0.6.0] - 2026-09-27
 
 ### Added

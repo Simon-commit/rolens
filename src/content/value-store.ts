@@ -1,8 +1,10 @@
-import type { CacheStatus, ItemsResponse, RoutilityResponse } from '../core/messages';
+import type { CacheStatus, ItemsResponse, NamesResponse, RoutilityResponse } from '../core/messages';
+import { normaliseName } from '../core/names';
 import { itemFromRoutility, withRoutility } from '../core/routility';
 import type { ItemValue, RoutilityData } from '../core/types';
 
 type Transport = (ids: number[]) => Promise<ItemsResponse | undefined>;
+type NameTransport = (names: string[]) => Promise<NamesResponse | undefined>;
 type RoutilityTransport = (ids: number[]) => Promise<RoutilityResponse | undefined>;
 
 /**
@@ -13,6 +15,8 @@ export class ValueStore {
   private readonly known = new Map<number, ItemValue | null>();
   private readonly routility = new Map<number, RoutilityData | null>();
   private readonly routilityRequested = new Set<number>();
+  /** Item id for each name asked about; null when no single limited has that name. */
+  private readonly byName = new Map<string, number | null>();
   private pending = new Set<number>();
   private batch: Promise<void> | null = null;
   /** Bumped when cached data is dropped, so answers to requests made before then are ignored. */
@@ -60,6 +64,29 @@ export class ValueStore {
     return changed;
   }
 
+  /** The limited with this exact name, once resolveNames has looked it up. */
+  idForName(name: string): number | null | undefined {
+    return this.byName.get(normaliseName(name));
+  }
+
+  /**
+   * Looks items up by name, for limiteds Roblox shows under an id Rolimon's does not track.
+   * Each name is asked about once per tab.
+   */
+  async resolveNames(names: Iterable<string>, transport: NameTransport): Promise<void> {
+    if (!this.useRolimons) return;
+    const wanted = [...new Set(names)].filter((name) => !this.byName.has(normaliseName(name))).slice(0, 200);
+    if (wanted.length === 0) return;
+    const generation = this.generation;
+    const response = await transport(wanted).catch(() => undefined);
+    if (!response || generation !== this.generation || response.status.itemCount === 0) return;
+    for (const name of wanted) {
+      const item = response.items[name];
+      this.byName.set(normaliseName(name), item ? item.id : null);
+      if (item) this.known.set(item.id, item);
+    }
+  }
+
   /** Resolves once every id has been looked up (or the lookup failed). */
   async load(ids: Iterable<number>): Promise<void> {
     if (!this.useRolimons) return;
@@ -75,6 +102,7 @@ export class ValueStore {
     this.pending.clear();
     this.batch = null;
     this.status = null;
+    this.byName.clear();
     this.generation += 1;
   }
 

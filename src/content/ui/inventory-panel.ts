@@ -333,8 +333,9 @@ export function openInventoryPanel(options: InventoryPanelOptions): void {
       body.scrollTop = 0;
     }
     if (list.length === 0) grid.replaceChildren(el('div', 'empty', 'No items match your search.'));
-    more.hidden = list.length <= shown;
-    more.textContent = `Show ${Math.min(PAGE, list.length - shown)} more`;
+    const remaining = list.length - Math.min(shown, list.length);
+    more.hidden = remaining <= 0;
+    more.textContent = `Show ${Math.min(PAGE, remaining)} more`;
     void options.loadThumbnails(page.map((entry) => entry.item.id)).then((images) => {
       for (const node of tiles) {
         const src = images.get(Number(node.dataset.id));

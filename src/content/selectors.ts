@@ -5,7 +5,15 @@
  */
 export const SELECTORS = {
   /** Links that identify an item. The id is read from the href. */
-  itemLink: 'a[href*="/catalog/"]',
+  itemLink: 'a[href*="/catalog/"], a[href*="/bundles/"]',
+  /** An item's own name inside its card; used to match limiteds Roblox shows under a new id. */
+  cardName: '.item-card-name, .item-name, [class*="item-card-name"]',
+  /** Marks Roblox puts on limited items: the limited badge and serial numbers. */
+  limitedMark:
+    '.limited-icon-container, [class*="icon-limited"], [class*="limited-icon"], [class*="icon-shop-limited"], [class*="limited-label"], [class*="serial"]',
+  /** Containers that only ever hold limiteds, so every card in them is one. */
+  limitedOnly:
+    '.trade-request-window, .trade-request-item, .trade-item-card, .trade-list-detail-offer, .trades-container',
   /** The card that owns an item link; one badge per card. */
   card: '.trade-request-item, .item-card-container, .item-card, .list-item, li',
   /** The card's caption (name and price); used to place the chip clear of the name. */
@@ -37,6 +45,36 @@ export const SELECTORS = {
 } as const;
 
 const CATALOG_PATH = /^\/catalog\/(\d+)(?:\/|$)/;
+const BUNDLE_PATH = /^\/bundles\/(\d+)(?:\/|$)/;
+
+/** The item a Roblox link points at: a catalog item, or a bundle (which Rolimon's does not track by id). */
+export function itemRefFromHref(
+  href: string,
+  base = 'https://www.roblox.com/',
+): { kind: 'catalog' | 'bundle'; id: number } | null {
+  let url: URL;
+  try {
+    url = new URL(href, base);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)roblox\.com$/.test(url.hostname)) return null;
+  for (const [kind, pattern] of [
+    ['catalog', CATALOG_PATH],
+    ['bundle', BUNDLE_PATH],
+  ] as const) {
+    const match = pattern.exec(url.pathname);
+    if (!match) continue;
+    const id = Number(match[1]);
+    return Number.isSafeInteger(id) && id > 0 ? { kind, id } : null;
+  }
+  return null;
+}
+
+export function bundleIdFromPath(pathname: string): number | null {
+  const match = BUNDLE_PATH.exec(pathname);
+  return match ? Number(match[1]) : null;
+}
 
 /** Extracts a catalog item id from an absolute or relative Roblox URL. */
 export function catalogIdFromHref(href: string, base = 'https://www.roblox.com/'): number | null {

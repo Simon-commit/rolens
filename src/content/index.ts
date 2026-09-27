@@ -1,12 +1,12 @@
 import { detectSeparators, numberSeparators, setNumberLocale, setNumberSeparators } from '../core/format';
 import { send } from '../core/messages';
 import { normaliseSettings, type Settings } from '../core/settings';
-import { findItemCards, renderBadges } from './badges';
+import { findItemCards, pendingNames, renderBadges, useNameMatcher } from './badges';
 import { isOwnNode, removeOwnNodes } from './dom';
 import { registerFont } from './fonts';
-import { renderItemPanel } from './item-panel';
+import { itemPageIsLimited, itemPageName, renderItemPanel } from './item-panel';
 import { renderProfile, resetProfiles } from './profile';
-import { catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
+import { bundleIdFromPath, catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
 import { renderTradeList, resetTradeList } from './trade-list';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
@@ -14,6 +14,26 @@ import { applyThemePreference, detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
 
 const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
+useNameMatcher({ lookup: (id) => store.peek(id), idForName: (name) => store.idForName(name) });
+const findByName = (names: string[]) => send({ type: 'rolens:findByName', names });
+
+/**
+ * The item a catalog or bundle page is about. Limiteds Roblox now shows under a new id
+ * (classic faces became heads and bundles) are found by their exact name instead.
+ */
+async function pageItemId(): Promise<number | null> {
+  const catalogId = catalogIdFromPath(location.pathname);
+  const bundleId = bundleIdFromPath(location.pathname);
+  if (catalogId === null && bundleId === null) return null;
+  if (catalogId !== null) {
+    await store.load([catalogId]);
+    if (store.peek(catalogId) !== null) return catalogId;
+  }
+  const name = itemPageName();
+  if (!name || !itemPageIsLimited(document)) return null;
+  await store.resolveNames([name], findByName);
+  return store.idForName(name) ?? null;
+}
 let settings: Settings = normaliseSettings(undefined);
 let scheduled = false;
 
@@ -41,11 +61,17 @@ async function update(): Promise<void> {
   scheduled = false;
   // Chips drawn before Roblox's prices appeared used the fallback format: redraw them.
   if (matchRobloxNumbers()) removeOwnNodes(document);
-  const cards = findItemCards(document);
-  const pageItemId = settings.showItemPanel ? catalogIdFromPath(location.pathname) : null;
-  const ids = new Set(cards.values());
-  if (pageItemId !== null) ids.add(pageItemId);
   store.useRolimons = settings.useRolimons;
+  let cards = findItemCards(document);
+  await store.load(cards.values());
+  const names = pendingNames(document);
+  if (names.length) {
+    await store.resolveNames(names, findByName);
+    cards = findItemCards(document);
+  }
+  const pageItem = settings.showItemPanel ? await pageItemId() : null;
+  const ids = new Set(cards.values());
+  if (pageItem !== null) ids.add(pageItem);
   await store.load(ids);
 
   const ctx: RenderContext = {
@@ -55,8 +81,8 @@ async function update(): Promise<void> {
   };
   const lookup = (id: number) => store.peek(id);
   if (settings.showBadges) renderBadges(cards, lookup, ctx);
-  if (pageItemId !== null) {
-    const item = store.peek(pageItemId);
+  if (pageItem !== null) {
+    const item = store.peek(pageItem);
     if (item) renderItemPanel(document, item, ctx);
   }
   if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);

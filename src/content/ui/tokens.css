@@ -262,3 +262,8 @@
     transition: none !important;
   }
 }
+
+/* The hidden attribute must win over display rules in widget styles. */
+[hidden] {
+  display: none !important;
+}
