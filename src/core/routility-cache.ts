@@ -126,6 +126,14 @@ export class RoutilityCache {
     return task;
   }
 
+  /** Forgets every saved estimate, in memory and in storage. */
+  async clear(): Promise<void> {
+    clearTimeout(this.saveTimer);
+    this.entries = {};
+    this.loading = Promise.resolve(this.entries);
+    await this.store.save(this.entries).catch(() => undefined);
+  }
+
   /** Reads the stored cache once, however many requests arrive while it loads. */
   private load(): Promise<Record<string, RoutilityEntry>> {
     this.loading ??= this.store

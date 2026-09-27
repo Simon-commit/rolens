@@ -5,6 +5,17 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-09-27
+
+### Changed
+
+- Trade list previews appear instantly on return visits. A trade's items never change, so RoLens reads each trade from Roblox once and saves its contents on this device, then recalculates the preview from current values on every visit. A typical visit to the Trades list now makes one request to Roblox instead of one per trade.
+- Saved trades belong to the signed-in Roblox account and are removed after 60 days, with at most 1,000 kept.
+
+### Added
+
+- "Data on this device" in the popup, with a control to clear saved trades, inventories and RoUtility estimates.
+
 ## [0.6.2] - 2026-09-27
 
 ### Fixed

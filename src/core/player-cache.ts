@@ -25,6 +25,11 @@ export class PlayerCache {
     private readonly wait: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms)),
   ) {}
 
+  /** Forgets every inventory read so far. */
+  clear(): void {
+    this.entries.clear();
+  }
+
   get(userId: number): Promise<PlayerInventory> {
     const cached = this.entries.get(userId);
     if (cached && this.now() - cached.fetchedAt < PLAYER_TTL_MS) return Promise.resolve(cached.inventory);

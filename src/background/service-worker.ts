@@ -10,6 +10,7 @@ import {
 } from '../core/messages';
 import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
+import { TRADE_CACHE_KEY } from '../core/trade-cache';
 import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
 import { fetchRolimonsItems } from '../core/rolimons';
@@ -96,6 +97,12 @@ async function handle(
       }
       return { items, status: values.status() };
     }
+    case 'rolens:clearCache':
+      // Saved trades, inventories and RoUtility estimates. The public value table is kept.
+      await routility.clear();
+      players.clear();
+      await chrome.storage.local.remove(TRADE_CACHE_KEY);
+      return { ...values.status(), routility: routility.status() };
     case 'rolens:refresh':
       await values.refresh(true);
       return { ...values.status(), routility: routility.status() };

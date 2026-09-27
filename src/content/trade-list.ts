@@ -1,5 +1,6 @@
 import { balanceTrade, totalSide, type SideTotals } from '../core/trade';
 import type { ItemValue } from '../core/types';
+import type { TradeCache } from '../core/trade-cache';
 import { makeAnchor } from './chip-fit';
 import {
   fetchTradeList,
@@ -33,6 +34,8 @@ export interface TradeListDeps {
   redraw: () => void;
   fetchList?: typeof fetchTradeList;
   fetchOffers?: typeof fetchTradeOffers;
+  /** Trades read before, saved on this device, so they are not requested from Roblox again. */
+  tradeCache?: TradeCache;
 }
 
 interface Listing {
@@ -46,6 +49,8 @@ interface Listing {
 const listings = new Map<TradeList, Listing>();
 const offers = new Map<number, TradeOffers | null | 'pending'>();
 const inView = new WeakSet<Element>();
+/** The account whose saved trades have been read into `offers`. */
+let seededFor: number | null = null;
 let observer: IntersectionObserver | null = null;
 
 /** Which list the page is showing, from the address or the selected tab. */
@@ -119,6 +124,10 @@ export async function renderTradeList(ctx: RenderContext, deps: TradeListDeps): 
   const me = signedInUserId();
   if (rows.length === 0 || me === null) return;
   const list = activeTradeList();
+  if (deps.tradeCache && seededFor !== me) {
+    seededFor = me;
+    for (const [id, trade] of await deps.tradeCache.all(me)) if (!offers.has(id)) offers.set(id, trade);
+  }
 
   const listing = listings.get(list);
   // A new trade at the top shifts every row: start the list again when the first row no longer matches.
@@ -142,6 +151,7 @@ export async function renderTradeList(ctx: RenderContext, deps: TradeListDeps): 
       offers.set(trade.id, 'pending');
       void (deps.fetchOffers ?? fetchTradeOffers)(trade.id, me).then((result) => {
         offers.set(trade.id, result);
+        if (result) void deps.tradeCache?.save(me, trade.id, result);
         // Failed or paused by rate limiting: try again later rather than on every scan.
         if (result === null) window.setTimeout(() => offers.delete(trade.id), RETRY_MS);
         deps.redraw();
@@ -191,4 +201,5 @@ function place(row: Element, host: HTMLElement): void {
 export function resetTradeList(): void {
   listings.clear();
   offers.clear();
+  seededFor = null;
 }

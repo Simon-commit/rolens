@@ -216,6 +216,18 @@ async function main(): Promise<void> {
       });
   });
 
+  const clear = $<HTMLButtonElement>('#clear-cache');
+  clear.addEventListener('click', () => {
+    clear.disabled = true;
+    void send({ type: 'rolens:clearCache' })
+      .catch(() => undefined)
+      .then((status) => {
+        renderAllStatus(status);
+        clear.textContent = 'Cleared';
+        $('#clear-note').textContent = 'Saved trades, inventories and estimates have been removed';
+      });
+  });
+
   await refreshStatus();
 }
 

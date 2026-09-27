@@ -252,6 +252,28 @@ button:focus-visible {
 }
 
 /* Segmented control */
+.text-button {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.text-button:hover:not(:disabled) {
+  background: var(--surface);
+}
+.text-button:disabled {
+  color: var(--text-2);
+  cursor: default;
+}
+
 .segmented {
   display: inline-flex;
   padding: 2px;

@@ -7,6 +7,7 @@ import { registerFont } from './fonts';
 import { itemPageIsLimited, itemPageName, renderItemPanel } from './item-panel';
 import { renderProfile, resetProfiles } from './profile';
 import { bundleIdFromPath, catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
+import { TRADE_CACHE_KEY, TradeCache } from '../core/trade-cache';
 import { renderTradeList, resetTradeList } from './trade-list';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
@@ -16,6 +17,10 @@ import { ValueStore } from './value-store';
 const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
 useNameMatcher({ lookup: (id) => store.peek(id), idForName: (name) => store.idForName(name) });
 const findByName = (names: string[]) => send({ type: 'rolens:findByName', names });
+const tradeCache = new TradeCache({
+  get: (key) => chrome.storage.local.get(key),
+  set: (items) => chrome.storage.local.set(items),
+});
 
 /**
  * The item a catalog or bundle page is about. Limiteds Roblox now shows under a new id
@@ -92,6 +97,7 @@ async function update(): Promise<void> {
       lookup,
       redraw: schedule,
       resolveNames: (names) => store.resolveNames(names, findByName),
+      tradeCache,
       idForName: (name) => store.idForName(name),
     });
   }
@@ -166,6 +172,11 @@ function start(): void {
       }
       if (!next.showTradePreviews) resetTradeList();
       removeOwnNodes(document);
+      schedule();
+    } else if (area === 'local' && changes[TRADE_CACHE_KEY] && changes[TRADE_CACHE_KEY].newValue === undefined) {
+      // Saved trades were cleared from the popup: forget them here too.
+      tradeCache.reset();
+      resetTradeList();
       schedule();
     } else if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('snapshot:'))) {
       // New values: widgets whose figures changed are redrawn by the next scan, the rest stay as they are.

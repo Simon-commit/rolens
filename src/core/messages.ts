@@ -9,7 +9,8 @@ export type Request =
   | { type: 'rolens:getPlayer'; userId: number }
   | { type: 'rolens:findByName'; names: string[] }
   | { type: 'rolens:getStatus' }
-  | { type: 'rolens:refresh' };
+  | { type: 'rolens:refresh' }
+  | { type: 'rolens:clearCache' };
 
 export interface CacheStatus {
   source: SourceId;
@@ -55,7 +56,7 @@ export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems'
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
   const { type, ids } = message as { type?: unknown; ids?: unknown };
-  if (type === 'rolens:getStatus' || type === 'rolens:refresh') return true;
+  if (type === 'rolens:getStatus' || type === 'rolens:refresh' || type === 'rolens:clearCache') return true;
   if (type === 'rolens:findByName') {
     const { names } = message as { names?: unknown };
     return (

@@ -157,6 +157,34 @@ describe('Trades list', () => {
     expect(resolved.has('Two')).toBe(false);
     expect(second!.querySelector('[data-rolens="trade-preview"]')).toBeNull();
   });
+  it('uses saved trades instead of asking Roblox again', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'user-data';
+    meta.dataset.userid = '1';
+    document.head.append(meta);
+    setBody(rows(['Kyrie']));
+    const saved = new Map([
+      [10, { give: { itemIds: [1], names: [''], robux: 0 }, receive: { itemIds: [2], names: [''], robux: 0 } }],
+    ]);
+    const requested: number[] = [];
+    const deps = {
+      loadValues: () => Promise.resolve(),
+      lookup: (id: number) => item({ id, rap: id * 100, value: id * 100 }),
+      redraw: () => {},
+      fetchList: () =>
+        Promise.resolve({ rows: [{ id: 10, partner: { name: 'kyrie', displayName: 'Kyrie' } }], next: null }),
+      fetchOffers: (id: number) => {
+        requested.push(id);
+        return Promise.resolve(null);
+      },
+      tradeCache: { all: () => Promise.resolve(saved), save: () => Promise.resolve() } as never,
+    };
+    await renderTradeList(ctx, deps);
+    await Promise.resolve();
+    await renderTradeList(ctx, deps);
+    expect(requested).toEqual([]);
+    expect(document.querySelector('[data-rolens="trade-preview"]')).not.toBeNull();
+  });
 });
 
 describe('Profile', () => {
