@@ -8,6 +8,7 @@ import { itemPageIsLimited, itemPageName, renderItemPanel } from './item-panel';
 import { renderProfile, resetProfiles } from './profile';
 import { bundleIdFromPath, catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
 import { TRADE_CACHE_KEY, TradeCache } from '../core/trade-cache';
+import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
 import { renderTradeList, resetTradeList } from './trade-list';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
@@ -102,6 +103,16 @@ async function update(): Promise<void> {
       idForName: (name) => store.idForName(name),
     });
   }
+  if (settings.warnDuplicateTrades) {
+    await renderDuplicateTrade(ctx, {
+      loadValues: (ids) => store.load(ids),
+      lookup,
+      redraw: schedule,
+      resolveNames: (names) => store.resolveNames(names, findByName),
+      tradeCache,
+      idForName: (name) => store.idForName(name),
+    });
+  }
   const profileId = settings.showProfileValue ? profileIdFromPath(location.pathname) : null;
   if (profileId !== null) {
     await renderProfile(profileId, ctx, {
@@ -177,6 +188,7 @@ function start(): void {
         resetProfiles();
       }
       if (!next.showTradePreviews) resetTradeList();
+      if (!next.warnDuplicateTrades) resetDuplicateTrade();
       removeOwnNodes(document);
       schedule();
     } else if (area === 'local' && changes[TRADE_CACHE_KEY] && changes[TRADE_CACHE_KEY].newValue === undefined) {

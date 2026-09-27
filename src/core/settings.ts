@@ -27,6 +27,11 @@ export interface Settings {
    * the user's own session, read-only.
    */
   showTradePreviews: boolean;
+  /**
+   * On the page for sending a trade, warns when a trade with the same player is still
+   * pending. Reads outbound trades with the user's own session, read-only.
+   */
+  warnDuplicateTrades: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -53,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showItemPanel: true,
   showProfileValue: true,
   showTradePreviews: true,
+  warnDuplicateTrades: true,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
@@ -74,6 +80,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'showItemPanel',
     'showProfileValue',
     'showTradePreviews',
+    'warnDuplicateTrades',
     'compactNumbers',
     'showUsd',
     'useRolimons',

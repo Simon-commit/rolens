@@ -29,6 +29,8 @@ export const SELECTORS = {
   itemPageTitle: '#item-container h1, .item-details-name-row h1, h1',
   /** The title's row; the stats card goes after it so it sits under any subtitle. */
   itemPageTitleRow: '.item-details-name-row, .item-name-container',
+  /** The offers on the page for sending a trade; the duplicate trade notice goes directly above them. */
+  sendTradeOffers: '.trade-request-window-offers',
   /** One trade in the list on the Trades page (partner, status and date). */
   tradeRow: '.trade-row',
   /** The selected list on the Trades page: a tab, or the type dropdown's current option. */

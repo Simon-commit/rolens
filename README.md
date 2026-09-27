@@ -30,6 +30,7 @@ published in this repository.
 - **Trade analysis** in a single compact bar on the trades page: verdict and percentage, net value, RAP and USD difference (shown in red when negative), warnings, a balance indicator and a one-click shareable summary. The bar expands to show per-side detail, and each side's heading shows its own total.
 - **Profile inventory.** Every profile shows the player's inventory value, RAP, USD and item count, with a bar showing what the inventory is made of. One click opens the full inventory with search, sorting and a rare filter.
 - **Trade list previews.** Each trade in your Trades list shows its net value before you open it. Trades are read from Roblox only while they are on screen, one at a time.
+- **Duplicate trade warning.** When you open the page to send a trade, RoLens notes any trade with the same player that is still pending and when it was sent. Hovering the notice shows the earlier trades with their items and values.
 - **Item page card** on catalog pages with value, USD and confidence, RAP, demand, trend and tags, with links to the item on each enabled source.
 - **Two data sources.** Rolimon's and RoUtility can be used together or individually. With both enabled, RoLens shows RoUtility's value beside Rolimon's and flags items where the two differ by 15% or more.
 - **USD estimates** from RoUtility, with confidence where RoUtility provides it. A fallback rate can be set for items without an estimate; figures calculated from it are clearly marked as estimates.
@@ -95,11 +96,11 @@ page from the service worker, which responds from a local cache.
 - **Player inventories:** requested from Rolimon's only for the profile being viewed, at most one every two seconds, and reused for five minutes. Only the 24 most valuable items on a profile request RoUtility estimates; the rest use the fallback rate and are marked as estimates.
 - **Roblox:** [`roblox-api.ts`](src/content/roblox-api.ts) is the only code that contacts Roblox. Item images come from Roblox's public thumbnails API without cookies. Trade list previews read `trades.roblox.com` with your session, using GET requests only, one every 1.2 seconds, and pause for a minute if Roblox limits them. A trade's items never change, so each trade is read once and its contents are saved on the device; previews are recalculated from current values on every visit. These are the only Roblox endpoints RoLens calls:
 
-| Endpoint                                                                | Used for                                          | Sends your session |
-| ----------------------------------------------------------------------- | ------------------------------------------------- | ------------------ |
-| `GET trades.roblox.com/v1/trades/{inbound,outbound,completed,inactive}` | Matching each row in the Trades list to its trade | Yes                |
-| `GET trades.roblox.com/v2/trades/{id}` (or `/v1/trades/{id}`)           | The items and Robux in a trade shown in the list  | Yes                |
-| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory              | No                 |
+| Endpoint                                                                | Used for                                                       | Sends your session |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
+| `GET trades.roblox.com/v1/trades/{inbound,outbound,completed,inactive}` | Trades list previews; pending trades for the duplicate warning | Yes                |
+| `GET trades.roblox.com/v2/trades/{id}` (or `/v1/trades/{id}`)           | The items and Robux in a trade being previewed                 | Yes                |
+| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory                           | No                 |
 
 All assumptions about Roblox's page structure are kept in
 [`src/content/selectors.ts`](src/content/selectors.ts), so a change to the Roblox website

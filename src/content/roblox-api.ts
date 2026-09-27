@@ -24,6 +24,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 const positiveInt = (value: unknown) =>
   typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
 
+function timestamp(value: unknown): number | null {
+  if (typeof value !== 'string') return null;
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : null;
+}
+
 /* Thumbnails ------------------------------------------------------------------------ */
 
 const thumbnails = new Map<number, string | null>();
@@ -63,8 +69,13 @@ export type TradeList = 'inbound' | 'outbound' | 'completed' | 'inactive';
 
 export interface TradeSummaryRow {
   id: number;
-  /** The other party's username and display name, to check a row matches its trade. */
-  partner: { name: string; displayName: string };
+  /** The other party. The names are also used to check a row matches its trade. */
+  partner: { id: number | null; name: string; displayName: string };
+  /** When the trade was sent and when it expires, in ms since the epoch; null when Roblox gives none. */
+  created: number | null;
+  expires: number | null;
+  /** Roblox's status, such as "Open", "Declined" or "Completed". */
+  status: string;
 }
 
 export interface TradeSide {
@@ -125,9 +136,13 @@ export function parseTradeList(body: unknown): { rows: TradeSummaryRow[]; next: 
     rows.push({
       id,
       partner: {
+        id: positiveInt(entry.user.id),
         name: typeof entry.user.name === 'string' ? entry.user.name : '',
         displayName: typeof entry.user.displayName === 'string' ? entry.user.displayName : '',
       },
+      created: timestamp(entry.created),
+      expires: timestamp(entry.expiration),
+      status: typeof entry.status === 'string' ? entry.status : '',
     });
   }
   return { rows, next: typeof body.nextPageCursor === 'string' ? body.nextPageCursor : null };

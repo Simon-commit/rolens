@@ -20,14 +20,42 @@ const setBody = (html: string) => {
   document.body.innerHTML = html; // eslint-disable-line no-restricted-properties
 };
 
+const tradeRow = (id: number, name: string, displayName: string) => ({
+  id,
+  partner: { id: null, name, displayName },
+  created: null,
+  expires: null,
+  status: '',
+});
+
 describe('Roblox trade parsers', () => {
   it('reads a page of the trades list', () => {
     expect(
       parseTradeList({
         nextPageCursor: 'abc',
-        data: [{ id: 5, user: { id: 2, name: 'kyrie', displayName: 'Kyrie' } }, { id: 'x' }],
+        data: [
+          {
+            id: 5,
+            user: { id: 2, name: 'kyrie', displayName: 'Kyrie' },
+            created: '2026-09-27T10:00:00.000Z',
+            expiration: '2026-10-01T10:00:00.000Z',
+            status: 'Open',
+          },
+          { id: 'x' },
+        ],
       }),
-    ).toEqual({ rows: [{ id: 5, partner: { name: 'kyrie', displayName: 'Kyrie' } }], next: 'abc' });
+    ).toEqual({
+      rows: [
+        {
+          id: 5,
+          partner: { id: 2, name: 'kyrie', displayName: 'Kyrie' },
+          created: Date.parse('2026-09-27T10:00:00.000Z'),
+          expires: Date.parse('2026-10-01T10:00:00.000Z'),
+          status: 'Open',
+        },
+      ],
+      next: 'abc',
+    });
     expect(parseTradeList({ error: 'nope' })).toBeNull();
   });
 
@@ -90,8 +118,8 @@ describe('Trades list', () => {
   it('matches rows to trades by partner', () => {
     setBody(rows(['Kyrie @kyrie_trades']));
     const row = document.querySelector('.trade-row')!;
-    expect(rowMatches(row, { id: 1, partner: { name: 'kyrie_trades', displayName: 'Kyrie' } })).toBe(true);
-    expect(rowMatches(row, { id: 1, partner: { name: 'nova', displayName: 'Nova' } })).toBe(false);
+    expect(rowMatches(row, tradeRow(1, 'kyrie_trades', 'Kyrie'))).toBe(true);
+    expect(rowMatches(row, tradeRow(1, 'nova', 'Nova'))).toBe(false);
   });
 
   it('previews trades in view and skips rows that do not match', async () => {
@@ -127,10 +155,7 @@ describe('Trades list', () => {
       redraw: () => (redraws += 1),
       fetchList: () =>
         Promise.resolve({
-          rows: [
-            { id: 10, partner: { name: 'kyrie', displayName: 'Kyrie' } },
-            { id: 11, partner: { name: 'nova', displayName: 'Nova' } },
-          ],
+          rows: [tradeRow(10, 'kyrie', 'Kyrie'), tradeRow(11, 'nova', 'Nova')],
           next: null,
         }),
       fetchOffers: (id: number) => {
@@ -171,8 +196,7 @@ describe('Trades list', () => {
       loadValues: () => Promise.resolve(),
       lookup: (id: number) => item({ id, rap: id * 100, value: id * 100 }),
       redraw: () => {},
-      fetchList: () =>
-        Promise.resolve({ rows: [{ id: 10, partner: { name: 'kyrie', displayName: 'Kyrie' } }], next: null }),
+      fetchList: () => Promise.resolve({ rows: [tradeRow(10, 'kyrie', 'Kyrie')], next: null }),
       fetchOffers: (id: number) => {
         requested.push(id);
         return Promise.resolve(null);

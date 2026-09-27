@@ -1,16 +1,8 @@
-import { balanceTrade, totalSide, type SideTotals } from '../core/trade';
-import type { ItemValue } from '../core/types';
 import type { TradeCache } from '../core/trade-cache';
 import { makeAnchor } from './chip-fit';
-import {
-  fetchTradeList,
-  fetchTradeOffers,
-  type TradeList,
-  type TradeOffers,
-  type TradeSide,
-  type TradeSummaryRow,
-} from './roblox-api';
+import { fetchTradeList, fetchTradeOffers, type TradeList, type TradeOffers, type TradeSummaryRow } from './roblox-api';
 import { SELECTORS } from './selectors';
+import { loadTradeValues, valueTrade, type TradeValuer } from './trade-values';
 import type { RenderContext } from './ui/context';
 import { renderTradePreview } from './ui/trade-preview';
 
@@ -21,16 +13,9 @@ import { renderTradePreview } from './ui/trade-preview';
  * request at a time. Nothing is ever sent, accepted or declined.
  */
 
-/** Share of Robux the receiver keeps after Roblox's marketplace fee. */
-export const ROBUX_AFTER_FEE = 0.7;
 const RETRY_MS = 60_000;
 
-export interface TradeListDeps {
-  loadValues: (ids: number[]) => Promise<void>;
-  lookup: (id: number) => ItemValue | null | undefined;
-  /** Looks up limiteds by exact name, for items Roblox lists under an id Rolimon's does not track (such as faces). */
-  resolveNames?: (names: string[]) => Promise<void>;
-  idForName?: (name: string) => number | null | undefined;
+export interface TradeListDeps extends TradeValuer {
   redraw: () => void;
   fetchList?: typeof fetchTradeList;
   fetchOffers?: typeof fetchTradeOffers;
@@ -92,10 +77,6 @@ function watch(row: Element, redraw: () => void): void {
     { rootMargin: '120px 0px' },
   );
   observer.observe(row);
-}
-
-function withRobux(side: SideTotals, robux: number): SideTotals {
-  return { ...side, value: side.value + robux, rap: side.rap + robux };
 }
 
 /** Loads more of the list until it covers the rows on the page. */
@@ -164,28 +145,12 @@ export async function renderTradeList(ctx: RenderContext, deps: TradeListDeps): 
   }
 
   if (ready.length === 0) return;
-  await deps.loadValues(ready.flatMap(({ trade }) => [...trade.give.itemIds, ...trade.receive.itemIds]));
-  // Items Rolimon's does not know by id (faces Roblox re-issued as heads) are matched by exact name.
-  const sides = ready.flatMap(({ trade }) => [trade.give, trade.receive]);
-  const unknownNames = sides.flatMap((side) =>
-    side.names.filter((name, i) => name && deps.lookup(side.itemIds[i]!) === null),
+  await loadTradeValues(
+    ready.map(({ trade }) => trade),
+    deps,
   );
-  if (unknownNames.length && deps.resolveNames) await deps.resolveNames([...new Set(unknownNames)]);
-  const lookup = (id: number) => deps.lookup(id) ?? undefined;
-  const valuedIds = (side: TradeSide) =>
-    side.itemIds.map((id, i) => {
-      if (deps.lookup(id) !== null) return id;
-      const match = side.names[i] ? deps.idForName?.(side.names[i]) : null;
-      return typeof match === 'number' ? match : id;
-    });
   for (const { row, trade } of ready) {
-    const give = totalSide(valuedIds(trade.give), lookup);
-    const receive = totalSide(valuedIds(trade.receive), lookup);
-    const balance = balanceTrade(
-      withRobux(give, trade.give.robux),
-      withRobux(receive, Math.floor(trade.receive.robux * ROBUX_AFTER_FEE)),
-    );
-    const unlisted = give.unknownIds.length + receive.unknownIds.length;
+    const { balance, unlisted } = valueTrade(trade, deps);
     const existing = row.querySelector<HTMLElement>(':scope > [data-rolens="trade-preview"]');
     place(row, renderTradePreview(existing, { kind: 'ready', balance, unlisted }, ctx));
   }

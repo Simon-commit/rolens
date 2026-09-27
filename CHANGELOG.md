@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-27
+
+### Added
+
+- Duplicate trade warning: the page for sending a trade notes any pending trade with the same player and when it was sent. Hovering or focusing the notice shows up to three earlier trades with their items, values and net result. RoLens reads your outbound trades for this with your session, read-only, and it can be turned off in the popup.
+
 ## [0.7.0] - 2026-09-27
 
 ### Added

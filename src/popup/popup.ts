@@ -116,6 +116,7 @@ function renderToggles(): void {
       | 'showBadges'
       | 'showTradeTotals'
       | 'showTradePreviews'
+      | 'warnDuplicateTrades'
       | 'showProfileValue'
       | 'showItemPanel'
       | 'showUsd'
