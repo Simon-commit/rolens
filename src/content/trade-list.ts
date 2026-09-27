@@ -1,7 +1,14 @@
 import { balanceTrade, totalSide, type SideTotals } from '../core/trade';
 import type { ItemValue } from '../core/types';
 import { makeAnchor } from './chip-fit';
-import { fetchTradeList, fetchTradeOffers, type TradeList, type TradeOffers, type TradeSummaryRow } from './roblox-api';
+import {
+  fetchTradeList,
+  fetchTradeOffers,
+  type TradeList,
+  type TradeOffers,
+  type TradeSide,
+  type TradeSummaryRow,
+} from './roblox-api';
 import { SELECTORS } from './selectors';
 import type { RenderContext } from './ui/context';
 import { renderTradePreview } from './ui/trade-preview';
@@ -20,6 +27,9 @@ const RETRY_MS = 60_000;
 export interface TradeListDeps {
   loadValues: (ids: number[]) => Promise<void>;
   lookup: (id: number) => ItemValue | null | undefined;
+  /** Looks up limiteds by exact name, for items Roblox lists under an id Rolimon's does not track (such as faces). */
+  resolveNames?: (names: string[]) => Promise<void>;
+  idForName?: (name: string) => number | null | undefined;
   redraw: () => void;
   fetchList?: typeof fetchTradeList;
   fetchOffers?: typeof fetchTradeOffers;
@@ -145,10 +155,22 @@ export async function renderTradeList(ctx: RenderContext, deps: TradeListDeps): 
 
   if (ready.length === 0) return;
   await deps.loadValues(ready.flatMap(({ trade }) => [...trade.give.itemIds, ...trade.receive.itemIds]));
+  // Items Rolimon's does not know by id (faces Roblox re-issued as heads) are matched by exact name.
+  const sides = ready.flatMap(({ trade }) => [trade.give, trade.receive]);
+  const unknownNames = sides.flatMap((side) =>
+    side.names.filter((name, i) => name && deps.lookup(side.itemIds[i]!) === null),
+  );
+  if (unknownNames.length && deps.resolveNames) await deps.resolveNames([...new Set(unknownNames)]);
   const lookup = (id: number) => deps.lookup(id) ?? undefined;
+  const valuedIds = (side: TradeSide) =>
+    side.itemIds.map((id, i) => {
+      if (deps.lookup(id) !== null) return id;
+      const match = side.names[i] ? deps.idForName?.(side.names[i]) : null;
+      return typeof match === 'number' ? match : id;
+    });
   for (const { row, trade } of ready) {
-    const give = totalSide(trade.give.itemIds, lookup);
-    const receive = totalSide(trade.receive.itemIds, lookup);
+    const give = totalSide(valuedIds(trade.give), lookup);
+    const receive = totalSide(valuedIds(trade.receive), lookup);
     const balance = balanceTrade(
       withRobux(give, trade.give.robux),
       withRobux(receive, Math.floor(trade.receive.robux * ROBUX_AFTER_FEE)),

@@ -87,7 +87,13 @@ async function update(): Promise<void> {
   }
   if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
   if (settings.showTradePreviews) {
-    await renderTradeList(ctx, { loadValues: (ids) => store.load(ids), lookup, redraw: schedule });
+    await renderTradeList(ctx, {
+      loadValues: (ids) => store.load(ids),
+      lookup,
+      redraw: schedule,
+      resolveNames: (names) => store.resolveNames(names, findByName),
+      idForName: (name) => store.idForName(name),
+    });
   }
   const profileId = settings.showProfileValue ? profileIdFromPath(location.pathname) : null;
   if (profileId !== null) {

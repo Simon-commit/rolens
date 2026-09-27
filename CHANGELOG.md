@@ -5,6 +5,13 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-09-27
+
+### Fixed
+
+- Trade list previews now count faces, matching them to Rolimon's by their exact name as they are matched elsewhere.
+- A preview that still has items without a value says so ("1 unvalued") instead of showing a total that looks complete. Its percentage is left out, and its hover title marks it as incomplete.
+
 ## [0.6.1] - 2026-09-27
 
 ### Fixed

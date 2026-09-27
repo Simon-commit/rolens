@@ -67,10 +67,18 @@ export interface TradeSummaryRow {
   partner: { name: string; displayName: string };
 }
 
+export interface TradeSide {
+  /** Item ids, one per copy. */
+  itemIds: number[];
+  /** Each item's name as Roblox gives it, in the same order; empty where Roblox gives none. */
+  names: string[];
+  robux: number;
+}
+
 export interface TradeOffers {
-  /** Item ids (one per copy) and Robux on each side, from the signed-in user's view. */
-  give: { itemIds: number[]; robux: number };
-  receive: { itemIds: number[]; robux: number };
+  /** Items and Robux on each side, from the signed-in user's view. */
+  give: TradeSide;
+  receive: TradeSide;
 }
 
 let queue: Promise<unknown> = Promise.resolve();
@@ -147,10 +155,25 @@ export function fetchTradeOffers(
   });
 }
 
-interface Side {
+interface Side extends TradeSide {
   userId: number | null;
-  itemIds: number[];
-  robux: number;
+}
+
+const nameOf = (...values: unknown[]): string => {
+  const found = values.find((value) => typeof value === 'string' && value.trim());
+  return typeof found === 'string' ? found.trim() : '';
+};
+
+/** Ids and names of the entries that have an id. */
+function readItems(
+  entries: unknown,
+  read: (entry: Record<string, unknown>) => { id: number | null; name: string },
+): { itemIds: number[]; names: string[] } {
+  const list = (Array.isArray(entries) ? entries : [])
+    .filter(isRecord)
+    .map(read)
+    .filter((entry): entry is { id: number; name: string } => entry.id !== null);
+  return { itemIds: list.map((entry) => entry.id), names: list.map((entry) => entry.name) };
 }
 
 /** v1: `offers[].userAssets[].assetId`. */
@@ -158,9 +181,7 @@ function sidesV1(body: Record<string, unknown>): Side[] | null {
   if (!Array.isArray(body.offers)) return null;
   return body.offers.filter(isRecord).map((offer) => ({
     userId: isRecord(offer.user) ? positiveInt(offer.user.id) : null,
-    itemIds: (Array.isArray(offer.userAssets) ? offer.userAssets : [])
-      .map((asset) => (isRecord(asset) ? positiveInt(asset.assetId) : null))
-      .filter((id): id is number => id !== null),
+    ...readItems(offer.userAssets, (asset) => ({ id: positiveInt(asset.assetId), name: nameOf(asset.name) })),
     robux: positiveInt(offer.robux) ?? 0,
   }));
 }
@@ -171,11 +192,10 @@ function sidesV2(body: Record<string, unknown>): Side[] | null {
   if (!offers.every(isRecord)) return null;
   return (offers as Record<string, unknown>[]).map((offer) => ({
     userId: isRecord(offer.user) ? positiveInt(offer.user.id) : null,
-    itemIds: (Array.isArray(offer.items) ? offer.items : [])
-      .map((item) =>
-        isRecord(item) && isRecord(item.itemTarget) ? positiveInt(Number(item.itemTarget.targetId)) : null,
-      )
-      .filter((id): id is number => id !== null),
+    ...readItems(offer.items, (item) => {
+      const target = isRecord(item.itemTarget) ? item.itemTarget : {};
+      return { id: positiveInt(Number(target.targetId)), name: nameOf(item.itemName, item.name, target.name) };
+    }),
     robux: positiveInt(offer.robux) ?? 0,
   }));
 }
@@ -188,8 +208,6 @@ export function parseTradeOffers(body: unknown, myUserId: number): TradeOffers |
   if (mine === -1) return null;
   const give = sides[mine]!;
   const receive = sides[1 - mine]!;
-  return {
-    give: { itemIds: give.itemIds, robux: give.robux },
-    receive: { itemIds: receive.itemIds, robux: receive.robux },
-  };
+  const side = ({ itemIds, names, robux }: Side): TradeSide => ({ itemIds, names, robux });
+  return { give: side(give), receive: side(receive) };
 }
