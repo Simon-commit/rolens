@@ -1,5 +1,12 @@
 import { ValueCache, type SnapshotStore } from '../core/cache';
-import { isRequest, type CacheStatus, type ItemsResponse, type Request } from '../core/messages';
+import {
+  isRequest,
+  type CacheStatus,
+  type ItemsResponse,
+  type Request,
+  type RoutilityResponse,
+} from '../core/messages';
+import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
 import type { ItemValue, SourceId, ValueSnapshot } from '../core/types';
 import { resolveProvider } from '../providers';
@@ -17,6 +24,16 @@ const store: SnapshotStore = {
 
 const caches = new Map<SourceId, ValueCache>();
 
+const routility = new RoutilityCache(fetch.bind(globalThis), {
+  async load() {
+    const { routility: stored } = await chrome.storage.local.get('routility');
+    return (stored as Record<string, RoutilityEntry> | undefined) ?? {};
+  },
+  async save(entries) {
+    await chrome.storage.local.set({ routility: entries });
+  },
+});
+
 async function currentCache(): Promise<ValueCache> {
   const { settings } = await chrome.storage.sync.get('settings');
   const provider = resolveProvider(normaliseSettings(settings as Partial<Settings> | undefined).source);
@@ -31,7 +48,10 @@ async function currentCache(): Promise<ValueCache> {
   return cache;
 }
 
-async function handle(request: Request): Promise<ItemsResponse | CacheStatus> {
+async function handle(request: Request): Promise<ItemsResponse | RoutilityResponse | CacheStatus> {
+  if (request.type === 'rolens:getRoutility') {
+    return { items: await routility.get(request.ids), status: routility.status() };
+  }
   const cache = await currentCache();
   switch (request.type) {
     case 'rolens:getItems': {
@@ -48,7 +68,7 @@ async function handle(request: Request): Promise<ItemsResponse | CacheStatus> {
       return cache.status();
     case 'rolens:getStatus':
       await cache.get();
-      return cache.status();
+      return { ...cache.status(), routility: routility.status() };
   }
 }
 

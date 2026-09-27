@@ -51,7 +51,14 @@ export function renderTradeSummary(
     give: { items: giveItems, usd: totalUsd(giveItems, ctx.settings) },
     receive: { items: receiveItems, usd: totalUsd(receiveItems, ctx.settings) },
   };
-  const signature = JSON.stringify([offers.give.ids, offers.receive.ids, view.balance.valueDelta, view.give.usd]);
+  const signature = JSON.stringify([
+    offers.give.ids,
+    offers.receive.ids,
+    view.balance.valueDelta,
+    view.give.usd,
+    view.receive.usd,
+    [...giveItems, ...receiveItems].map((item) => [item.rare, item.routility?.value ?? null]),
+  ]);
   if (existing?.dataset.signature === signature) return view.balance;
   existing?.remove();
   for (const [side, totals] of [

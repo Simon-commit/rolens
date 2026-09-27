@@ -4,7 +4,18 @@ import { effectiveValue } from '../../core/types';
 import { el } from '../dom';
 import type { RenderContext } from './context';
 import { glyph, icon } from './icons';
-import { demandStat, detailsCss, flagPills, rapInsight, rapStat, sourceLine, trendStat, usdStat } from './item-details';
+import {
+  demandStat,
+  detailsCss,
+  flagPills,
+  rapInsight,
+  rapStat,
+  routilityStat,
+  sourceLine,
+  trendStat,
+  usdStat,
+} from './item-details';
+import { routilityItemPage } from '../../core/routility';
 import { createWidget } from './shadow';
 
 const css = `
@@ -35,6 +46,7 @@ const css = `
   transition: color 0.15s ease;
 }
 .link:hover { color: var(--rl-accent); }
+.links { display: flex; gap: 14px; }
 .link .rl-icon { width: 12px; height: 12px; }
 .main { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 18px 0 16px; }
 .big { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-top: 6px; }
@@ -42,7 +54,7 @@ const css = `
 .usd-block { text-align: right; }
 .usd-block .stat-value { justify-content: flex-end; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 .usd-block .stat-note { text-align: right; }
-.strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-top: 14px; border-top: 1px solid var(--rl-border); }
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding-top: 14px; border-top: 1px solid var(--rl-border); }
 .foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rl-border); font-size: 11px; color: var(--rl-text-3); }
 ${detailsCss}
 `;
@@ -53,12 +65,19 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
   const { host, root } = createWidget('panel', css, 'section');
   host.dataset.rolensId = String(item.id);
 
-  const link = ctx.provider.itemUrl ? el('a', 'link', `${ctx.provider.label}`, icon('external')) : null;
-  if (link && ctx.provider.itemUrl) {
-    link.href = ctx.provider.itemUrl(item.id);
+  const externalLink = (label: string, href: string) => {
+    const link = el('a', 'link', label, icon('external'));
+    link.href = href;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-  }
+    return link;
+  };
+  const links = el(
+    'div',
+    'links',
+    ctx.provider.itemUrl ? externalLink(ctx.provider.label, ctx.provider.itemUrl(item.id)) : null,
+    item.routility ? externalLink('RoUtility', routilityItemPage(item.id)) : null,
+  );
 
   const usd = usdStat(item, ctx);
   const card = el(
@@ -68,7 +87,7 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
       'div',
       'head',
       el('div', 'head-left', el('span', 'rl-brand', glyph(18), 'RoLens'), el('div', 'flags', ...flagPills(item))),
-      link,
+      links,
     ),
     el(
       'div',
@@ -82,8 +101,8 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
       ),
       usd ? el('div', 'usd-block', usd) : null,
     ),
-    el('div', 'strip', rapStat(item, ctx), demandStat(item), trendStat(item)),
-    el('div', 'foot', `Data from ${sourceLine(ctx)}`),
+    el('div', 'strip', rapStat(item, ctx), routilityStat(item, ctx), demandStat(item), trendStat(item)),
+    el('div', 'foot', `Data from ${sourceLine(ctx, Boolean(item.routility))}`),
   );
   root.append(card);
   return host;

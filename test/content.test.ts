@@ -109,6 +109,47 @@ describe('hover card', () => {
   });
 });
 
+describe('RoUtility in the UI', () => {
+  const withSecondValue = item({
+    id: 7,
+    name: 'Contested Hat',
+    value: 100_000,
+    rap: 90_000,
+    usd: { value: 350, confidence: 'high', origin: 'routility', rate: 3.5 },
+    routility: {
+      value: 130_000,
+      usd: 350,
+      rate: 3.5,
+      confidence: 'high',
+      confidenceReason: 'Many recent sales',
+      rare: false,
+      projected: false,
+      hyped: false,
+      copies: 1200,
+    },
+  });
+
+  it('shows USD with confidence, the second value and a disagreement warning', () => {
+    const text = buildHoverCard(withSecondValue, ctx)
+      .map((node) => node.textContent)
+      .join(' ');
+    expect(text).toContain('$350');
+    expect(text).toContain('High confidence · $3.50/1K');
+    expect(text).toContain('RoUtility value130K+30%');
+    expect(text).toContain('Sources disagree');
+    expect(text).toContain('1,200');
+    expect(text).toContain("Rolimon's & RoUtility");
+  });
+
+  it('does not warn when the sources roughly agree', () => {
+    const close = { ...withSecondValue, routility: { ...withSecondValue.routility!, value: 105_000 } };
+    const text = buildHoverCard(close, ctx)
+      .map((node) => node.textContent)
+      .join(' ');
+    expect(text).not.toContain('Sources disagree');
+  });
+});
+
 describe('trade card', () => {
   beforeEach(() => setBody(tradePage));
 

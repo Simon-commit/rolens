@@ -33,6 +33,22 @@ try {
       }),
     });
   });
+  let routilityRequests = 0;
+  await context.route('https://routility.io/**', (route) => {
+    routilityRequests += 1;
+    const id = /item\/(\d+)\/details/.exec(route.request().url())?.[1];
+    if (id !== '1') return route.fulfill({ status: 404, body: '' });
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        item_id: '1',
+        item_value: 2000,
+        item_usd: 42.5,
+        item_confidence: 'High',
+        item_rare: true,
+      }),
+    });
+  });
   await context.route('https://www.roblox.com/**', (route) => {
     const { pathname } = new URL(route.request().url());
     const body = pathname.startsWith('/catalog/') ? itemPage : tradePage;
@@ -49,6 +65,10 @@ try {
   const chipIds = await page.$$eval('[data-rolens="badge"]', (chips) => chips.map((chip) => chip.dataset.rolensId));
   assert.deepEqual(chipIds, ['1', '2', '3']);
   assert.ok(await page.evaluate(() => document.fonts.check('12px "RoLens Inter"')), 'bundled font should load');
+  await page.waitForFunction(() =>
+    document.querySelector('[data-rolens="badge"][data-rolens-id="1"]')?.shadowRoot?.textContent?.includes('$42.50'),
+  );
+  assert.equal(await page.$eval('[data-rolens="badge"][data-rolens-id="1"]', (chip) => chip.dataset.rare), 'true');
 
   await page.goto('https://www.roblox.com/catalog/1/Valued-Hat');
   await page.waitForSelector('[data-rolens="panel"]');
@@ -61,6 +81,7 @@ try {
   assert.match(await popup.textContent('#status'), /3 items tracked/);
 
   assert.equal(apiRequests, 1, 'values should be fetched once and then served from cache');
+  assert.equal(routilityRequests, 3, 'RoUtility is asked once per limited on screen, then cached');
   console.log('E2E smoke test passed');
 } finally {
   await context.close();

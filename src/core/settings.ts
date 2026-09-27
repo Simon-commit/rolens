@@ -18,6 +18,8 @@ export interface Settings {
   compactNumbers: boolean;
   /** Show USD estimates where available. */
   showUsd: boolean;
+  /** Fetch USD, confidence and a second value from RoUtility for items on screen. */
+  useRoutility: boolean;
   /**
    * The user's own trading rate in USD per 1,000 value, used for USD estimates when no
    * source provides one. Null means "don't estimate".
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showItemPanel: true,
   compactNumbers: true,
   showUsd: true,
+  useRoutility: true,
   usdRate: null,
 };
 
@@ -45,7 +48,14 @@ export function normaliseSettings(stored: unknown): Settings {
   if (raw.source === 'rolimons' || raw.source === 'routility') result.source = raw.source;
   if (raw.theme === 'auto' || raw.theme === 'light' || raw.theme === 'dark') result.theme = raw.theme;
   if (typeof raw.tradeDetails === 'boolean') result.tradeDetails = raw.tradeDetails;
-  for (const key of ['showBadges', 'showTradeTotals', 'showItemPanel', 'compactNumbers', 'showUsd'] as const) {
+  for (const key of [
+    'showBadges',
+    'showTradeTotals',
+    'showItemPanel',
+    'compactNumbers',
+    'showUsd',
+    'useRoutility',
+  ] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }
   if (typeof raw.usdRate === 'number' && Number.isFinite(raw.usdRate) && raw.usdRate > 0 && raw.usdRate < 1000) {

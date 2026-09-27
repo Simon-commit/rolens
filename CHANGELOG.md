@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-27
+
+### Added
+
+- RoUtility integration: USD estimates with confidence, RoUtility's value and copies, and its rare/projected/hyped flags, fetched per item on screen and cached for 30 minutes. New host permission: `https://routility.io/*`.
+- "Sources disagree" warning on items, trades and item pages when Rolimon's and RoUtility values differ by 15% or more.
+- RoUtility switch and connection status in the popup; the USD rate becomes a fallback for items RoUtility doesn't price.
+
 ## [0.2.0] - 2026-09-27
 
 ### Added

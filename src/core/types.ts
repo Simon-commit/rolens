@@ -18,6 +18,24 @@ export interface UsdEstimate {
   confidence: Confidence | null;
   /** Where the estimate came from: a data source, or the user's own Robux rate. */
   origin: SourceId | 'rate';
+  /** Why the source is (un)sure, in its own words, when it says. */
+  reason?: string;
+  /** The source's USD per 1,000 value rate for this item, when it gives one. */
+  rate?: number;
+}
+
+/** What RoUtility adds on top of the main value source. */
+export interface RoutilityData {
+  /** RoUtility's own value in Robux, for comparing with the main source. */
+  value: number | null;
+  usd: number | null;
+  rate: number | null;
+  confidence: Confidence | null;
+  confidenceReason: string | null;
+  rare: boolean;
+  projected: boolean;
+  hyped: boolean;
+  copies: number | null;
 }
 
 /** One limited item's market data, normalised across sources. */
@@ -38,6 +56,8 @@ export interface ItemValue {
   rare: boolean;
   /** Market USD estimate from a source that provides one. Absent when none does. */
   usd?: UsdEstimate;
+  /** RoUtility's data for this item, when it has been fetched. */
+  routility?: RoutilityData;
 }
 
 /** A full table of item values from one source, as cached by the extension. */

@@ -29,11 +29,9 @@ ships is in this repository.
 - **Trade analysis** on the trades page in one compact line: win/loss verdict with percentage, net value, RAP and USD difference, warnings, a balance strip and a one-click summary for Discord. Expand it for per-side detail; each side's heading also shows its total.
 - **Item page card** on catalog pages: value, USD with confidence, RAP, demand meter, trend, rare and hyped tags, and a link to the item on Rolimon's.
 - **Rare items stand out**: an iridescent outline on the item's card and a rare marker on its chip.
-- **USD values**: shown from a USD source when one is connected (with its confidence and range), or from your own rate in USD per 1,000 value.
+- **USD values from RoUtility** with a confidence meter, plus RoUtility's own value beside Rolimon's and a **"sources disagree"** warning when they differ by 15% or more. Items RoUtility doesn't price can use your own fallback rate.
 - **Light and dark themes** with a smooth cross-fade: follow Roblox automatically, or pick one in the popup.
 - **Designed to fit Roblox**: uses a bundled Inter typeface, respects reduced motion, and is keyboard accessible. Every widget is isolated in Shadow DOM, so it can't break Roblox's layout.
-
-RoUtility support is planned; see [Data sources](#data-sources).
 
 ## Safety
 
@@ -41,7 +39,7 @@ RoUtility support is planned; see [Data sources](#data-sources).
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No account access         | RoLens never reads cookies, never calls Roblox APIs, and has no `cookies` permission.                                                                                 |
 | Minimal permissions       | Only `storage`, plus network access to `api.rolimons.com`. See [`src/manifest.json`](src/manifest.json).                                                              |
-| Can't phone home          | A strict Content Security Policy lets extension pages connect only to `api.rolimons.com`.                                                                             |
+| Can't phone home          | A strict Content Security Policy lets extension pages connect only to `api.rolimons.com` and `routility.io`.                                                          |
 | No remote code            | Manifest V3 forbids it, and the build ships unminified bundles you can read.                                                                                          |
 | No markup injection       | Remote data is only ever written with `textContent`. Lint rules ban `innerHTML`, `eval` and friends ([`eslint.config.js`](eslint.config.js)), and a test checks this. |
 | No analytics, no tracking | There is no telemetry code. See [PRIVACY.md](PRIVACY.md).                                                                                                             |
@@ -84,6 +82,8 @@ src/
 The content script never talks to the network. It asks the service worker for the items it
 sees on the page; the worker answers from a cached copy of the value table and refreshes it
 at most once every 10 minutes (and never more than once a minute, per Rolimon's rate limit).
+RoUtility data is fetched per item, only for items on screen, at most three at a time, cached
+for 30 minutes, and paused for five minutes if RoUtility rate-limits or blocks a request.
 
 Every assumption about Roblox's page structure lives in
 [`src/content/selectors.ts`](src/content/selectors.ts), so a Roblox redesign is a one-file fix.
@@ -99,7 +99,6 @@ Values are community estimates, not prices. The market moves fast; always use yo
 
 ## Roadmap
 
-- RoUtility USD estimates with confidence, and a "sources disagree" warning when Rolimon's and RoUtility differ
 - Live totals on the trade creation page as you add items
 - Robux in trades, counted after Roblox's 30% fee
 - Total inventory value on profiles

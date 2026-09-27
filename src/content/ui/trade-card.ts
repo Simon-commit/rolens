@@ -6,7 +6,7 @@ import { el } from '../dom';
 import { pill } from './atoms';
 import type { RenderContext } from './context';
 import { glyph, icon, type IconName } from './icons';
-import { sourceLine } from './item-details';
+import { sourceLine, sourcesDisagree } from './item-details';
 import { createWidget } from './shadow';
 
 /*
@@ -29,6 +29,7 @@ const css = `
 .delta { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
 .wrap[data-verdict='win'] .delta { color: var(--rl-win); }
 .wrap[data-verdict='loss'] .delta { color: var(--rl-loss); }
+.usd-delta { font-size: 13px; font-weight: 650; color: var(--rl-accent); white-space: nowrap; }
 .meta { font-size: 12px; color: var(--rl-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .spacer { flex: 1; }
 .flags { display: flex; gap: 4px; flex: none; }
@@ -149,6 +150,13 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
   if (balance.give.hasProjected || balance.receive.hasProjected) {
     flags.push(flag('warning', 'Projected', 'Contains an item with projected (manipulated) RAP', 'warn'));
   }
+  const allItems = [...view.give.items, ...view.receive.items];
+  const disagree = allItems.filter(sourcesDisagree).length;
+  if (disagree) {
+    flags.push(
+      flag('wave', String(disagree), `Rolimon's and RoUtility disagree on ${disagree} item(s) by 15% or more`, 'warn'),
+    );
+  }
   const unknown = balance.give.unknownIds.length + balance.receive.unknownIds.length;
   if (unknown) flags.push(flag('help', String(unknown), `${unknown} item(s) without value data, not counted`));
 
@@ -171,7 +179,6 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
   const meta = [
     `${formatRobux(balance.give.value, compact)} → ${formatRobux(balance.receive.value, compact)}`,
     `${formatDelta(balance.rapDelta, compact)} RAP`,
-    usdDelta === null ? null : formatUsdDelta(usdDelta, compact),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -188,6 +195,7 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
         verdict === 'even' ? undefined : verdict,
       ),
       el('span', 'delta', formatDelta(balance.valueDelta, compact)),
+      usdDelta === null ? null : el('span', 'usd-delta', formatUsdDelta(usdDelta, compact)),
       el('span', 'meta', meta),
       el('span', 'spacer'),
       el('span', 'flags', ...flags),
@@ -209,7 +217,14 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
             sideBlock('You give', balance.give.value, balance.give.rap, view.give, ctx),
             sideBlock('You get', balance.receive.value, balance.receive.rap, view.receive, ctx),
           ),
-          el('div', 'source', `Values from ${sourceLine(ctx)}`),
+          el(
+            'div',
+            'source',
+            `Values from ${sourceLine(
+              ctx,
+              allItems.some((item) => item.routility),
+            )}`,
+          ),
         ),
       ),
     ),

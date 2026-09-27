@@ -30,4 +30,37 @@ describe('ValueStore', () => {
     expect(transport).toHaveBeenCalledTimes(2);
     expect(store.peek(5)).toBeUndefined();
   });
+
+  it('layers RoUtility data on known limiteds, asking once per item', async () => {
+    const store = new ValueStore(async (ids) => ({
+      items: Object.fromEntries(ids.filter((id) => id < 10).map((id) => [id, item({ id, value: 1000 })])),
+      status: status(100),
+    }));
+    await store.load([1, 2, 50]);
+    const routility = vi.fn(async (ids: number[]) => ({
+      items: Object.fromEntries(
+        ids.map((id) => [
+          id,
+          {
+            value: 1200,
+            usd: 4,
+            rate: null,
+            confidence: 'medium' as const,
+            confidenceReason: null,
+            rare: true,
+            projected: false,
+            hyped: false,
+            copies: null,
+          },
+        ]),
+      ),
+      status: { lastSuccess: 1, error: null, blockedUntil: null },
+    }));
+    expect(await store.loadRoutility([1, 2, 50], routility)).toBe(true);
+    expect(routility.mock.calls[0]?.[0]).toEqual([1, 2]);
+    expect(store.peek(1)?.usd?.value).toBe(4);
+    expect(store.peek(1)?.rare).toBe(true);
+    expect(await store.loadRoutility([1, 2], routility)).toBe(false);
+    expect(routility).toHaveBeenCalledOnce();
+  });
 });

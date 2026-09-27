@@ -1,7 +1,9 @@
-import type { CacheStatus, ItemsResponse } from '../core/messages';
-import type { ItemValue } from '../core/types';
+import type { CacheStatus, ItemsResponse, RoutilityResponse } from '../core/messages';
+import { withRoutility } from '../core/routility';
+import type { ItemValue, RoutilityData } from '../core/types';
 
 type Transport = (ids: number[]) => Promise<ItemsResponse | undefined>;
+type RoutilityTransport = (ids: number[]) => Promise<RoutilityResponse | undefined>;
 
 /**
  * Per-tab lookup cache. Batches ids requested in the same tick into one message,
@@ -9,14 +11,41 @@ type Transport = (ids: number[]) => Promise<ItemsResponse | undefined>;
  */
 export class ValueStore {
   private readonly known = new Map<number, ItemValue | null>();
+  private readonly routility = new Map<number, RoutilityData | null>();
+  private readonly routilityRequested = new Set<number>();
   private pending = new Set<number>();
   private batch: Promise<void> | null = null;
   status: CacheStatus | null = null;
 
   constructor(private readonly transport: Transport) {}
 
+  /** The item with any RoUtility data layered on; null if it's not a limited. */
   peek(id: number): ItemValue | null | undefined {
-    return this.known.get(id);
+    const item = this.known.get(id);
+    return item ? withRoutility(item, this.routility.get(id)) : item;
+  }
+
+  /**
+   * Fetches RoUtility data for known limiteds among `ids` that haven't been asked
+   * about yet in this tab. Resolves true when new data arrived.
+   */
+  async loadRoutility(ids: Iterable<number>, transport: RoutilityTransport): Promise<boolean> {
+    const wanted = [...ids].filter((id) => this.known.get(id) && !this.routilityRequested.has(id));
+    if (wanted.length === 0) return false;
+    for (const id of wanted) this.routilityRequested.add(id);
+    const response = await transport(wanted).catch(() => undefined);
+    if (!response) return false;
+    let changed = false;
+    for (const id of wanted) {
+      if (id in response.items) {
+        this.routility.set(id, response.items[id] ?? null);
+        changed = true;
+      } else {
+        // Not fetched (rate limited or capped): allow a retry on a later scan.
+        this.routilityRequested.delete(id);
+      }
+    }
+    return changed;
   }
 
   /** Resolves once every id has been looked up (or the lookup failed). */
@@ -30,6 +59,8 @@ export class ValueStore {
   /** Forget everything, e.g. after the value source changes. */
   clear(): void {
     this.known.clear();
+    this.routility.clear();
+    this.routilityRequested.clear();
     this.status = null;
   }
 

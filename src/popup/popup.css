@@ -324,6 +324,14 @@ input[type='radio'] {
   align-items: center;
   gap: 10px;
 }
+.source-left > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+.setting b {
+  display: flex;
+  align-items: center;
+}
 
 footer {
   display: flex;
@@ -355,4 +363,29 @@ footer a:hover {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.source-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.source-mark--rolimons {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+}
+.source-mark--routility {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+.setting b .badge {
+  margin-left: 8px;
+}
+.badge.is-bad {
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+  color: var(--bad);
 }

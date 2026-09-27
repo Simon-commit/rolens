@@ -37,36 +37,31 @@ function renderStatus(status: CacheStatus | undefined): void {
   }
 }
 
-function renderSources(): void {
-  const container = $('#sources');
-  container.replaceChildren();
-  for (const provider of Object.values(PROVIDERS)) {
-    const row = document.createElement('label');
-    row.className = provider.available ? 'setting' : 'setting is-disabled';
-    const left = document.createElement('span');
-    left.className = 'source-left';
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = 'source';
-    input.value = provider.id;
-    input.disabled = !provider.available;
-    input.checked = settings.source === provider.id;
-    input.addEventListener('change', () => void save({ source: provider.id }).then(refreshStatus));
-    const text = document.createElement('span');
-    text.style.display = 'grid';
-    const name = document.createElement('b');
-    name.textContent = provider.label;
-    const note = document.createElement('small');
-    note.textContent = provider.available ? 'Values, RAP, demand, trend' : 'USD values and confidence';
-    text.append(name, note);
-    left.append(input, text);
-    const badge = document.createElement('span');
-    badge.className = provider.available ? 'badge' : 'badge is-soon';
-    badge.textContent = provider.available ? 'Connected' : 'Coming soon';
-    if (provider.unavailableReason) badge.title = provider.unavailableReason;
-    row.append(left, badge);
-    container.append(row);
+function renderRoutilityStatus(status: CacheStatus | undefined): void {
+  const badge = $('#routility-badge');
+  const routility = status?.routility;
+  let text = 'Ready';
+  let tone = 'is-soon';
+  if (!settings.useRoutility) {
+    text = 'Off';
+  } else if (routility?.blockedUntil || (routility?.error && !routility.lastSuccess)) {
+    text = 'Blocked';
+    tone = 'is-bad';
+  } else if (routility?.lastSuccess) {
+    text = 'Connected';
+    tone = '';
   }
+  badge.textContent = text;
+  badge.className = `badge ${tone}`.trim();
+  badge.title = routility?.error ? `Last error: ${routility.error}` : '';
+}
+
+function renderSources(): void {
+  const input = $<HTMLInputElement>('#use-routility');
+  input.checked = settings.useRoutility;
+  input.addEventListener('change', () => {
+    void save({ useRoutility: input.checked }).then(refreshStatus);
+  });
 }
 
 function renderToggles(): void {
@@ -137,7 +132,9 @@ function renderTheme(): void {
 }
 
 async function refreshStatus(): Promise<void> {
-  renderStatus(await send({ type: 'rolens:getStatus' }).catch(() => undefined));
+  const status = await send({ type: 'rolens:getStatus' }).catch(() => undefined);
+  renderStatus(status);
+  renderRoutilityStatus(status);
 }
 
 async function main(): Promise<void> {

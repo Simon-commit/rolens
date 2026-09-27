@@ -90,11 +90,11 @@
             </div>
           </div>
           <label class="setting">
-            <span><b>Show USD</b><small id="usd-note">Uses your rate until a USD source is connected</small></span>
+            <span><b>Show USD</b><small id="usd-note">From RoUtility, or your rate as a fallback</small></span>
             <input type="checkbox" role="switch" data-setting="showUsd" />
           </label>
           <label class="setting" for="usd-rate">
-            <span><b>Your rate</b><small>USD per 1,000 value. Leave empty to hide estimates.</small></span>
+            <span><b>Fallback rate</b><small>USD per 1,000 value, for items RoUtility doesn't price.</small></span>
             <span class="money-input">
               <span aria-hidden="true">$</span>
               <input id="usd-rate" type="number" inputmode="decimal" min="0" max="999" step="0.1" placeholder="—" />
@@ -105,7 +105,25 @@
 
       <section aria-labelledby="source-title">
         <h2 id="source-title">Sources</h2>
-        <div class="list" id="sources"></div>
+        <div class="list">
+          <div class="setting">
+            <span class="source-left">
+              <span class="source-mark source-mark--rolimons" aria-hidden="true">R</span>
+              <span><b>Rolimon's</b><small>Values, RAP, demand, trend</small></span>
+            </span>
+            <span class="badge">Connected</span>
+          </div>
+          <label class="setting" for="use-routility">
+            <span class="source-left">
+              <span class="source-mark source-mark--routility" aria-hidden="true">U</span>
+              <span
+                ><b>RoUtility <span id="routility-badge" class="badge is-soon">Ready</span></b
+                ><small>USD, confidence and a second value</small></span
+              >
+            </span>
+            <input id="use-routility" type="checkbox" role="switch" />
+          </label>
+        </div>
       </section>
     </main>
 

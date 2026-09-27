@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RoLens: Roblox Trade Values",
   "short_name": "RoLens",
-  "description": "See Rolimon's values, RAP, demand and trade win/loss right on Roblox. Open source, no account access.",
+  "description": "See Rolimon's values, RoUtility USD estimates, RAP, demand and trade win/loss right on Roblox. Open source, no account access.",
   "version": "0.0.0",
   "minimum_chrome_version": "116",
   "icons": {
@@ -32,9 +32,9 @@
     }
   ],
   "permissions": ["storage"],
-  "host_permissions": ["https://api.rolimons.com/*"],
+  "host_permissions": ["https://api.rolimons.com/*", "https://routility.io/*"],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com"
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com https://routility.io"
   },
   "web_accessible_resources": [
     {

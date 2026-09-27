@@ -10,6 +10,7 @@ import {
   flagPills,
   rapInsight,
   rapStat,
+  routilityStat,
   sourceLine,
   stat,
   trendStat,
@@ -84,10 +85,12 @@ export function buildHoverCard(item: ItemValue, ctx: RenderContext): HTMLElement
       usdStat(item, ctx) ?? stat('USD', el('span', 'rl-faint', '—')),
       demandStat(item),
       trendStat(item),
+      routilityStat(item, ctx),
+      item.routility?.copies ? stat('Copies', item.routility.copies.toLocaleString('en-US')) : null,
     ),
     insight ? el('div', 'insight', insight) : null,
     flags.length ? el('div', 'flags', ...flags) : null,
-    el('div', 'foot', el('span', '', sourceLine(ctx)), el('span', '', 'RoLens')),
+    el('div', 'foot', el('span', '', sourceLine(ctx, Boolean(item.routility))), el('span', '', 'RoLens')),
   ];
   return nodes.filter((node): node is HTMLElement => node !== null);
 }

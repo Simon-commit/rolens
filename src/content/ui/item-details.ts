@@ -1,4 +1,5 @@
 import { formatAge, formatDemand, formatRobux, formatTrend } from '../../core/format';
+import { DISAGREEMENT_THRESHOLD, valueDisagreement } from '../../core/routility';
 import { demandLevel, type ItemValue } from '../../core/types';
 import { formatUsd, usdFor } from '../../core/usd';
 import { el } from '../dom';
@@ -49,8 +50,38 @@ export function usdStat(item: ItemValue, ctx: RenderContext): HTMLElement | null
   const confidence = usd.confidence
     ? `${usd.confidence.charAt(0).toUpperCase()}${usd.confidence.slice(1)} confidence`
     : null;
-  const note = usd.origin === 'rate' ? 'At your rate' : [range, confidence].filter(Boolean).join(' · ') || null;
+  const rate = usd.rate ? `$${usd.rate.toFixed(2)}/1K` : null;
+  const note = usd.origin === 'rate' ? 'At your rate' : [confidence, range, rate].filter(Boolean).join(' · ') || null;
   if (note) node.append(el('div', 'stat-note', note));
+  if (usd.reason) node.title = usd.reason;
+  return node;
+}
+
+function signedPercent(share: number): string {
+  const pct = Math.round(share * 100);
+  return `${pct > 0 ? '+' : pct < 0 ? '−' : '±'}${Math.abs(pct)}%`;
+}
+
+/** True when RoUtility's value differs from the main value by more than the threshold. */
+export function sourcesDisagree(item: ItemValue): boolean {
+  const diff = valueDisagreement(item);
+  return diff !== null && Math.abs(diff) >= DISAGREEMENT_THRESHOLD;
+}
+
+/** RoUtility's value next to the main one, with the difference; null without RoUtility data. */
+export function routilityStat(item: ItemValue, ctx: RenderContext): HTMLElement | null {
+  const other = item.routility?.value;
+  if (!other) return null;
+  const diff = valueDisagreement(item);
+  const node = stat(
+    'RoUtility value',
+    formatRobux(other, ctx.settings.compactNumbers),
+    diff === null ? null : el('span', 'stat-diff', signedPercent(diff)),
+  );
+  if (sourcesDisagree(item)) {
+    node.dataset.tone = 'warn';
+    node.title = `Rolimon's and RoUtility disagree by ${signedPercent(diff!)} on this item`;
+  }
   return node;
 }
 
@@ -70,12 +101,13 @@ export function flagPills(item: ItemValue): HTMLElement[] {
   if (item.rare) pills.push(pill('Rare', 'rare', 'gem'));
   if (item.projected) pills.push(pill('Projected', 'warn', 'warning'));
   if (item.hyped) pills.push(pill('Hyped', undefined, 'flame'));
+  if (sourcesDisagree(item)) pills.push(pill('Sources disagree', 'warn', 'wave'));
   return pills;
 }
 
-export function sourceLine(ctx: RenderContext): string {
+export function sourceLine(ctx: RenderContext, withRoutility = false): string {
   const age = ctx.status?.fetchedAt ? ` · ${formatAge(ctx.status.fetchedAt)}` : '';
-  return `${ctx.provider.label}${age}`;
+  return `${ctx.provider.label}${withRoutility ? ' & RoUtility' : ''}${age}`;
 }
 
 /** Styles for the blocks above, included by widgets that use them. */
@@ -92,5 +124,7 @@ export const detailsCss = `
 .stat[data-tone='loss'] .stat-value { color: var(--rl-loss); }
 .stat[data-tone='warn'] .stat-value { color: var(--rl-warn); }
 .usd { color: var(--rl-accent); }
+.stat-diff { font-size: 11px; font-weight: 600; color: var(--rl-text-3); }
+.stat[data-tone='warn'] .stat-diff { color: var(--rl-warn); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }
 `;

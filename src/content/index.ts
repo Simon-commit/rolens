@@ -36,6 +36,11 @@ async function update(): Promise<void> {
     if (item) renderItemPanel(document, item, ctx);
   }
   if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
+
+  if (settings.useRoutility) {
+    const changed = await store.loadRoutility(ids, (batch) => send({ type: 'rolens:getRoutility', ids: batch }));
+    if (changed) schedule();
+  }
 }
 
 function saveTradeDetails(expanded: boolean): void {

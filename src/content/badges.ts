@@ -2,7 +2,7 @@ import type { ItemValue } from '../core/types';
 import { isOwnNode, ROLENS_ATTR } from './dom';
 import { catalogIdFromHref, SELECTORS } from './selectors';
 import { createChip } from './ui/chip';
-import type { RenderContext } from './ui/context';
+import { renderKey, type RenderContext } from './ui/context';
 
 /** Marks an item card whose item is rare, so page-level CSS can outline it. */
 export const RARE_ATTR = 'data-rolens-rare';
@@ -31,13 +31,15 @@ export function renderBadges(
 ): void {
   for (const [card, id] of cards) {
     const existing = card.querySelector<HTMLElement>(':scope [data-rolens="badge"]');
-    if (existing?.dataset.rolensId === String(id)) continue;
+    const item = lookup(id);
+    if (item && existing?.dataset.rolensKey === renderKey(item)) continue;
     existing?.remove();
     card.removeAttribute(RARE_ATTR);
-    const item = lookup(id);
     if (!item) continue;
     if (item.rare) card.setAttribute(RARE_ATTR, '');
     const caption = card.querySelector(SELECTORS.cardCaption);
-    (caption ?? card).append(createChip(item, ctx));
+    const chip = createChip(item, ctx);
+    chip.dataset.rolensKey = renderKey(item);
+    (caption ?? card).append(chip);
   }
 }
