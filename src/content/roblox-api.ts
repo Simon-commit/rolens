@@ -1,7 +1,8 @@
 /*
  * The only code in RoLens that talks to Roblox. Every call is a read-only GET:
  *
- *   thumbnails.roblox.com  item images for the inventory panel; public, sent without cookies
+ *   thumbnails.roblox.com  item images and avatar headshots for the inventory panel and trade
+ *                          proofs; public, sent without cookies
  *   trades.roblox.com      the trades you can already see on the Trades page, for value
  *                          previews; sent with your Roblox session, as the page itself does
  *
@@ -61,6 +62,51 @@ export async function itemThumbnails(ids: number[], fetchFn: typeof fetch = fetc
     if (image) result.set(id, image);
   }
   return result;
+}
+
+const headshots = new Map<number, string | null>();
+
+/** Avatar headshots for players, for trade proofs. Public, sent without cookies. */
+export async function userHeadshots(ids: number[], fetchFn: typeof fetch = fetch): Promise<Map<number, string>> {
+  const missing = [...new Set(ids)].filter((id) => !headshots.has(id));
+  if (missing.length) {
+    const url = `${THUMBNAILS.replace('/assets', '/users/avatar-headshot')}?userIds=${missing.join(',')}&size=150x150&format=Png&isCircular=false`;
+    const body: unknown = await fetchFn(url, { credentials: 'omit' })
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null);
+    for (const id of missing) headshots.set(id, null);
+    if (isRecord(body) && Array.isArray(body.data)) {
+      for (const entry of body.data) {
+        if (!isRecord(entry)) continue;
+        const id = positiveInt(entry.targetId);
+        const image = typeof entry.imageUrl === 'string' ? entry.imageUrl : '';
+        if (id && entry.state === 'Completed' && /^https:\/\/[a-z0-9-]+\.rbxcdn\.com\//.test(image)) {
+          headshots.set(id, image);
+        }
+      }
+    }
+  }
+  const result = new Map<number, string>();
+  for (const id of ids) {
+    const image = headshots.get(id);
+    if (image) result.set(id, image);
+  }
+  return result;
+}
+
+/**
+ * Decodes an image from Roblox's CDN, without cookies, for drawing on a canvas. Returns
+ * null when the image cannot be read (a canvas never draws an image it could not verify).
+ */
+export async function loadBitmap(url: string, fetchFn: typeof fetch = fetch): Promise<ImageBitmap | null> {
+  if (!/^https:\/\/[a-z0-9-]+\.rbxcdn\.com\//.test(url)) return null;
+  try {
+    const response = await fetchFn(url, { credentials: 'omit', mode: 'cors' });
+    if (!response.ok) return null;
+    return await createImageBitmap(await response.blob());
+  } catch {
+    return null;
+  }
 }
 
 /* Trades ---------------------------------------------------------------------------- */

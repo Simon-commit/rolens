@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-09-27
+
+### Added
+
+- Trade proofs: the trade analysis bar on completed trades has a proof button. It creates an image showing both players with their avatars and usernames, the items each gave with value and RAP, Robux, the totals with USD, and the net result, with the sources and the time the values were read. The image is drawn on your device and can be downloaded as a PNG or copied. Avatars come from Roblox's public thumbnails API, without cookies.
+
 ## [0.7.1] - 2026-09-27
 
 ### Added

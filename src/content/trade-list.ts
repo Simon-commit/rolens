@@ -168,3 +168,39 @@ export function resetTradeList(): void {
   offers.clear();
   seededFor = null;
 }
+
+const sameItems = (a: number[], b: number[]) =>
+  a.length === b.length && [...a].sort((x, y) => x - y).every((id, i) => id === [...b].sort((x, y) => x - y)[i]);
+
+/**
+ * The trade open in the Trades page's detail panel, as RoLens read it from the list: the
+ * selected row when Roblox marks one, otherwise the listed trade with exactly these items.
+ * `offers` is null when its items have not been read yet.
+ */
+export function openListedTrade(
+  giveIds: number[],
+  receiveIds: number[],
+  doc: Document = document,
+): { row: TradeSummaryRow; offers: TradeOffers | null } | null {
+  const known = listings.get(activeTradeList(doc))?.rows ?? [];
+  const rows = [...doc.querySelectorAll(SELECTORS.tradeRow)];
+  const selected = doc.querySelector(SELECTORS.selectedTradeRow);
+  const index = selected ? rows.indexOf(selected) : -1;
+  const bySelection = index >= 0 ? known[index] : undefined;
+  if (bySelection && rowMatches(selected!, bySelection)) {
+    const state = offers.get(bySelection.id);
+    return { row: bySelection, offers: state && state !== 'pending' ? state : null };
+  }
+  for (const row of known) {
+    const state = offers.get(row.id);
+    if (
+      state &&
+      state !== 'pending' &&
+      sameItems(state.give.itemIds, giveIds) &&
+      sameItems(state.receive.itemIds, receiveIds)
+    ) {
+      return { row, offers: state };
+    }
+  }
+  return null;
+}

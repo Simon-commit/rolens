@@ -27,7 +27,8 @@ contains only GET requests. These are the only Roblox endpoints it calls:
 | ----------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
 | `GET trades.roblox.com/v1/trades/{inbound,outbound,completed,inactive}` | Trades list previews; pending trades for the duplicate warning | Yes                |
 | `GET trades.roblox.com/v2/trades/{id}` (or `/v1/trades/{id}`)           | The items and Robux in a trade being previewed                 | Yes                |
-| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory                           | No                 |
+| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory and trade proofs          | No                 |
+| `GET thumbnails.roblox.com/v1/users/avatar-headshot`                    | Player avatars in trade proofs                                 | No                 |
 
 The two trades endpoints are called only while trade list previews or the duplicate trade warning are turned on. Any change to that file should be reviewed with this list in mind.
 

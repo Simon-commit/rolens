@@ -33,6 +33,8 @@ export const SELECTORS = {
   sendTradeOffers: '.trade-request-window-offers',
   /** One trade in the list on the Trades page (partner, status and date). */
   tradeRow: '.trade-row',
+  /** The trade row whose details are open. */
+  selectedTradeRow: '.trade-row.selected, .trade-row.active, .trade-row[aria-selected="true"]',
   /** The selected list on the Trades page: a tab, or the type dropdown's current option. */
   tradeListTab:
     '.trades-list-header .rbx-tab.active, .trade-type-selector .rbx-selection-label, [role="tab"][aria-selected="true"], .rbx-tab.active',

@@ -152,7 +152,11 @@ function iconButton(name: IconName, label: string): HTMLButtonElement {
   return button;
 }
 
-export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElement {
+export function createTradeCard(
+  view: TradeView,
+  ctx: RenderContext,
+  options: { proof?: (button: HTMLElement) => void } = {},
+): HTMLElement {
   const compact = ctx.settings.compactNumbers;
   const { balance } = view;
   const verdict = verdictOf(balance.valueDelta);
@@ -193,6 +197,13 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
       });
   });
 
+  let proof: HTMLButtonElement | null = null;
+  if (options.proof) {
+    const create = options.proof;
+    proof = iconButton('image', 'Create trade proof');
+    proof.addEventListener('click', () => create(proof!));
+  }
+
   const toggle = el('button', 'btn', icon('chevron', 'rl-icon chev'));
   toggle.type = 'button';
 
@@ -220,6 +231,7 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
       el('span', 'meta', meta),
       el('span', 'spacer'),
       el('span', 'flags', ...flags),
+      proof,
       copy,
       toggle,
     ),

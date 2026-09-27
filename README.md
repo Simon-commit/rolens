@@ -31,6 +31,7 @@ published in this repository.
 - **Profile inventory.** Every profile shows the player's inventory value, RAP, USD and item count, with a bar showing what the inventory is made of. One click opens the full inventory with search, sorting and a rare filter.
 - **Trade list previews.** Each trade in your Trades list shows its net value before you open it. Trades are read from Roblox only while they are on screen, one at a time.
 - **Duplicate trade warning.** When you open the page to send a trade, RoLens notes any trade with the same player that is still pending and when it was sent. Hovering the notice shows the earlier trades with their items and values.
+- **Trade proofs.** Completed trades get a proof button that creates an image of the trade: both players with their avatars, every item with its value and RAP, the totals, USD and the net result. The image is drawn on your device and can be downloaded or copied.
 - **Item page card** on catalog pages with value, USD and confidence, RAP, demand, trend and tags, with links to the item on each enabled source.
 - **Two data sources.** Rolimon's and RoUtility can be used together or individually. With both enabled, RoLens shows RoUtility's value beside Rolimon's and flags items where the two differ by 15% or more.
 - **USD estimates** from RoUtility, with confidence where RoUtility provides it. A fallback rate can be set for items without an estimate; figures calculated from it are clearly marked as estimates.
@@ -100,7 +101,8 @@ page from the service worker, which responds from a local cache.
 | ----------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
 | `GET trades.roblox.com/v1/trades/{inbound,outbound,completed,inactive}` | Trades list previews; pending trades for the duplicate warning | Yes                |
 | `GET trades.roblox.com/v2/trades/{id}` (or `/v1/trades/{id}`)           | The items and Robux in a trade being previewed                 | Yes                |
-| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory                           | No                 |
+| `GET thumbnails.roblox.com/v1/assets`                                   | Item images in the profile inventory and trade proofs          | No                 |
+| `GET thumbnails.roblox.com/v1/users/avatar-headshot`                    | Player avatars in trade proofs                                 | No                 |
 
 All assumptions about Roblox's page structure are kept in
 [`src/content/selectors.ts`](src/content/selectors.ts), so a change to the Roblox website

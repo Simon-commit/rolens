@@ -9,7 +9,8 @@ import { renderProfile, resetProfiles } from './profile';
 import { bundleIdFromPath, catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
 import { TRADE_CACHE_KEY, TradeCache } from '../core/trade-cache';
 import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
-import { renderTradeList, resetTradeList } from './trade-list';
+import { activeTradeList, renderTradeList, resetTradeList } from './trade-list';
+import { createProof } from './proof';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
 import { applyThemePreference, detectTheme } from './ui/shadow';
@@ -92,7 +93,21 @@ async function update(): Promise<void> {
     const item = store.peek(pageItem);
     if (item) renderItemPanel(document, item, ctx);
   }
-  if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
+  const valuer = {
+    loadValues: (ids: number[]) => store.load(ids),
+    lookup,
+    resolveNames: (names: string[]) => store.resolveNames(names, findByName),
+    idForName: (name: string) => store.idForName(name),
+  };
+  if (settings.showTradeTotals) {
+    // Completed trades get a proof button; the proof is drawn on this device.
+    const proof =
+      activeTradeList() === 'completed'
+        ? (give: number[], receive: number[], button: HTMLElement) =>
+            void createProof(give, receive, ctx, valuer, button)
+        : undefined;
+    renderTradeSummary(document, lookup, ctx, proof);
+  }
   if (settings.showTradePreviews) {
     await renderTradeList(ctx, {
       loadValues: (ids) => store.load(ids),

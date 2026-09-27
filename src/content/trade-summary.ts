@@ -34,6 +34,7 @@ export function renderTradeSummary(
   root: ParentNode,
   lookup: (id: number) => ItemValue | null | undefined,
   ctx: RenderContext,
+  proof?: (giveIds: number[], receiveIds: number[], button: HTMLElement) => void,
 ): TradeBalance | null {
   const offers = findTradeOffers(root);
   const existing = root.querySelector<HTMLElement>('[data-rolens="trade"]');
@@ -58,6 +59,7 @@ export function renderTradeSummary(
     view.give.usd?.value ?? null,
     view.receive.usd?.value ?? null,
     [...giveItems, ...receiveItems].map((item) => [item.rare, item.routility?.value ?? null]),
+    Boolean(proof),
   ]);
   if (existing?.dataset.signature === signature) return view.balance;
   existing?.remove();
@@ -69,7 +71,9 @@ export function renderTradeSummary(
     const header = side.element.querySelector(SELECTORS.tradeOfferHeader);
     header?.append(createSideTotal(totals.value, totals.rap, ctx));
   }
-  const card = createTradeCard(view, ctx);
+  const card = createTradeCard(view, ctx, {
+    proof: proof ? (button) => proof(offers.give.ids, offers.receive.ids, button) : undefined,
+  });
   card.dataset.signature = signature;
   const firstOffer = [offers.give.element, offers.receive.element].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
