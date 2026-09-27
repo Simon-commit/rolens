@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_SETTINGS, normaliseSettings } from '../src/core/settings';
+import { isRequest } from '../src/core/messages';
+
+describe('normaliseSettings', () => {
+  it('falls back to defaults', () => {
+    expect(normaliseSettings(undefined)).toEqual(DEFAULT_SETTINGS);
+    expect(normaliseSettings('junk')).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('keeps valid keys and drops invalid ones', () => {
+    expect(normaliseSettings({ showBadges: false, source: 'evil', compactNumbers: 'yes' })).toEqual({
+      ...DEFAULT_SETTINGS,
+      showBadges: false,
+    });
+  });
+});
+
+describe('isRequest', () => {
+  it('accepts well-formed requests only', () => {
+    expect(isRequest({ type: 'rolens:getItems', ids: [1, 2] })).toBe(true);
+    expect(isRequest({ type: 'rolens:getStatus' })).toBe(true);
+    expect(isRequest({ type: 'rolens:getItems', ids: ['1'] })).toBe(false);
+    expect(isRequest({ type: 'rolens:getItems', ids: [-1] })).toBe(false);
+    expect(isRequest({ type: 'other' })).toBe(false);
+    expect(isRequest(null)).toBe(false);
+  });
+});

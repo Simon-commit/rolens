@@ -1,0 +1,133 @@
+:root {
+  --bg: #f7f8f9;
+  --surface: #ffffff;
+  --border: #e1e4e8;
+  --text: #1b1d1f;
+  --muted: #5c6166;
+  --accent: #0b7a5f;
+  --bad: #c0392b;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191b1d;
+    --surface: #232527;
+    --border: #34373a;
+    --text: #f2f4f5;
+    --muted: #a8adb3;
+    --accent: #3ddc97;
+    --bad: #ff6b5b;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.tagline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.card {
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.row h2 {
+  margin: 0;
+}
+.status {
+  margin: 8px 0 0;
+}
+.error {
+  margin: 6px 0 0;
+  color: var(--bad);
+}
+.button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.sources {
+  display: grid;
+  gap: 6px;
+}
+.source,
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+.source.is-disabled {
+  cursor: default;
+  color: var(--muted);
+}
+.source small {
+  display: block;
+  color: var(--muted);
+}
+input {
+  accent-color: var(--accent);
+  margin: 2px 0 0;
+}
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.foot a {
+  color: var(--accent);
+  white-space: nowrap;
+}

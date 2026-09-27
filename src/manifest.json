@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "RoLens: Roblox Trade Values",
+  "short_name": "RoLens",
+  "description": "See Rolimon's values, RAP, demand and trade win/loss right on Roblox. Open source, no account access.",
+  "version": "0.0.0",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "RoLens",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.roblox.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.rolimons.com/*"]
+}

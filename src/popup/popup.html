@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RoLens</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <img src="icons/icon-48.png" alt="" width="28" height="28" />
+      <div>
+        <h1>RoLens</h1>
+        <p class="tagline">Trade values on Roblox</p>
+      </div>
+    </header>
+
+    <section class="card" aria-labelledby="status-title">
+      <div class="row">
+        <h2 id="status-title">Value data</h2>
+        <button id="refresh" type="button" class="button">Refresh</button>
+      </div>
+      <p id="status" class="status" role="status">Loading…</p>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="source-title">
+      <h2 id="source-title">Source</h2>
+      <div id="sources" class="sources"></div>
+    </section>
+
+    <section class="card" aria-labelledby="display-title">
+      <h2 id="display-title">Show</h2>
+      <label class="toggle"><input type="checkbox" data-setting="showBadges" /> Value badges on items</label>
+      <label class="toggle"><input type="checkbox" data-setting="showTradeTotals" /> Trade win/loss totals</label>
+      <label class="toggle"><input type="checkbox" data-setting="showItemPanel" /> Stats panel on item pages</label>
+      <label class="toggle"><input type="checkbox" data-setting="compactNumbers" /> Compact numbers (1.2M)</label>
+    </section>
+
+    <footer class="foot">
+      <span>Open source, MIT. Never reads your Roblox account.</span>
+      <a href="https://github.com/Simon-commit/rolens" target="_blank" rel="noopener noreferrer">Source code</a>
+    </footer>
+    <script src="popup.js"></script>
+  </body>
+</html>
