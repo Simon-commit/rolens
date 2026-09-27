@@ -32,5 +32,8 @@
     }
   ],
   "permissions": ["storage"],
-  "host_permissions": ["https://api.rolimons.com/*"]
+  "host_permissions": ["https://api.rolimons.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com"
+  }
 }
