@@ -1,5 +1,3 @@
-import type { SourceId } from './types';
-
 export type ThemePreference = 'auto' | 'light' | 'dark';
 
 export interface Settings {
@@ -12,7 +10,6 @@ export interface Settings {
   darkRoblox: boolean;
   /** Whether the trade analysis bar is expanded to show per-side details. */
   tradeDetails: boolean;
-  source: SourceId;
   /** Value badges on item cards across Roblox. */
   showBadges: boolean;
   /** Totals and win/loss on the trades page. */
@@ -38,7 +35,6 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'auto',
   darkRoblox: false,
   tradeDetails: false,
-  source: 'rolimons',
   showBadges: true,
   showTradeTotals: true,
   showItemPanel: true,
@@ -54,7 +50,6 @@ export function normaliseSettings(stored: unknown): Settings {
   const result: Settings = { ...DEFAULT_SETTINGS };
   if (typeof stored !== 'object' || stored === null) return result;
   const raw = stored as Record<string, unknown>;
-  if (raw.source === 'rolimons' || raw.source === 'routility') result.source = raw.source;
   if (raw.theme === 'auto' || raw.theme === 'light' || raw.theme === 'dark') result.theme = raw.theme;
   if (typeof raw.tradeDetails === 'boolean') result.tradeDetails = raw.tradeDetails;
   for (const key of [

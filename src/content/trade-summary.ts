@@ -55,8 +55,8 @@ export function renderTradeSummary(
     offers.give.ids,
     offers.receive.ids,
     view.balance.valueDelta,
-    view.give.usd,
-    view.receive.usd,
+    view.give.usd?.value ?? null,
+    view.receive.usd?.value ?? null,
     [...giveItems, ...receiveItems].map((item) => [item.rare, item.routility?.value ?? null]),
   ]);
   if (existing?.dataset.signature === signature) return view.balance;

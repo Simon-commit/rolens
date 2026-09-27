@@ -24,6 +24,15 @@ describe('ValueCache', () => {
     expect(saved).toHaveLength(1);
   });
 
+  it('reads the stored snapshot once on a cold start, however many requests arrive', async () => {
+    const fresh: ValueSnapshot = { source: 'rolimons', fetchedAt: 1_000_000, items: { '2': item({ id: 2 }) } };
+    const { cache, fetchItems } = setup(fresh);
+    const [a, b] = await Promise.all([cache.get(), cache.get()]);
+    expect(a?.items['2']).toBeDefined();
+    expect(b?.items['2']).toBeDefined();
+    expect(fetchItems).not.toHaveBeenCalled();
+  });
+
   it('serves fresh data without refetching', async () => {
     const { cache, fetchItems, advance } = setup();
     await cache.get();

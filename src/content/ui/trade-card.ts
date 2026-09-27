@@ -1,10 +1,12 @@
 import { formatDelta, formatPercent, formatRobux, percentChange } from '../../core/format';
+import { enabledSources, sourceNames } from '../../core/sources';
 import type { TradeBalance } from '../../core/trade';
 import type { ItemValue } from '../../core/types';
-import { formatUsd, formatUsdDelta } from '../../core/usd';
+import { formatUsd, formatUsdDelta, type UsdTotal } from '../../core/usd';
 import { el } from '../dom';
 import { pill } from './atoms';
 import type { RenderContext } from './context';
+import { disagreeTradeTip, PROJECTED_TRADE_TIP, rareTradeTip, unlistedTradeTip, type Tip } from './copy';
 import { glyph, icon, type IconName } from './icons';
 import { sourceLine, sourcesDisagree } from './item-details';
 import { createWidget } from './shadow';
@@ -32,6 +34,7 @@ const css = `
 .wrap[data-verdict='loss'] .delta { color: var(--rl-loss); }
 .usd-delta { font-size: 13px; font-weight: 650; color: var(--rl-accent); white-space: nowrap; }
 .usd-delta.is-loss { color: var(--rl-loss); }
+.usd-delta.is-estimate { text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset: 2px; cursor: help; outline: none; }
 .meta { font-size: 12px; color: var(--rl-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .spacer { flex: 1; }
 .flags { display: flex; gap: 4px; flex: none; }
@@ -69,14 +72,13 @@ const css = `
 .side .total { margin: 2px 0 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--rl-text-2); line-height: 1.7; }
 .row b { font-weight: 600; color: var(--rl-text); }
-.row .usd { color: var(--rl-accent); }
 .source { margin-top: 10px; font-size: 11px; color: var(--rl-text-3); }
 @media (max-width: 560px) { .meta { display: none; } }
 `;
 
 export interface TradeSide {
   items: ItemValue[];
-  usd: number | null;
+  usd: UsdTotal | null;
 }
 
 export interface TradeView {
@@ -91,22 +93,31 @@ function verdictOf(delta: number): 'win' | 'loss' | 'even' {
 
 /** Plain-text summary for pasting into Discord or a trade ad. */
 export function tradeSummaryText(view: TradeView, compact: boolean, sources = "Rolimon's"): string {
-  const names = (items: ItemValue[]) => items.map((item) => item.acronym || item.name).join(', ') || 'nothing';
+  const names = (items: ItemValue[]) => items.map((item) => item.acronym || item.name).join(', ') || 'No items';
   const { balance } = view;
   const pct = percentChange(balance.valueDelta, balance.give.value);
   return [
-    `Offering: ${names(view.give.items)} (${formatRobux(balance.give.value, compact)})`,
-    `Receiving: ${names(view.receive.items)} (${formatRobux(balance.receive.value, compact)})`,
+    `You offer: ${names(view.give.items)} (${formatRobux(balance.give.value, compact)})`,
+    `You receive: ${names(view.receive.items)} (${formatRobux(balance.receive.value, compact)})`,
     `Net: ${formatDelta(balance.valueDelta, compact)} value${pct === null ? '' : ` (${formatPercent(pct)})`}, ${formatDelta(balance.rapDelta, compact)} RAP`,
-    `Values: ${sources}, via RoLens`,
+    `Values from ${sources}, via RoLens`,
   ].join('\n');
 }
 
-function flag(iconName: IconName, text: string, tip: [string, string], variant?: 'rare' | 'warn'): HTMLElement {
+function flag(iconName: IconName, text: string, tip: Tip, variant?: 'rare' | 'warn'): HTMLElement {
   return attachTip(el('span', variant ? `flag flag--${variant}` : 'flag', icon(iconName), text), ...tip);
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const ESTIMATE_TIP: Tip = [
+  'Includes estimates',
+  'This total includes USD figures calculated at the fallback rate for items without a RoUtility estimate.',
+];
+
+/** A USD total, marked as an estimate when part of it was calculated at the fallback rate. */
+function usdFigure(className: string, text: string, total: { estimated: boolean }): HTMLElement {
+  const node = el('span', total.estimated ? `${className} is-estimate` : className, text);
+  return total.estimated ? attachTip(node, ...ESTIMATE_TIP) : node;
+}
 
 function sideBlock(label: string, total: number, rap: number, side: TradeSide, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
@@ -117,7 +128,18 @@ function sideBlock(label: string, total: number, rap: number, side: TradeSide, c
     el('div', 'rl-eyebrow', label),
     el('div', 'total', formatRobux(total, compact)),
     el('div', 'row', el('span', '', 'RAP'), el('b', '', formatRobux(rap, compact))),
-    side.usd === null ? null : el('div', 'row', el('span', '', 'USD'), el('b', 'usd', formatUsd(side.usd, compact))),
+    side.usd === null
+      ? null
+      : el(
+          'div',
+          'row',
+          el('span', '', 'USD'),
+          el(
+            'b',
+            '',
+            usdFigure('usd', `${side.usd.estimated ? '≈' : ''}${formatUsd(side.usd.value, compact)}`, side.usd),
+          ),
+        ),
     el('div', 'row', el('span', '', 'Items'), el('b', '', `${side.items.length}${rare ? ` · ${rare} rare` : ''}`)),
   );
 }
@@ -130,89 +152,37 @@ function iconButton(name: IconName, label: string): HTMLButtonElement {
   return button;
 }
 
-function chevron(): SVGSVGElement {
-  const svg = icon('flat', 'rl-icon chev');
-  svg.replaceChildren();
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M6 9l6 6 6-6');
-  svg.append(path);
-  return svg;
-}
-
 export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
   const { balance } = view;
   const verdict = verdictOf(balance.valueDelta);
   const pct = percentChange(balance.valueDelta, balance.give.value);
-  const usdDelta = view.give.usd !== null && view.receive.usd !== null ? view.receive.usd - view.give.usd : null;
+  const usdDelta =
+    view.give.usd && view.receive.usd
+      ? {
+          value: view.receive.usd.value - view.give.usd.value,
+          estimated: view.give.usd.estimated || view.receive.usd.estimated,
+        }
+      : null;
   const { host, root } = createWidget('trade', css, 'section');
   host.setAttribute('aria-label', 'RoLens trade analysis');
 
-  const flags: HTMLElement[] = [];
-  const rare = [...view.give.items, ...view.receive.items].filter((item) => item.rare).length;
-  if (rare) {
-    flags.push(
-      flag(
-        'gem',
-        String(rare),
-        [
-          'Rare items',
-          `${plural(rare, 'item')} in this trade ${rare === 1 ? 'is' : 'are'} classified as rare, with a limited number of copies in circulation.`,
-        ],
-        'rare',
-      ),
-    );
-  }
-  if (balance.give.hasProjected || balance.receive.hasProjected) {
-    flags.push(
-      flag(
-        'warning',
-        'Projected',
-        [
-          'Projected RAP',
-          'This trade includes an item whose RAP has been inflated by recent above-market sales. Its value is a more reliable measure than its RAP.',
-        ],
-        'warn',
-      ),
-    );
-  }
   const allItems = [...view.give.items, ...view.receive.items];
+  const flags: HTMLElement[] = [];
+  const rare = allItems.filter((item) => item.rare).length;
+  if (rare) flags.push(flag('gem', String(rare), rareTradeTip(rare), 'rare'));
+  if (balance.give.hasProjected || balance.receive.hasProjected) {
+    flags.push(flag('warning', 'Projected', PROJECTED_TRADE_TIP, 'warn'));
+  }
   const disagree = allItems.filter(sourcesDisagree).length;
-  if (disagree) {
-    flags.push(
-      flag(
-        'split',
-        String(disagree),
-        [
-          'Sources disagree',
-          `Rolimon's and RoUtility differ by 15% or more on ${plural(disagree, 'item')}. We recommend reviewing ${disagree === 1 ? 'it' : 'them'} on both sources before accepting this trade.`,
-        ],
-        'warn',
-      ),
-    );
-  }
-  const unknown = balance.give.unknownIds.length + balance.receive.unknownIds.length;
-  if (unknown) {
-    flags.push(
-      flag('help', String(unknown), [
-        'No value data',
-        `${plural(unknown, 'item')} ${unknown === 1 ? 'has' : 'have'} no published value and ${unknown === 1 ? 'is' : 'are'} excluded from the totals.`,
-      ]),
-    );
-  }
+  if (disagree) flags.push(flag('split', String(disagree), disagreeTradeTip(disagree), 'warn'));
+  const unlisted = balance.give.unknownIds.length + balance.receive.unknownIds.length;
+  if (unlisted) flags.push(flag('help', String(unlisted), unlistedTradeTip(unlisted)));
 
   const copy = iconButton('copy', 'Copy trade summary');
   copy.addEventListener('click', () => {
     void navigator.clipboard
-      .writeText(
-        tradeSummaryText(
-          view,
-          compact,
-          [ctx.settings.useRolimons ? "Rolimon's" : null, ctx.settings.useRoutility ? 'RoUtility' : null]
-            .filter(Boolean)
-            .join(' and '),
-        ),
-      )
+      .writeText(tradeSummaryText(view, compact, sourceNames(enabledSources(ctx.settings))))
       .then(() => {
         copy.classList.add('is-done');
         copy.replaceChildren(icon('check'));
@@ -223,16 +193,10 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
       });
   });
 
-  const toggle = el('button', 'btn', chevron());
+  const toggle = el('button', 'btn', icon('chevron', 'rl-icon chev'));
   toggle.type = 'button';
-  toggle.setAttribute('aria-label', 'Show trade details');
 
-  const meta = [
-    `${formatRobux(balance.give.value, compact)} → ${formatRobux(balance.receive.value, compact)}`,
-    `${formatDelta(balance.rapDelta, compact)} RAP`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = `${formatRobux(balance.give.value, compact)} → ${formatRobux(balance.receive.value, compact)} · ${formatDelta(balance.rapDelta, compact)} RAP`;
 
   const wrap = el(
     'div',
@@ -248,7 +212,11 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
       el('span', 'delta', formatDelta(balance.valueDelta, compact)),
       usdDelta === null
         ? null
-        : el('span', usdDelta < 0 ? 'usd-delta is-loss' : 'usd-delta', formatUsdDelta(usdDelta, compact)),
+        : usdFigure(
+            usdDelta.value < 0 ? 'usd-delta is-loss' : 'usd-delta',
+            formatUsdDelta(usdDelta.value, compact),
+            usdDelta,
+          ),
       el('span', 'meta', meta),
       el('span', 'spacer'),
       el('span', 'flags', ...flags),
@@ -287,8 +255,10 @@ export function createTradeCard(view: TradeView, ctx: RenderContext): HTMLElemen
 
   const setOpen = (open: boolean) => {
     wrap.classList.toggle('is-open', open);
+    const label = open ? 'Hide trade details' : 'Show trade details';
     toggle.setAttribute('aria-expanded', String(open));
-    toggle.title = open ? 'Hide details' : 'Show details';
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
   };
   setOpen(ctx.settings.tradeDetails);
   toggle.addEventListener('click', () => {

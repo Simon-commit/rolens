@@ -97,6 +97,17 @@
 }
 
 /* Shared atoms */
+
+/* USD figures: published estimates in the accent colour; figures calculated at the
+   fallback rate in a neutral tone with a dotted underline, explained on hover. */
+.usd {
+  color: var(--rl-accent);
+}
+.usd.is-estimate {
+  color: var(--rl-text-2);
+  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent);
+  text-underline-offset: 2px;
+}
 .rl-glyph {
   width: 16px;
   height: 16px;
@@ -127,9 +138,6 @@
   font-weight: 650;
   letter-spacing: -0.01em;
   color: var(--rl-text);
-}
-.rl-muted {
-  color: var(--rl-text-2);
 }
 .rl-faint {
   color: var(--rl-text-3);
@@ -231,8 +239,10 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  :host,
   *,
-  *::before {
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }

@@ -25,7 +25,7 @@ the permissions it needs, and every line of shipped code is published in this re
 
 ## Features
 
-- **Value chips** on every limited item across Roblox, showing value, USD and markers for rare and projected items. Hovering or focusing a chip opens a detailed card with RAP, demand, trend and a comparison of RAP with value.
+- **Value chips** on limited items across Roblox, showing value, USD where available and markers for rare and projected items. Hovering or focusing a chip opens a detailed card with RAP, demand, trend and a comparison of RAP with value.
 - **Trade analysis** in a single compact bar on the trades page: verdict and percentage, net value, RAP and USD difference (shown in red when negative), warnings, a balance indicator and a one-click shareable summary. The bar expands to show per-side detail, and each side's heading shows its own total.
 - **Item page card** on catalog pages with value, USD and confidence, RAP, demand, trend and tags, with links to the item on each enabled source.
 - **Two data sources.** Rolimon's and RoUtility can be used together or individually. With both enabled, RoLens shows RoUtility's value beside Rolimon's and flags items where the two differ by 15% or more.
@@ -80,8 +80,7 @@ src/
   background/   service worker: fetches and caches data (the only code with network access)
   content/      runs on roblox.com: finds item cards and trades, and renders RoLens widgets
   popup/        toolbar popup: data status, sources and display settings
-  providers/    one module per value source
-  core/         shared logic, fully unit tested
+  core/         shared logic, fully unit tested: parsing, caching, formatting and sources
 ```
 
 Content scripts never access the network. They request data for the items on the page from the

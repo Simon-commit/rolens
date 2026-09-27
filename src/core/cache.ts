@@ -22,7 +22,7 @@ export interface Fetcher {
  */
 export class ValueCache {
   private snapshot: ValueSnapshot | null = null;
-  private loaded = false;
+  private loading: Promise<void> | null = null;
   private inFlight: Promise<void> | null = null;
   private lastAttempt = 0;
   private lastError: string | null = null;
@@ -83,14 +83,16 @@ export class ValueCache {
     return !this.snapshot || this.now() - this.snapshot.fetchedAt > STALE_AFTER_MS;
   }
 
-  private async ensureLoaded(): Promise<void> {
-    if (this.loaded) return;
-    this.loaded = true;
-    try {
-      const stored = await this.store.load(this.fetcher.source);
-      if (stored && stored.source === this.fetcher.source) this.snapshot = stored;
-    } catch {
-      // A corrupt cache is not fatal; the next fetch replaces it.
-    }
+  /** Reads the stored snapshot once. Requests that arrive meanwhile wait for it, so a cold start never refetches. */
+  private ensureLoaded(): Promise<void> {
+    this.loading ??= this.store
+      .load(this.fetcher.source)
+      .then((stored) => {
+        if (stored && stored.source === this.fetcher.source) this.snapshot = stored;
+      })
+      .catch(() => {
+        // A corrupt cache is not fatal; the next fetch replaces it.
+      });
+    return this.loading;
   }
 }

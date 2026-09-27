@@ -1,3 +1,4 @@
+import { capitalise } from '../../core/format';
 import type { Confidence, Trend } from '../../core/types';
 import { el } from '../dom';
 import { icon, type IconName } from './icons';
@@ -19,7 +20,7 @@ const CONFIDENCE_DOTS: Record<Confidence, number> = { low: 1, medium: 2, high: 3
 
 export function confidenceDots(confidence: Confidence): HTMLElement {
   const dots = el('span', 'rl-confidence');
-  dots.title = `${confidence} confidence`;
+  dots.title = `${capitalise(confidence)} confidence`;
   for (let i = 1; i <= 3; i++) dots.append(el('i', i <= CONFIDENCE_DOTS[confidence] ? 'is-on' : ''));
   return dots;
 }

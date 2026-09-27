@@ -3,12 +3,10 @@ import type { RenderContext } from '../src/content/ui/context';
 import { roomFor } from '../src/content/chip-fit';
 import { createChip, shrinkToFit } from '../src/content/ui/chip';
 import { DEFAULT_SETTINGS } from '../src/core/settings';
-import { rolimons } from '../src/providers/rolimons';
 import { item } from './fixtures/items';
 
 const ctx: RenderContext = {
   settings: { ...DEFAULT_SETTINGS, compactNumbers: false, usdRate: 3 },
-  provider: rolimons,
   status: null,
 };
 

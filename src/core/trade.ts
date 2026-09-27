@@ -4,8 +4,6 @@ export interface SideTotals {
   /** Sum of effective values (value, or RAP when unvalued). */
   value: number;
   rap: number;
-  /** Items the source knows about. */
-  known: number;
   /** Item ids on this side the source has no data for. */
   unknownIds: number[];
   /** Any item whose RAP is flagged as projected (manipulated). */
@@ -13,7 +11,7 @@ export interface SideTotals {
 }
 
 export function totalSide(ids: readonly number[], lookup: (id: number) => ItemValue | undefined): SideTotals {
-  const totals: SideTotals = { value: 0, rap: 0, known: 0, unknownIds: [], hasProjected: false };
+  const totals: SideTotals = { value: 0, rap: 0, unknownIds: [], hasProjected: false };
   for (const id of ids) {
     const item = lookup(id);
     if (!item) {
@@ -22,7 +20,6 @@ export function totalSide(ids: readonly number[], lookup: (id: number) => ItemVa
     }
     totals.value += effectiveValue(item);
     totals.rap += item.rap;
-    totals.known += 1;
     if (item.projected) totals.hasProjected = true;
   }
   return totals;

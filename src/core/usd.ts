@@ -13,13 +13,20 @@ export function usdFor(item: ItemValue, settings: Settings): UsdEstimate | null 
   return { value: (effectiveValue(item) / 1000) * settings.usdRate, confidence: null, origin: 'rate' };
 }
 
+export interface UsdTotal {
+  value: number;
+  /** True when any item's figure was calculated at the fallback rate. */
+  estimated: boolean;
+}
+
 /** Sum of USD estimates, or null if any item lacks one (a partial total would mislead). */
-export function totalUsd(items: readonly ItemValue[], settings: Settings): number | null {
-  let total = 0;
+export function totalUsd(items: readonly ItemValue[], settings: Settings): UsdTotal | null {
+  const total: UsdTotal = { value: 0, estimated: false };
   for (const item of items) {
     const usd = usdFor(item, settings);
     if (!usd) return null;
-    total += usd.value;
+    total.value += usd.value;
+    if (usd.origin === 'rate') total.estimated = true;
   }
   return total;
 }

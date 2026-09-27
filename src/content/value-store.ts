@@ -15,6 +15,9 @@ export class ValueStore {
   private readonly routilityRequested = new Set<number>();
   private pending = new Set<number>();
   private batch: Promise<void> | null = null;
+  /** Bumped when cached data is dropped, so answers to requests made before then are ignored. */
+  private generation = 0;
+  private routilityGeneration = 0;
   status: CacheStatus | null = null;
   /** False when Rolimon's is off: items then come from RoUtility alone. */
   useRolimons = true;
@@ -41,8 +44,9 @@ export class ValueStore {
     );
     if (wanted.length === 0) return false;
     for (const id of wanted) this.routilityRequested.add(id);
+    const generation = this.routilityGeneration;
     const response = await transport(wanted).catch(() => undefined);
-    if (!response) return false;
+    if (!response || generation !== this.routilityGeneration) return false;
     let changed = false;
     for (const id of wanted) {
       if (id in response.items) {
@@ -65,21 +69,32 @@ export class ValueStore {
     return this.batch;
   }
 
-  /** Forget everything, e.g. after the value source changes. */
-  clear(): void {
+  /** Forgets the main source's values, e.g. after it published new ones. RoUtility data is kept. */
+  clearValues(): void {
     this.known.clear();
+    this.pending.clear();
+    this.batch = null;
+    this.status = null;
+    this.generation += 1;
+  }
+
+  /** Forgets everything, e.g. after a source is turned on or off. */
+  clear(): void {
+    this.clearValues();
     this.routility.clear();
     this.routilityRequested.clear();
-    this.status = null;
+    this.routilityGeneration += 1;
   }
 
   private async flush(): Promise<void> {
     const ids = [...this.pending];
+    const generation = this.generation;
     this.pending = new Set();
     this.batch = null;
     for (let i = 0; i < ids.length; i += 1000) {
       const chunk = ids.slice(i, i + 1000);
       const response = await this.transport(chunk).catch(() => undefined);
+      if (generation !== this.generation) return;
       if (!response) continue;
       this.status = response.status;
       // With an empty table we can't tell "not a limited" from "no data yet".

@@ -28,14 +28,14 @@ describe('format', () => {
     expect(percentChange(50, 200)).toBe(25);
     expect(percentChange(5, 0)).toBeNull();
     expect(formatPercent(12.345)).toBe('+12.3%');
-    expect(formatPercent(-4)).toBe('-4%');
+    expect(formatPercent(-4)).toBe('−4%');
   });
 
   it('describes cache age', () => {
     const now = 10_000_000;
     expect(formatAge(now - 5_000, now)).toBe('just now');
-    expect(formatAge(now - 3 * 60_000, now)).toBe('3 min ago');
-    expect(formatAge(now - 2 * 3_600_000, now)).toBe('2 h ago');
+    expect(formatAge(now - 3 * 60_000, now)).toBe('3 minutes ago');
+    expect(formatAge(now - 2 * 3_600_000, now)).toBe('2 hours ago');
   });
 });
 

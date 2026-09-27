@@ -25,8 +25,19 @@ describe('usdFor', () => {
 describe('totalUsd', () => {
   it('sums, but refuses partial totals', () => {
     const settings = DEFAULT_SETTINGS;
-    expect(totalUsd([item({ id: 1, usd: source }), item({ id: 2, usd: source })], settings)).toBe(100);
+    expect(totalUsd([item({ id: 1, usd: source }), item({ id: 2, usd: source })], settings)).toEqual({
+      value: 100,
+      estimated: false,
+    });
     expect(totalUsd([item({ id: 1, usd: source }), item({ id: 2 })], settings)).toBeNull();
+  });
+
+  it('marks totals that include figures at the fallback rate', () => {
+    const settings = { ...DEFAULT_SETTINGS, usdRate: 3 };
+    expect(totalUsd([item({ id: 1, usd: source }), item({ id: 2, rap: 1000 })], settings)).toEqual({
+      value: 53,
+      estimated: true,
+    });
   });
 });
 

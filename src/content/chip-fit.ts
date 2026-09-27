@@ -1,3 +1,6 @@
+import { ANCHOR_ATTR, ROLENS_ATTR } from './attrs';
+import { SELECTORS } from './selectors';
+
 /*
  * Where a value chip goes inside a Roblox item card.
  *
@@ -11,17 +14,12 @@
  *   row      list rows (small thumbnail): right-aligned on the Robux price line, which
  *            is short and leaves the right side free; the item name and Roblox's
  *            remove button are never covered
- *   inline   cards without a thumbnail: in the caption, as before
+ *   inline   cards without a thumbnail: in the caption
  *
  * None of these change the size of any Roblox element.
  */
 
-import { SELECTORS } from './selectors';
-
 export type Placement = 'inline' | 'overlay' | 'row';
-
-/** Set on the element a chip floats over, so content.css can make it a positioning context. */
-export const ANCHOR_ATTR = 'data-rolens-anchor';
 
 const THUMBNAIL = '.item-card-thumb-container, .thumbnail-2d-container, [class*="thumbnail"], img';
 /** Thumbnails at least this wide are tiles; smaller ones are list rows. */
@@ -46,7 +44,7 @@ function rowInset(card: Element): number {
 function largestThumbnail(card: Element): { node: HTMLElement; rect: DOMRect } | null {
   let best: { node: HTMLElement; rect: DOMRect } | null = null;
   for (const match of card.querySelectorAll<HTMLElement>(THUMBNAIL)) {
-    if (match.closest('[data-rolens]')) continue;
+    if (match.closest(`[${ROLENS_ATTR}]`)) continue;
     const node = match instanceof HTMLImageElement ? match.parentElement : match;
     if (!node || !card.contains(node)) continue;
     const rect = node.getBoundingClientRect();
@@ -103,6 +101,7 @@ function positionInRow(host: HTMLElement, card: Element, caption: Element | null
 
 /** The selection check Roblox adds to the top-right of a tile once it is in the offer. */
 const TILE_CHECK = '.item-card-equipped';
+/** Gap between a tile's edge and its chip; matches the overlay's top and left in content.css. */
 const TILE_INSET = 6;
 
 /**

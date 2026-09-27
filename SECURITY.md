@@ -12,6 +12,8 @@ You can expect a response within a few days.
 
 ## Commitments
 
+RoLens will never:
+
 - Read Roblox cookies or session tokens, or call Roblox APIs on your behalf.
 - Send, accept or decline trades.
 - Load or run code from the network.

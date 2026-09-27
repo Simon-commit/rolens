@@ -5,6 +5,33 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-27
+
+A full revision of the code base and its wording, with no change to how chips sit on Roblox's pages.
+
+### Changed
+
+- Every explanation shown on hover now comes from one place, so markers read the same on chips, hover cards, the item page and the trade bar.
+- Trends read "Rising" and "Falling" instead of Rolimon's "Raising" and "Lowering". Update times are written out ("3 minutes ago").
+- USD totals in the trade bar that include figures at the fallback rate are marked as estimates, as they already were on chips.
+- Source lines say "Sources" when two are shown. The copied trade summary uses the same wording as the trade bar ("You offer", "You receive").
+- Percentages use a true minus sign everywhere. Rates are shown without trailing zeros.
+- The popup's status badges use one vocabulary (Connected, Connecting, Ready, Paused, Unavailable, Off), and refreshing updates them too.
+
+### Fixed
+
+- Stats on the item page card no longer cut off long demand labels.
+- A hover card or tooltip no longer stays open when its chip is redrawn under the pointer.
+- New values from Rolimon's update chips in place instead of redrawing every widget on the page.
+- Opening Roblox right after the browser starts no longer downloads the value table again when a saved copy exists.
+- A RoUtility response in an unexpected format is reported as an error instead of hiding the item for six hours.
+- Error messages spell Rolimon's correctly. The security policy's list of commitments has its heading back.
+
+### Internal
+
+- Removed the unused provider layer and the obsolete value-source setting. Source names and links live in `core/sources.ts`.
+- Tooltips and hover cards share one floating-panel implementation; marker attributes live in `content/attrs.ts`.
+
 ## [0.4.4] - 2026-09-27
 
 ### Changed

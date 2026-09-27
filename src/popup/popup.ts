@@ -1,8 +1,9 @@
+import { STALE_AFTER_MS } from '../core/cache';
 import { formatAge } from '../core/format';
 import { send, type CacheStatus } from '../core/messages';
+import { ROUTILITY_BACKOFF_MS } from '../core/routility-cache';
 import { normaliseSettings, type Settings, type ThemePreference } from '../core/settings';
-import { STALE_AFTER_MS } from '../core/cache';
-import { PROVIDERS } from '../providers';
+import { SOURCES } from '../core/sources';
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 
@@ -20,8 +21,8 @@ function renderStatus(status: CacheStatus | undefined): void {
   $('#refresh').hidden = !settings.useRolimons;
   if (!status) {
     card.dataset.state = 'error';
-    title.textContent = 'Service unavailable';
-    sub.textContent = 'Please reload the extension.';
+    title.textContent = 'RoLens is unavailable';
+    sub.textContent = 'Reload the extension to restore the connection';
     return;
   }
   if (!settings.useRolimons) {
@@ -38,7 +39,7 @@ function renderStatus(status: CacheStatus | undefined): void {
     }
     return;
   }
-  const label = PROVIDERS[status.source].label;
+  const label = SOURCES.rolimons.label;
   if (status.fetchedAt) {
     title.textContent = `${status.itemCount.toLocaleString()} items tracked`;
     sub.textContent = status.error
@@ -46,8 +47,8 @@ function renderStatus(status: CacheStatus | undefined): void {
       : `${label} · Updated ${formatAge(status.fetchedAt)}`;
     card.dataset.state = status.error ? 'error' : Date.now() - status.fetchedAt > STALE_AFTER_MS ? 'stale' : 'fresh';
   } else {
-    title.textContent = status.error ? 'Values could not be loaded' : 'Loading values';
-    sub.textContent = status.error ?? `Connecting to ${label}`;
+    title.textContent = status.error ? 'Values could not be loaded' : 'Loading values…';
+    sub.textContent = status.error ?? `Connecting to ${label}…`;
     card.dataset.state = status.error ? 'error' : 'stale';
   }
 }
@@ -60,22 +61,28 @@ function paintBadge(badge: HTMLElement, text: string, tone: string, title = ''):
 
 function renderRolimonsStatus(status: CacheStatus | undefined): void {
   const badge = $('#rolimons-badge');
-  if (!settings.useRolimons) paintBadge(badge, 'Off', 'is-soon');
+  if (!settings.useRolimons) paintBadge(badge, 'Off', 'is-idle');
   else if (status?.error && !status.fetchedAt)
     paintBadge(badge, 'Unavailable', 'is-bad', `Last error: ${status.error}`);
   else if (status?.fetchedAt) paintBadge(badge, 'Connected', '');
-  else paintBadge(badge, 'Connecting', 'is-soon');
+  else paintBadge(badge, 'Connecting', 'is-idle');
 }
 
 function renderRoutilityStatus(status: CacheStatus | undefined): void {
   const badge = $('#routility-badge');
   const routility = status?.routility;
   const title = routility?.error ? `Last error: ${routility.error}` : '';
-  if (!settings.useRoutility) paintBadge(badge, 'Off', 'is-soon');
-  else if (routility?.blockedUntil || (routility?.error && !routility.lastSuccess)) {
-    paintBadge(badge, 'Blocked', 'is-bad', title);
-  } else if (routility?.lastSuccess) paintBadge(badge, 'Connected', '', title);
-  else paintBadge(badge, 'Ready', 'is-soon', title);
+  if (!settings.useRoutility) paintBadge(badge, 'Off', 'is-idle');
+  else if (routility?.blockedUntil) {
+    paintBadge(
+      badge,
+      'Paused',
+      'is-bad',
+      `RoUtility declined recent requests. RoLens pauses for ${ROUTILITY_BACKOFF_MS / 60_000} minutes before trying again.`,
+    );
+  } else if (routility?.error && !routility.lastSuccess) paintBadge(badge, 'Unavailable', 'is-bad', title);
+  else if (routility?.lastSuccess) paintBadge(badge, 'Connected', '', title);
+  else paintBadge(badge, 'Ready', 'is-idle', 'Data is requested for items as they appear on Roblox');
 }
 
 /** Two source switches; whichever is the only one left on can't be turned off. */
@@ -90,8 +97,8 @@ function renderSources(): void {
     }
     $('#source-note').hidden = onCount > 1;
     $('#usd-note').textContent = settings.useRoutility
-      ? 'RoUtility estimates, with your own rate as a fallback'
-      : 'Calculated from your own rate';
+      ? 'RoUtility estimates, with the fallback rate where none is published'
+      : 'Calculated at the fallback rate';
   };
   for (const input of inputs) {
     input.addEventListener('change', () => {
@@ -170,11 +177,14 @@ function renderTheme(): void {
   requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('ready')));
 }
 
-async function refreshStatus(): Promise<void> {
-  const status = await send({ type: 'rolens:getStatus' }).catch(() => undefined);
+function renderAllStatus(status: CacheStatus | undefined): void {
   renderStatus(status);
   renderRolimonsStatus(status);
   renderRoutilityStatus(status);
+}
+
+async function refreshStatus(): Promise<void> {
+  renderAllStatus(await send({ type: 'rolens:getStatus' }).catch(() => undefined));
 }
 
 async function main(): Promise<void> {
@@ -193,7 +203,7 @@ async function main(): Promise<void> {
     void send({ type: 'rolens:refresh' })
       .catch(() => undefined)
       .then((status) => {
-        renderStatus(status);
+        renderAllStatus(status);
         refresh.disabled = false;
         refresh.classList.remove('is-spinning');
       });

@@ -1,3 +1,4 @@
+import { ANCHOR_ATTR, RARE_ATTR, ROLENS_ATTR } from './attrs';
 import { releaseAnchor } from './chip-fit';
 
 /**
@@ -18,8 +19,6 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-export const ROLENS_ATTR = 'data-rolens';
-
 /** True for nodes RoLens injected, so they can be skipped and cleaned up. */
 export function isOwnNode(node: Node): boolean {
   return node instanceof Element && node.hasAttribute(ROLENS_ATTR);
@@ -28,6 +27,6 @@ export function isOwnNode(node: Node): boolean {
 /** Removes everything RoLens added, including markers on Roblox's own elements. */
 export function removeOwnNodes(root: ParentNode): void {
   for (const node of root.querySelectorAll(`[${ROLENS_ATTR}]`)) node.remove();
-  for (const node of root.querySelectorAll('[data-rolens-rare]')) node.removeAttribute('data-rolens-rare');
-  for (const node of root.querySelectorAll<HTMLElement>('[data-rolens-anchor]')) releaseAnchor(node);
+  for (const node of root.querySelectorAll(`[${RARE_ATTR}]`)) node.removeAttribute(RARE_ATTR);
+  for (const node of root.querySelectorAll<HTMLElement>(`[${ANCHOR_ATTR}]`)) releaseAnchor(node);
 }

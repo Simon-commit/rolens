@@ -1,12 +1,10 @@
 import type { ItemValue } from '../core/types';
 import { fitChip, roomFor } from './chip-fit';
-import { isOwnNode, ROLENS_ATTR } from './dom';
+import { RARE_ATTR, ROLENS_ATTR } from './attrs';
+import { isOwnNode } from './dom';
 import { catalogIdFromHref, SELECTORS } from './selectors';
 import { createChip, shrinkToFit } from './ui/chip';
 import { renderKey, type RenderContext } from './ui/context';
-
-/** Marks an item card whose item is rare, so page-level CSS can outline it. */
-export const RARE_ATTR = 'data-rolens-rare';
 
 /** Maps each item card on the page to the item id it shows. */
 export function findItemCards(root: ParentNode): Map<Element, number> {

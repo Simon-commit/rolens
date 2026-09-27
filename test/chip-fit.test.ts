@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ANCHOR_ATTR, fitChip } from '../src/content/chip-fit';
+import { ANCHOR_ATTR } from '../src/content/attrs';
+import { fitChip } from '../src/content/chip-fit';
 
 /** jsdom has no layout, so each element gets a fixed box. */
 function box(node: Element, left: number, top: number, width: number, height: number): void {

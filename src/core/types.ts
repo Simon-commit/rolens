@@ -1,8 +1,10 @@
-/** Market demand as rated by the value source. */
-export type Demand = 'terrible' | 'low' | 'normal' | 'high' | 'amazing';
+/** Market demand as rated by the value source, lowest first. */
+export const DEMANDS = ['terrible', 'low', 'normal', 'high', 'amazing'] as const;
+export type Demand = (typeof DEMANDS)[number];
 
-/** Short-term price direction as rated by the value source. */
-export type Trend = 'lowering' | 'unstable' | 'stable' | 'raising' | 'fluctuating';
+/** Short-term price direction as rated by the value source, in Rolimon's order. */
+export const TRENDS = ['lowering', 'unstable', 'stable', 'raising', 'fluctuating'] as const;
+export type Trend = (typeof TRENDS)[number];
 
 export type SourceId = 'rolimons' | 'routility';
 
@@ -81,5 +83,5 @@ export function effectiveValue(item: ItemValue): number {
 
 /** Demand as a 1-5 level, for meters. 0 when unrated. */
 export function demandLevel(demand: Demand | null): number {
-  return demand ? (['terrible', 'low', 'normal', 'high', 'amazing'] as const).indexOf(demand) + 1 : 0;
+  return demand ? DEMANDS.indexOf(demand) + 1 : 0;
 }

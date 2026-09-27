@@ -74,19 +74,33 @@ export function percentChange(gain: number, base: number): number | null {
   return (gain / base) * 100;
 }
 
+/** A signed percentage with one decimal where it matters: +12.5%, −3%, ±0%. */
 export function formatPercent(value: number): string {
   const rounded = Math.round(value * 10) / 10;
-  return localiseDigits(`${rounded > 0 ? '+' : ''}${rounded}%`);
+  const sign = rounded > 0 ? '+' : rounded < 0 ? '−' : '±';
+  return localiseDigits(`${sign}${Math.abs(rounded)}%`);
 }
 
-const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+export const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** "1 item", "3 items". */
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export function formatDemand(demand: Demand | null): string {
   return demand ? capitalise(demand) : 'Unrated';
 }
 
+/** Rolimon's names trends "raising" and "lowering"; RoLens shows them in plain English. */
+const TREND_LABELS: Record<Trend, string> = {
+  raising: 'Rising',
+  lowering: 'Falling',
+  stable: 'Stable',
+  unstable: 'Unstable',
+  fluctuating: 'Fluctuating',
+};
+
 export function formatTrend(trend: Trend | null): string {
-  return trend ? capitalise(trend) : 'Unrated';
+  return trend ? TREND_LABELS[trend] : 'Unrated';
 }
 
 /** Human "time ago" for cache freshness. */
@@ -94,8 +108,8 @@ export function formatAge(fetchedAt: number, now = Date.now()): string {
   const seconds = Math.max(0, Math.round((now - fetchedAt) / 1000));
   if (seconds < 60) return 'just now';
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) return `${plural(minutes, 'minute')} ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return `${Math.round(hours / 24)} d ago`;
+  if (hours < 24) return `${plural(hours, 'hour')} ago`;
+  return `${plural(Math.round(hours / 24), 'day')} ago`;
 }

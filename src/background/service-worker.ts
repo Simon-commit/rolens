@@ -8,8 +8,8 @@ import {
 } from '../core/messages';
 import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
-import type { ItemValue, SourceId, ValueSnapshot } from '../core/types';
-import { resolveProvider } from '../providers';
+import { fetchRolimonsItems } from '../core/rolimons';
+import type { ItemValue, ValueSnapshot } from '../core/types';
 
 const store: SnapshotStore = {
   async load(source) {
@@ -22,7 +22,11 @@ const store: SnapshotStore = {
   },
 };
 
-const caches = new Map<SourceId, ValueCache>();
+/** Rolimon's full value table, refreshed in the background when stale. */
+const values = new ValueCache(
+  { source: 'rolimons', fetchItems: () => fetchRolimonsItems(fetch.bind(globalThis)) },
+  store,
+);
 
 const routility = new RoutilityCache(fetch.bind(globalThis), {
   async load() {
@@ -36,44 +40,30 @@ const routility = new RoutilityCache(fetch.bind(globalThis), {
 
 async function currentSettings(): Promise<Settings> {
   const { settings } = await chrome.storage.sync.get('settings');
-  return normaliseSettings(settings as Partial<Settings> | undefined);
-}
-
-async function currentCache(): Promise<ValueCache> {
-  const provider = resolveProvider((await currentSettings()).source);
-  let cache = caches.get(provider.id);
-  if (!cache) {
-    cache = new ValueCache(
-      { source: provider.id, fetchItems: () => provider.fetchItems(fetch.bind(globalThis)) },
-      store,
-    );
-    caches.set(provider.id, cache);
-  }
-  return cache;
+  return normaliseSettings(settings);
 }
 
 async function handle(request: Request): Promise<ItemsResponse | RoutilityResponse | CacheStatus> {
   if (request.type === 'rolens:getRoutility') {
     return { items: await routility.get(request.ids), status: routility.status() };
   }
-  const cache = await currentCache();
   switch (request.type) {
     case 'rolens:getItems': {
-      const snapshot = await cache.get();
+      const snapshot = await values.get();
       const items: Record<string, ItemValue> = {};
       for (const id of request.ids) {
         const item = snapshot?.items[id];
         if (item) items[id] = item;
       }
-      return { items, status: cache.status() };
+      return { items, status: values.status() };
     }
     case 'rolens:refresh':
-      await cache.refresh(true);
-      return cache.status();
+      await values.refresh(true);
+      return { ...values.status(), routility: routility.status() };
     case 'rolens:getStatus':
       // With Rolimon's turned off, report status without downloading its table.
-      if ((await currentSettings()).useRolimons) await cache.get();
-      return { ...cache.status(), routility: routility.status() };
+      if ((await currentSettings()).useRolimons) await values.get();
+      return { ...values.status(), routility: routility.status() };
   }
 }
 

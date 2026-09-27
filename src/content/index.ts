@@ -1,7 +1,6 @@
 import { detectSeparators, numberSeparators, setNumberLocale, setNumberSeparators } from '../core/format';
 import { send } from '../core/messages';
 import { normaliseSettings, type Settings } from '../core/settings';
-import { resolveProvider } from '../providers';
 import { findItemCards, renderBadges } from './badges';
 import { isOwnNode, removeOwnNodes } from './dom';
 import { registerFont } from './fonts';
@@ -49,7 +48,6 @@ async function update(): Promise<void> {
 
   const ctx: RenderContext = {
     settings,
-    provider: resolveProvider(settings.source),
     status: store.status,
     saveTradeDetails,
   };
@@ -72,7 +70,10 @@ function saveTradeDetails(expanded: boolean): void {
   void chrome.storage.sync.set({ settings });
 }
 
-/** Settings that widgets update in place, without being rebuilt. */
+/**
+ * Settings that need no redraw: the theme is applied to widgets in place, dark Roblox is
+ * handled by early.js, and the trade bar's open state is read when it is next drawn.
+ */
 const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails', 'darkRoblox']);
 
 function onlyLiveKeysChanged(prev: Settings, next: Settings): boolean {
@@ -112,20 +113,14 @@ function start(): void {
       settings = next;
       if (next.theme !== prev.theme) applyThemePreference(next.theme);
       if (onlyLiveKeysChanged(prev, next)) return;
-      if (
-        next.source !== prev.source ||
-        next.useRolimons !== prev.useRolimons ||
-        next.useRoutility !== prev.useRoutility
-      ) {
-        store.clear();
-      }
+      if (next.useRolimons !== prev.useRolimons || next.useRoutility !== prev.useRoutility) store.clear();
+      removeOwnNodes(document);
+      schedule();
     } else if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('snapshot:'))) {
-      store.clear();
-    } else {
-      return;
+      // New values: widgets whose figures changed are redrawn by the next scan, the rest stay as they are.
+      store.clearValues();
+      schedule();
     }
-    removeOwnNodes(document);
-    schedule();
   });
 
   schedule();

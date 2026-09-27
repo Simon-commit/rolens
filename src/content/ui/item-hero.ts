@@ -1,6 +1,5 @@
-import { formatRobux } from '../../core/format';
-import type { ItemValue } from '../../core/types';
-import { effectiveValue } from '../../core/types';
+import { SOURCES } from '../../core/sources';
+import type { ItemValue, SourceId } from '../../core/types';
 import { el } from '../dom';
 import type { RenderContext } from './context';
 import { glyph, icon } from './icons';
@@ -14,8 +13,8 @@ import {
   sourceLine,
   trendStat,
   usdStat,
+  valueHeadline,
 } from './item-details';
-import { routilityItemPage } from '../../core/routility';
 import { createWidget } from './shadow';
 
 const css = `
@@ -50,31 +49,29 @@ const css = `
 .usd-block { text-align: right; }
 .usd-block .stat-value { justify-content: flex-end; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 .usd-block .stat-note { text-align: right; }
-.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding-top: 14px; border-top: 1px solid var(--rl-border); }
+.strip { display: grid; grid-template-columns: repeat(4, max-content); justify-content: space-between; gap: 16px; padding-top: 14px; border-top: 1px solid var(--rl-border); }
 .foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rl-border); font-size: 11px; color: var(--rl-text-3); }
 ${detailsCss}
 `;
 
 /** The full stats card on a catalog item page. */
 export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement {
-  const compact = ctx.settings.compactNumbers;
   const { host, root } = createWidget('panel', css, 'section');
   host.dataset.rolensId = String(item.id);
 
-  const externalLink = (label: string, href: string) => {
-    const link = el('a', 'link', label, icon('external'));
-    link.href = href;
+  const sourceLink = (id: SourceId) => {
+    const link = el('a', 'link', SOURCES[id].label, icon('external'));
+    link.href = SOURCES[id].itemUrl(item.id);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     return link;
   };
+  // Links to the sources this card's figures came from.
   const links = el(
     'div',
     'links',
-    ctx.settings.useRolimons && ctx.provider.itemUrl
-      ? externalLink(ctx.provider.label, ctx.provider.itemUrl(item.id))
-      : null,
-    item.routility || !ctx.settings.useRolimons ? externalLink('RoUtility', routilityItemPage(item.id)) : null,
+    ctx.settings.useRolimons ? sourceLink('rolimons') : null,
+    item.routility || !ctx.settings.useRolimons ? sourceLink('routility') : null,
   );
 
   const usd = usdStat(item, ctx);
@@ -93,9 +90,8 @@ export function createItemHero(item: ItemValue, ctx: RenderContext): HTMLElement
       el(
         'div',
         '',
-        el('div', 'rl-eyebrow', item.value === null ? 'RAP (no value)' : 'Value'),
-        el('div', 'big', formatRobux(effectiveValue(item), compact)),
-        el('div', 'big-note', rapInsight(item) ?? (item.value === null ? 'No published value available' : '')),
+        ...valueHeadline(item, ctx),
+        el('div', 'big-note', rapInsight(item) ?? (item.value === null ? 'No published value' : '')),
       ),
       usd ? el('div', 'usd-block', usd) : null,
     ),

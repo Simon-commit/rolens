@@ -1,10 +1,20 @@
-import { formatAge, formatDemand, formatRobux, formatTrend } from '../../core/format';
+import {
+  capitalise,
+  formatAge,
+  formatDemand,
+  formatPercent,
+  formatRobux,
+  formatTrend,
+  percentChange,
+} from '../../core/format';
 import { DISAGREEMENT_THRESHOLD, valueDisagreement } from '../../core/routility';
-import { demandLevel, type ItemValue, type Trend } from '../../core/types';
+import { sourceNames } from '../../core/sources';
+import { demandLevel, effectiveValue, type ItemValue, type SourceId } from '../../core/types';
 import { formatUsd, usdFor } from '../../core/usd';
 import { el } from '../dom';
 import { confidenceDots, demandMeter, pill, TREND_ICON, TREND_TONE } from './atoms';
 import type { RenderContext } from './context';
+import { disagreeTip, rateTip, TIPS, TREND_TIPS } from './copy';
 import { icon } from './icons';
 import { attachTip } from './tooltip';
 
@@ -12,6 +22,14 @@ import { attachTip } from './tooltip';
 
 export function stat(label: string, ...value: (Node | string | null)[]): HTMLElement {
   return el('div', 'stat', el('div', 'rl-eyebrow', label), el('div', 'stat-value', ...value));
+}
+
+/** The eyebrow and large figure that lead both cards: the value, or the RAP when there is none. */
+export function valueHeadline(item: ItemValue, ctx: RenderContext): [HTMLElement, HTMLElement] {
+  return [
+    el('div', 'rl-eyebrow', item.value === null ? 'RAP (no value)' : 'Value'),
+    el('div', 'big', formatRobux(effectiveValue(item), ctx.settings.compactNumbers)),
+  ];
 }
 
 export function rapStat(item: ItemValue, ctx: RenderContext): HTMLElement {
@@ -24,32 +42,17 @@ export function demandStat(item: ItemValue): HTMLElement {
   return stat('Demand', demandMeter(demandLevel(item.demand)), el('span', 'stat-text', formatDemand(item.demand)));
 }
 
-/** What each price trend means, shown when hovering the trend. */
-export const TREND_TIPS: Record<Trend, string> = {
-  raising: 'Recent sale prices are trending upward.',
-  lowering: 'Recent sale prices are trending downward.',
-  stable: 'Recent sale prices have remained consistent.',
-  unstable: 'Recent sale prices vary significantly, so the value carries more uncertainty.',
-  fluctuating: 'Sale prices move up and down between sales. Expect some variation around the value.',
-};
-
 export function trendStat(item: ItemValue): HTMLElement {
-  const trendIcon = item.trend ? icon(TREND_ICON[item.trend]) : null;
-  const text = el('span', 'stat-text', formatTrend(item.trend));
-  const value = item.trend
-    ? attachTip(el('span', 'tip-anchor', trendIcon, text), `Trend: ${formatTrend(item.trend)}`, TREND_TIPS[item.trend])
-    : text;
-  const node = stat('Trend', value);
+  const label = formatTrend(item.trend);
+  const text = el('span', 'stat-text', label);
+  const node = stat(
+    'Trend',
+    item.trend
+      ? attachTip(el('span', 'tip-anchor', icon(TREND_ICON[item.trend]), text), label, TREND_TIPS[item.trend])
+      : text,
+  );
   if (item.trend) node.dataset.tone = TREND_TONE[item.trend];
   return node;
-}
-
-/** Title and formal explanation for a USD figure calculated from the fallback rate. */
-export function rateTip(rate: number): [string, string] {
-  return [
-    'Estimated USD value',
-    `RoUtility does not publish a USD estimate for this item. This figure is calculated at your fallback rate of ${formatUsd(rate, false)} per 1,000 value. A rate of $3 per 1,000 value is widely recognised as the prevailing market reference for limited items. It should be regarded as indicative only.`,
-  ];
 }
 
 /** USD estimate with its confidence, or null when there is none to show. */
@@ -67,31 +70,26 @@ export function usdStat(item: ItemValue, ctx: RenderContext): HTMLElement | null
     );
     return node;
   }
-  const range =
-    usd.low !== undefined && usd.high !== undefined
-      ? `${formatUsd(usd.low, compact)}–${formatUsd(usd.high, compact)}`
-      : null;
   const node = stat(
     'USD',
     el('span', 'usd', formatUsd(usd.value, compact)),
     usd.confidence ? confidenceDots(usd.confidence) : null,
   );
-  const confidence = usd.confidence
-    ? `${usd.confidence.charAt(0).toUpperCase()}${usd.confidence.slice(1)} confidence`
-    : null;
-  const rate = usd.rate ? `$${usd.rate.toFixed(2)}/1K` : null;
-  const note = [confidence, range, rate].filter(Boolean).join(' · ') || null;
+  const note = [
+    usd.confidence ? `${capitalise(usd.confidence)} confidence` : null,
+    usd.low !== undefined && usd.high !== undefined
+      ? `${formatUsd(usd.low, compact)}–${formatUsd(usd.high, compact)}`
+      : null,
+    usd.rate ? `${formatUsd(usd.rate, false)}/1K` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   if (note) node.append(el('div', 'stat-note', note));
   if (usd.reason) node.title = usd.reason;
   return node;
 }
 
-function signedPercent(share: number): string {
-  const pct = Math.round(share * 100);
-  return `${pct > 0 ? '+' : pct < 0 ? '−' : '±'}${Math.abs(pct)}%`;
-}
-
-/** True when RoUtility's value differs from the main value by more than the threshold. */
+/** True when RoUtility's value differs from the main value by at least the threshold. */
 export function sourcesDisagree(item: ItemValue): boolean {
   const diff = valueDisagreement(item);
   return diff !== null && Math.abs(diff) >= DISAGREEMENT_THRESHOLD;
@@ -105,12 +103,9 @@ export function routilityStat(item: ItemValue, ctx: RenderContext): HTMLElement 
   const node = stat(
     'RoUtility value',
     formatRobux(other, ctx.settings.compactNumbers),
-    diff === null ? null : el('span', 'stat-diff', signedPercent(diff)),
+    diff === null ? null : el('span', 'stat-diff', formatPercent(Math.round(diff * 100))),
   );
-  if (sourcesDisagree(item)) {
-    node.dataset.tone = 'warn';
-    node.title = `Rolimon's and RoUtility disagree by ${signedPercent(diff!)} on this item`;
-  }
+  if (sourcesDisagree(item)) node.dataset.tone = 'warn';
   return node;
 }
 
@@ -119,54 +114,32 @@ export function routilityStat(item: ItemValue, ctx: RenderContext): HTMLElement 
  * below what the community thinks it's worth.
  */
 export function rapInsight(item: ItemValue): string | null {
-  if (item.value === null || item.value === 0 || item.rap === 0) return null;
-  const pct = Math.round(((item.rap - item.value) / item.value) * 100);
+  if (item.value === null || item.rap === 0) return null;
+  const pct = Math.round(percentChange(item.rap - item.value, item.value) ?? 0);
   if (Math.abs(pct) < 3) return 'RAP is in line with value';
   return `RAP is ${Math.abs(pct)}% ${pct > 0 ? 'above' : 'below'} value`;
 }
 
 export function flagPills(item: ItemValue): HTMLElement[] {
   const pills: HTMLElement[] = [];
-  if (item.rare) {
-    pills.push(
-      attachTip(pill('Rare', 'rare', 'gem'), 'Rare', 'A limited number of copies of this item are in circulation.'),
-    );
-  }
-  if (item.projected) {
-    pills.push(
-      attachTip(
-        pill('Projected', 'warn', 'warning'),
-        'Projected RAP',
-        "Recent above-market sales have inflated this item's RAP. Its value is a more reliable measure.",
-      ),
-    );
-  }
-  if (item.hyped) {
-    pills.push(
-      attachTip(
-        pill('Hyped', undefined, 'flame'),
-        'Hyped',
-        'This item is in unusually high demand. Its current price may not be sustained.',
-      ),
-    );
-  }
+  if (item.rare) pills.push(attachTip(pill('Rare', 'rare', 'gem'), ...TIPS.rare));
+  if (item.projected) pills.push(attachTip(pill('Projected', 'warn', 'warning'), ...TIPS.projected));
+  if (item.hyped) pills.push(attachTip(pill('Hyped', undefined, 'flame'), ...TIPS.hyped));
   if (sourcesDisagree(item)) {
-    const diff = valueDisagreement(item)!;
-    pills.push(
-      attachTip(
-        pill('Sources disagree', 'warn', 'split'),
-        'Sources disagree',
-        `RoUtility's value differs from Rolimon's by ${signedPercent(diff)}. We recommend reviewing both sources before trading this item.`,
-      ),
-    );
+    pills.push(attachTip(pill('Sources disagree', 'warn', 'split'), ...disagreeTip(valueDisagreement(item)!)));
   }
   return pills;
 }
 
+/**
+ * Where the figures shown came from, e.g. "Sources: Rolimon's and RoUtility · Updated 3
+ * minutes ago". RoUtility is named only when it contributed to what is shown.
+ */
 export function sourceLine(ctx: RenderContext, withRoutility = false): string {
-  if (!ctx.settings.useRolimons) return 'Source: RoUtility';
-  const age = ctx.status?.fetchedAt ? ` · Updated ${formatAge(ctx.status.fetchedAt)}` : '';
-  return `Source: ${ctx.provider.label}${withRoutility ? ' and RoUtility' : ''}${age}`;
+  const ids: SourceId[] = ctx.settings.useRolimons ? ['rolimons'] : [];
+  if (withRoutility || !ctx.settings.useRolimons) ids.push('routility');
+  const age = ctx.settings.useRolimons && ctx.status?.fetchedAt ? ` · Updated ${formatAge(ctx.status.fetchedAt)}` : '';
+  return `${ids.length > 1 ? 'Sources' : 'Source'}: ${sourceNames(ids)}${age}`;
 }
 
 /** Styles for the blocks above, included by widgets that use them. */
@@ -184,12 +157,10 @@ export const detailsCss = `
 .stat[data-tone='win'] .stat-value { color: var(--rl-win); }
 .stat[data-tone='loss'] .stat-value { color: var(--rl-loss); }
 .stat[data-tone='warn'] .stat-value { color: var(--rl-warn); }
-.usd { color: var(--rl-accent); }
-.usd.is-estimate { color: var(--rl-text-2); text-decoration: underline dotted; text-underline-offset: 2px; }
 .stat-diff { font-size: 11px; font-weight: 600; color: var(--rl-text-3); }
 .stat[data-tone='warn'] .stat-diff { color: var(--rl-warn); }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; }
-.tip-anchor { display: inline-flex; align-items: center; gap: 6px; min-width: 0; cursor: help; outline: none; border-radius: 6px; }
+.tip-anchor { display: inline-flex; align-items: center; gap: 6px; min-width: 0; cursor: help; outline: none; border-radius: var(--rl-radius-sm); }
 .flags .rl-pill { cursor: help; outline: none; }
 .tip-anchor:focus-visible, .flags .rl-pill:focus-visible { box-shadow: 0 0 0 2px var(--rl-accent); }
 `;

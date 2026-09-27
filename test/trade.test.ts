@@ -11,7 +11,7 @@ const lookup = (id: number) => table.get(id);
 
 describe('trade totals', () => {
   it('uses value when present and RAP otherwise', () => {
-    expect(totalSide([1, 2], lookup)).toMatchObject({ value: 2300, rap: 1800, known: 2, hasProjected: false });
+    expect(totalSide([1, 2], lookup)).toMatchObject({ value: 2300, rap: 1800, hasProjected: false });
   });
 
   it('counts duplicates and tracks unknown items', () => {

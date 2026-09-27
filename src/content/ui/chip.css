@@ -60,15 +60,9 @@
   background: var(--rl-border-strong);
 }
 .usd {
-  color: var(--rl-accent);
   font-weight: 600;
 }
-/* Calculated from the fallback rate rather than published by RoUtility: shown in a
-   neutral tone with a dotted underline, and explained on hover. */
 .usd.is-estimate {
-  color: var(--rl-text-2);
-  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent);
-  text-underline-offset: 2px;
   cursor: help;
   outline: none;
 }

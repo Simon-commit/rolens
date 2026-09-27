@@ -30,7 +30,7 @@ export interface RoutilityStatus {
 
 class HttpError extends Error {
   constructor(readonly status: number) {
-    super(`RoUtility responded with HTTP ${status}`);
+    super(`RoUtility could not be reached (HTTP ${status})`);
   }
 }
 
@@ -40,6 +40,7 @@ class HttpError extends Error {
  */
 export class RoutilityCache {
   private entries: Record<string, RoutilityEntry> | null = null;
+  private loading: Promise<Record<string, RoutilityEntry>> | null = null;
   private readonly inFlight = new Map<number, Promise<void>>();
   private lastSuccess: number | null = null;
   private error: string | null = null;
@@ -106,7 +107,10 @@ export class RoutilityCache {
           return;
         }
         if (!response.ok) throw new HttpError(response.status);
-        this.entries![id] = { data: parseRoutilityItem(await response.json(), id), fetchedAt: this.now() };
+        const data = parseRoutilityItem(await response.json(), id);
+        // A response RoLens can't read means RoUtility changed its format, not that the item is unknown.
+        if (!data) throw new Error('RoUtility returned an unexpected response');
+        this.entries![id] = { data, fetchedAt: this.now() };
         this.lastSuccess = this.now();
         this.error = null;
       } catch (error) {
@@ -122,26 +126,24 @@ export class RoutilityCache {
     return task;
   }
 
-  private async load(): Promise<Record<string, RoutilityEntry>> {
-    if (!this.entries) {
-      try {
-        this.entries = await this.store.load();
-      } catch {
-        this.entries = {};
-      }
-    }
-    return this.entries;
+  /** Reads the stored cache once, however many requests arrive while it loads. */
+  private load(): Promise<Record<string, RoutilityEntry>> {
+    this.loading ??= this.store
+      .load()
+      .catch(() => ({}))
+      .then((entries) => (this.entries = entries));
+    return this.loading;
   }
 
   private scheduleSave(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      let entries = this.entries ?? {};
+      const entries = this.entries ?? {};
       const keys = Object.keys(entries);
       if (keys.length > MAX_ENTRIES) {
-        const newest = keys.sort((a, b) => entries[b]!.fetchedAt - entries[a]!.fetchedAt).slice(0, MAX_ENTRIES);
-        entries = Object.fromEntries(newest.map((key) => [key, entries[key]!]));
-        this.entries = entries;
+        // Trimmed in place: requests still running hold this same object.
+        keys.sort((a, b) => entries[b]!.fetchedAt - entries[a]!.fetchedAt);
+        for (const key of keys.slice(MAX_ENTRIES)) Reflect.deleteProperty(entries, key);
       }
       void this.store.save(entries).catch(() => undefined);
     }, 1000);

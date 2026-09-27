@@ -68,7 +68,13 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('[data-rolens="badge"][data-rolens-id="1"]')?.shadowRoot?.textContent?.includes('$42.50'),
   );
-  assert.equal(await page.$eval('[data-rolens="badge"][data-rolens-id="1"]', (chip) => chip.dataset.rare), 'true');
+  assert.ok(
+    await page.$eval(
+      '[data-rolens="badge"][data-rolens-id="1"]',
+      (chip) => chip.closest('[data-rolens-rare]') !== null,
+    ),
+    'rare item cards should be marked',
+  );
 
   await page.goto('https://www.roblox.com/catalog/1/Valued-Hat');
   await page.waitForSelector('[data-rolens="panel"]');

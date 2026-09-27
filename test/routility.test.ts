@@ -120,6 +120,13 @@ describe('RoutilityCache', () => {
   }
   const ok = (id: number) => new Response(JSON.stringify({ ...skotn, item_id: String(id) }), { status: 200 });
 
+  it('reports a response it cannot read as an error, not as an unknown item', async () => {
+    const { cache } = setup(() => new Response(JSON.stringify({ unexpected: true }), { status: 200 }));
+    expect(await cache.get([1])).toEqual({});
+    expect(cache.status().error).toBe('RoUtility returned an unexpected response');
+    expect(cache.status().lastSuccess).toBeNull();
+  });
+
   it('fetches each item once and serves it from cache', async () => {
     const { cache, fetchFn } = setup(ok);
     const first = await cache.get([1, 2, 2]);

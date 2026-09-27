@@ -1,20 +1,24 @@
 /*
- * Page-level styles. RoLens widgets style themselves inside Shadow DOM; this file only
- * outlines rare items' cards, using RoLens's own attribute. The font is registered in fonts.ts.
+ * Page-level styles (shipped as content.css). RoLens widgets style themselves inside
+ * Shadow DOM; this file only places them on Roblox's cards, outlines rare items and keeps
+ * the optional dark mode from flashing, always through RoLens's own data-rolens-*
+ * attributes (see attrs.ts). The font is registered in fonts.ts.
  */
 
 /* Optional dark Roblox (see roblox-dark.ts): stays dark while the page loads, before Roblox's own dark styles apply. */
 html[data-rolens-dark] {
+  --rolens-roblox-dark: #191b1d; /* Roblox's own dark page background */
   color-scheme: dark;
-  background-color: #191b1d;
+  background-color: var(--rolens-roblox-dark);
 }
 html[data-rolens-dark] body:not(.dark-theme) {
-  background-color: #191b1d !important;
+  background-color: var(--rolens-roblox-dark) !important;
 }
 
 /* Chips float over Roblox's cards (see chip-fit.ts), so Roblox's own layout never changes size. */
 [data-rolens='badge'][data-placement='overlay'] {
   position: absolute;
+  /* Matches TILE_INSET in chip-fit.ts. */
   top: 6px;
   left: 6px;
   z-index: 2;

@@ -22,6 +22,17 @@ describe('ValueStore', () => {
     expect(transport).toHaveBeenCalledOnce();
   });
 
+  it('ignores answers to lookups made before it was cleared', async () => {
+    let answer!: (response: ItemsResponse) => void;
+    const store = new ValueStore(() => new Promise((resolve) => (answer = resolve)));
+    const loading = store.load([1]);
+    await Promise.resolve();
+    store.clearValues();
+    answer({ items: { '1': item({ id: 1 }) }, status: status(100) });
+    await loading;
+    expect(store.peek(1)).toBeUndefined();
+  });
+
   it('retries ids when the value table was empty', async () => {
     const transport = vi.fn(async (): Promise<ItemsResponse> => ({ items: {}, status: status(0) }));
     const store = new ValueStore(transport);

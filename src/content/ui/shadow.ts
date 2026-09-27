@@ -1,5 +1,5 @@
 import type { ThemePreference } from '../../core/settings';
-import { ROLENS_ATTR } from '../dom';
+import { ROLENS_ATTR } from '../attrs';
 import tokens from './tokens.css?raw';
 
 export type Theme = 'light' | 'dark';
@@ -39,6 +39,12 @@ export function applyThemePreference(next: ThemePreference, root: ParentNode = d
   preference = next;
   const theme = resolveTheme();
   for (const host of root.querySelectorAll<HTMLElement>(`[${ROLENS_ATTR}]`)) host.dataset.theme = theme;
+}
+
+/** The theme of the widget `node` is drawn in, so a floating panel can match it. */
+export function themeOf(node: Element): Theme {
+  const root = node.getRootNode();
+  return root instanceof ShadowRoot && (root.host as HTMLElement).dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
 /**

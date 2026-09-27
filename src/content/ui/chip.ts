@@ -1,13 +1,12 @@
 import { formatRobux } from '../../core/format';
-import type { ItemValue } from '../../core/types';
-import { effectiveValue } from '../../core/types';
+import { effectiveValue, type ItemValue } from '../../core/types';
 import { formatUsd, usdFor } from '../../core/usd';
 import { el } from '../dom';
 import css from './chip.css?raw';
 import type { RenderContext } from './context';
 import { attachHoverCard } from './hover-card';
 import { glyph, icon } from './icons';
-import { rateTip } from './item-details';
+import { rateTip } from './copy';
 import { createWidget } from './shadow';
 import { attachTip } from './tooltip';
 
@@ -21,40 +20,46 @@ function figure(className: string, full: string, short: string): HTMLElement {
   return node;
 }
 
+/** The USD figure a chip shows. Items with RAP only keep to one quiet line; theirs is in the hover card. */
+function chipUsd(item: ItemValue, ctx: RenderContext) {
+  return item.value === null ? null : usdFor(item, ctx.settings);
+}
+
 /** Accessible one-line description, also used as the chip's label for screen readers. */
 export function describeItem(item: ItemValue, ctx: RenderContext): string {
   const compact = ctx.settings.compactNumbers;
   const parts = [
     item.name,
-    item.value === null ? 'unvalued' : `value ${formatRobux(item.value, compact)}`,
+    item.value === null ? 'no published value' : `value ${formatRobux(item.value, compact)}`,
     `RAP ${formatRobux(item.rap, compact)}`,
   ];
-  const usd = item.value === null ? null : usdFor(item, ctx.settings);
-  if (usd) parts.push(`${usd.origin === 'rate' ? 'estimated at' : 'about'} ${formatUsd(usd.value, compact)}`);
+  const usd = chipUsd(item, ctx);
+  if (usd)
+    parts.push(`USD ${formatUsd(usd.value, compact)}${usd.origin === 'rate' ? ' (estimate at fallback rate)' : ''}`);
   if (item.rare) parts.push('rare');
-  if (item.projected) parts.push('projected');
+  if (item.projected) parts.push('projected RAP');
   return parts.join(', ');
 }
 
-/** The compact value chip shown under item cards. Hover or focus it for full details. */
+/** The compact value chip shown on item cards. Hover or focus it for full details. */
 export function createChip(item: ItemValue, ctx: RenderContext): HTMLElement {
   const compact = ctx.settings.compactNumbers;
   const { host, root } = createWidget('badge', css);
   host.dataset.rolensId = String(item.id);
 
-  // RAP-only items keep to a single quiet line; their USD figure is in the hover card.
-  const usd = item.value === null ? null : usdFor(item, ctx.settings);
+  const usd = chipUsd(item, ctx);
   const amount = effectiveValue(item);
   let usdNode: HTMLElement | null = null;
   if (usd) {
-    const estimated = usd.origin === 'rate';
+    const mark = usd.origin === 'rate' ? '≈' : '';
     usdNode = figure(
-      estimated ? 'usd is-estimate' : 'usd',
-      `${estimated ? '≈' : ''}${formatUsd(usd.value, compact)}`,
-      `${estimated ? '≈' : ''}${formatUsd(usd.value, true)}`,
+      mark ? 'usd is-estimate' : 'usd',
+      mark + formatUsd(usd.value, compact),
+      mark + formatUsd(usd.value, true),
     );
-    if (estimated && ctx.settings.usdRate !== null) {
+    if (mark && ctx.settings.usdRate !== null) {
       attachTip(usdNode, ...rateTip(ctx.settings.usdRate));
+      // The chip itself is the tab stop; its label already says the figure is an estimate.
       usdNode.tabIndex = -1;
     }
   }
@@ -72,10 +77,9 @@ export function createChip(item: ItemValue, ctx: RenderContext): HTMLElement {
   chip.tabIndex = 0;
   chip.setAttribute('role', 'note');
   chip.setAttribute('aria-label', describeItem(item, ctx));
-  if (item.value === null) chip.classList.add('is-unvalued');
-  if (item.projected) chip.classList.add('is-projected');
-  if (item.rare) chip.classList.add('is-rare');
-  if (item.rare) host.dataset.rare = 'true';
+  chip.classList.toggle('is-unvalued', item.value === null);
+  chip.classList.toggle('is-projected', item.projected);
+  chip.classList.toggle('is-rare', item.rare);
   root.append(chip);
   attachHoverCard(chip, item, ctx);
   return host;

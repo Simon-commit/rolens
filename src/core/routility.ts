@@ -1,4 +1,4 @@
-import type { Confidence, Demand, ItemValue, RoutilityData, Trend } from './types';
+import { DEMANDS, TRENDS, type Confidence, type ItemValue, type RoutilityData } from './types';
 
 /**
  * RoUtility per-item details. There's no documented API; this is the endpoint
@@ -7,7 +7,6 @@ import type { Confidence, Demand, ItemValue, RoutilityData, Trend } from './type
  */
 export const ROUTILITY_ORIGIN = 'https://routility.io';
 export const routilityItemUrl = (id: number) => `${ROUTILITY_ORIGIN}/item/${id}/details`;
-export const routilityItemPage = (id: number) => `${ROUTILITY_ORIGIN}/catalog/${id}`;
 
 function num(value: unknown): number | null {
   if (typeof value === 'string' && value.trim() !== '') value = Number(value);
@@ -34,9 +33,6 @@ export function parseConfidence(value: unknown): Confidence | null {
   if (pct > 100) return null;
   return pct >= 70 ? 'high' : pct >= 40 ? 'medium' : 'low';
 }
-
-const DEMANDS: readonly Demand[] = ['terrible', 'low', 'normal', 'high', 'amazing'];
-const TRENDS: readonly Trend[] = ['lowering', 'unstable', 'stable', 'raising', 'fluctuating'];
 
 function word<T extends string>(options: readonly T[], value: unknown): T | null {
   const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';

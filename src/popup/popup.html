@@ -16,9 +16,9 @@
         </div>
       </div>
       <div class="status" id="status-card">
-        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <span class="dot" aria-hidden="true"></span>
         <div class="status-text">
-          <strong id="status">Loading…</strong>
+          <strong id="status">Loading values…</strong>
           <span id="status-sub"></span>
         </div>
         <button id="refresh" type="button" class="icon-button" aria-label="Refresh values" title="Refresh values">
@@ -35,7 +35,7 @@
         <h2 id="look-title">Appearance</h2>
         <div class="list">
           <div class="setting">
-            <span><b>RoLens theme</b><small id="theme-note">Follows Roblox</small></span>
+            <span><b>RoLens theme</b><small id="theme-note">Matches Roblox and your system</small></span>
             <div class="segmented theme-switch" role="radiogroup" aria-label="Theme">
               <button type="button" role="radio" data-theme-choice="auto">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -75,9 +75,7 @@
         <h2 id="show-title">On Roblox</h2>
         <div class="list">
           <label class="setting">
-            <span
-              ><b>Value chips</b><small>Value and USD on every limited item, with full details on hover</small></span
-            >
+            <span><b>Value chips</b><small>Value and USD on limited items, with full details on hover</small></span>
             <input type="checkbox" role="switch" data-setting="showBadges" />
           </label>
           <label class="setting">
@@ -103,7 +101,8 @@
           </div>
           <label class="setting">
             <span
-              ><b>Show USD</b><small id="usd-note">RoUtility estimates, with your own rate as a fallback</small></span
+              ><b>Show USD</b
+              ><small id="usd-note">RoUtility estimates, with the fallback rate where none is published</small></span
             >
             <input type="checkbox" role="switch" data-setting="showUsd" />
           </label>
@@ -130,7 +129,7 @@
             <span class="source-left">
               <span class="source-mark source-mark--rolimons" aria-hidden="true">R</span>
               <span
-                ><b>Rolimon's <span id="rolimons-badge" class="badge is-soon">Ready</span></b
+                ><b>Rolimon's <span id="rolimons-badge" class="badge is-idle">Connecting</span></b
                 ><small>Values, RAP, demand and trend</small></span
               >
             </span>
@@ -140,14 +139,14 @@
             <span class="source-left">
               <span class="source-mark source-mark--routility" aria-hidden="true">U</span>
               <span
-                ><b>RoUtility <span id="routility-badge" class="badge is-soon">Ready</span></b
+                ><b>RoUtility <span id="routility-badge" class="badge is-idle">Ready</span></b
                 ><small>USD estimates, confidence and an independent value</small></span
               >
             </span>
             <input id="use-routility" type="checkbox" role="switch" data-source="useRoutility" />
           </label>
         </div>
-        <p class="section-note" id="source-note">At least one source must remain enabled.</p>
+        <p class="section-note" id="source-note">At least one source must remain enabled</p>
       </section>
     </main>
 
