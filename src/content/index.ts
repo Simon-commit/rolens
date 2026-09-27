@@ -5,7 +5,9 @@ import { findItemCards, renderBadges } from './badges';
 import { isOwnNode, removeOwnNodes } from './dom';
 import { registerFont } from './fonts';
 import { renderItemPanel } from './item-panel';
-import { catalogIdFromPath, SELECTORS } from './selectors';
+import { renderProfile, resetProfiles } from './profile';
+import { catalogIdFromPath, profileIdFromPath, SELECTORS } from './selectors';
+import { renderTradeList, resetTradeList } from './trade-list';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
 import { applyThemePreference, detectTheme } from './ui/shadow';
@@ -58,6 +60,19 @@ async function update(): Promise<void> {
     if (item) renderItemPanel(document, item, ctx);
   }
   if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
+  if (settings.showTradePreviews) {
+    await renderTradeList(ctx, { loadValues: (ids) => store.load(ids), lookup, redraw: schedule });
+  }
+  const profileId = settings.showProfileValue ? profileIdFromPath(location.pathname) : null;
+  if (profileId !== null) {
+    await renderProfile(profileId, ctx, {
+      getPlayer: (userId) => send({ type: 'rolens:getPlayer', userId }),
+      loadValues: (ids) => store.load(ids),
+      loadRoutility: (ids) => store.loadRoutility(ids, (batch) => send({ type: 'rolens:getRoutility', ids: batch })),
+      lookup,
+      redraw: schedule,
+    });
+  }
 
   if (settings.useRoutility) {
     const changed = await store.loadRoutility(ids, (batch) => send({ type: 'rolens:getRoutility', ids: batch }));
@@ -113,7 +128,11 @@ function start(): void {
       settings = next;
       if (next.theme !== prev.theme) applyThemePreference(next.theme);
       if (onlyLiveKeysChanged(prev, next)) return;
-      if (next.useRolimons !== prev.useRolimons || next.useRoutility !== prev.useRoutility) store.clear();
+      if (next.useRolimons !== prev.useRolimons || next.useRoutility !== prev.useRoutility) {
+        store.clear();
+        resetProfiles();
+      }
+      if (!next.showTradePreviews) resetTradeList();
       removeOwnNodes(document);
       schedule();
     } else if (area === 'local' && Object.keys(changes).some((key) => key.startsWith('snapshot:'))) {

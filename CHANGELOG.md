@@ -5,6 +5,22 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-27
+
+### Added
+
+- **Profile inventory.** Every Roblox profile shows a RoLens box with the player's inventory value, RAP, USD, item count and rare count, with a bar showing its most valuable holdings. Clicking the box opens the full inventory: item images, copies, value, RAP and USD for every item, with search, sorting by value, RAP or name, and a rare filter. The inventory comes from Rolimon's and shows when Rolimon's last scanned it. Private, closed and unscanned inventories are explained.
+- **Trade list previews.** Each trade in the Trades list shows its net value and percentage before it is opened, with details on hover. Robux received is counted after Roblox's 30% fee.
+- Settings in the popup to turn each of these off.
+
+### Changed
+
+- The fallback USD rate now defaults to $3 per 1,000 Robux. A rate you cleared stays cleared.
+
+### Security
+
+- RoLens now makes read-only requests to Roblox: item images from the public thumbnails API without cookies, and, for trade list previews, your own trades with your session. All of them are in one file, `src/content/roblox-api.ts`. SECURITY.md and PRIVACY.md describe them in full.
+
 ## [0.5.0] - 2026-09-27
 
 A full revision of the code base and its wording, with no change to how chips sit on Roblox's pages.

@@ -15,9 +15,11 @@ describe('normaliseSettings', () => {
 
   it('accepts a sane USD rate only', () => {
     expect(normaliseSettings({ usdRate: 3.5 }).usdRate).toBe(3.5);
-    expect(normaliseSettings({ usdRate: -1 }).usdRate).toBeNull();
-    expect(normaliseSettings({ usdRate: '3' }).usdRate).toBeNull();
-    expect(normaliseSettings({ usdRate: 1e9 }).usdRate).toBeNull();
+    expect(normaliseSettings({ usdRate: -1 }).usdRate).toBe(3);
+    expect(normaliseSettings({ usdRate: '3' }).usdRate).toBe(3);
+    expect(normaliseSettings({ usdRate: 1e9 }).usdRate).toBe(3);
+    // Clearing the rate in the popup turns estimates off.
+    expect(normaliseSettings({ usdRate: null }).usdRate).toBeNull();
   });
 
   it('keeps valid keys and drops invalid ones', () => {

@@ -1,3 +1,4 @@
+import type { PlayerInventory } from './player';
 import type { RoutilityStatus } from './routility-cache';
 import type { ItemValue, RoutilityData, SourceId } from './types';
 
@@ -5,6 +6,7 @@ import type { ItemValue, RoutilityData, SourceId } from './types';
 export type Request =
   | { type: 'rolens:getItems'; ids: number[] }
   | { type: 'rolens:getRoutility'; ids: number[] }
+  | { type: 'rolens:getPlayer'; userId: number }
   | { type: 'rolens:getStatus' }
   | { type: 'rolens:refresh' };
 
@@ -22,6 +24,9 @@ export interface RoutilityResponse {
   status: RoutilityStatus;
 }
 
+/** A player's inventory, or why it couldn't be fetched. */
+export type PlayerResponse = { inventory: PlayerInventory } | { error: string };
+
 export interface ItemsResponse {
   items: Record<string, ItemValue>;
   status: CacheStatus;
@@ -31,12 +36,18 @@ export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems'
   ? ItemsResponse
   : R extends { type: 'rolens:getRoutility' }
     ? RoutilityResponse
-    : CacheStatus;
+    : R extends { type: 'rolens:getPlayer' }
+      ? PlayerResponse
+      : CacheStatus;
 
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
   const { type, ids } = message as { type?: unknown; ids?: unknown };
   if (type === 'rolens:getStatus' || type === 'rolens:refresh') return true;
+  if (type === 'rolens:getPlayer') {
+    const { userId } = message as { userId?: unknown };
+    return typeof userId === 'number' && Number.isSafeInteger(userId) && userId > 0;
+  }
   return (
     (type === 'rolens:getItems' || type === 'rolens:getRoutility') &&
     Array.isArray(ids) &&

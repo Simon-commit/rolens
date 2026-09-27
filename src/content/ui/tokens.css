@@ -35,6 +35,14 @@
   --rl-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -6px rgba(15, 23, 42, 0.12);
   --rl-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.06), 0 24px 48px -12px rgba(15, 23, 42, 0.25);
 
+  /* Categorical colours, for the inventory composition bar. */
+  --rl-series-1: #10b981;
+  --rl-series-2: #06b6d4;
+  --rl-series-3: #6366f1;
+  --rl-series-4: #f59e0b;
+  --rl-series-5: #ec4899;
+  --rl-series-6: #8b5cf6;
+
   --rl-radius-sm: 6px;
   --rl-radius: 12px;
   --rl-radius-lg: 16px;
@@ -76,6 +84,13 @@
   --rl-rare-text: #fcd34d;
   --rl-rare-soft: rgba(252, 211, 77, 0.12);
   --rl-rare-line: rgba(252, 211, 77, 0.45);
+
+  --rl-series-1: #34d399;
+  --rl-series-2: #22d3ee;
+  --rl-series-3: #818cf8;
+  --rl-series-4: #fbbf24;
+  --rl-series-5: #f472b6;
+  --rl-series-6: #a78bfa;
 
   --rl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -6px rgba(0, 0, 0, 0.5);

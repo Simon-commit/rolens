@@ -3,9 +3,11 @@ import {
   isRequest,
   type CacheStatus,
   type ItemsResponse,
+  type PlayerResponse,
   type Request,
   type RoutilityResponse,
 } from '../core/messages';
+import { PlayerCache } from '../core/player-cache';
 import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
 import { fetchRolimonsItems } from '../core/rolimons';
@@ -38,14 +40,22 @@ const routility = new RoutilityCache(fetch.bind(globalThis), {
   },
 });
 
+const players = new PlayerCache(fetch.bind(globalThis));
+
 async function currentSettings(): Promise<Settings> {
   const { settings } = await chrome.storage.sync.get('settings');
   return normaliseSettings(settings);
 }
 
-async function handle(request: Request): Promise<ItemsResponse | RoutilityResponse | CacheStatus> {
+async function handle(request: Request): Promise<ItemsResponse | RoutilityResponse | PlayerResponse | CacheStatus> {
   if (request.type === 'rolens:getRoutility') {
     return { items: await routility.get(request.ids), status: routility.status() };
+  }
+  if (request.type === 'rolens:getPlayer') {
+    return players.get(request.userId).then(
+      (inventory) => ({ inventory }),
+      (error: unknown) => ({ error: error instanceof Error ? error.message : String(error) }),
+    );
   }
   switch (request.type) {
     case 'rolens:getItems': {

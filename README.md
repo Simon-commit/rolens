@@ -20,13 +20,16 @@ RoLens is a Chrome extension for Roblox limited item traders. It brings market d
 [Rolimon's](https://www.rolimons.com) and [RoUtility](https://routility.io) onto the Roblox
 website, so every trade can be evaluated without leaving the page.
 
-RoLens is designed to be safe to install. It never accesses your Roblox account, requests only
-the permissions it needs, and every line of shipped code is published in this repository.
+RoLens is designed to be safe to install. It never reads your cookies or changes anything on
+your Roblox account, requests only the permissions it needs, and every line of shipped code is
+published in this repository.
 
 ## Features
 
 - **Value chips** on limited items across Roblox, showing value, USD where available and markers for rare and projected items. Hovering or focusing a chip opens a detailed card with RAP, demand, trend and a comparison of RAP with value.
 - **Trade analysis** in a single compact bar on the trades page: verdict and percentage, net value, RAP and USD difference (shown in red when negative), warnings, a balance indicator and a one-click shareable summary. The bar expands to show per-side detail, and each side's heading shows its own total.
+- **Profile inventory.** Every profile shows the player's inventory value, RAP, USD and item count, with a bar showing what the inventory is made of. One click opens the full inventory with search, sorting and a rare filter.
+- **Trade list previews.** Each trade in your Trades list shows its net value before you open it. Trades are read from Roblox only while they are on screen, one at a time.
 - **Item page card** on catalog pages with value, USD and confidence, RAP, demand, trend and tags, with links to the item on each enabled source.
 - **Two data sources.** Rolimon's and RoUtility can be used together or individually. With both enabled, RoLens shows RoUtility's value beside Rolimon's and flags items where the two differ by 15% or more.
 - **USD estimates** from RoUtility, with confidence where RoUtility provides it. A fallback rate can be set for items without an estimate; figures calculated from it are clearly marked as estimates.
@@ -38,15 +41,15 @@ the permissions it needs, and every line of shipped code is published in this re
 
 ## Security and privacy
 
-| Commitment               | How it is enforced                                                                                                                                                                |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No account access        | RoLens never reads cookies, never calls Roblox APIs and does not request the `cookies` permission.                                                                                |
-| Minimal permissions      | `storage`, plus network access to `api.rolimons.com` and `routility.io` only. See [`src/manifest.json`](src/manifest.json).                                                       |
-| No other network access  | A strict Content Security Policy limits extension pages to `api.rolimons.com` and `routility.io`. Only the background service worker makes requests, and it never sends cookies.  |
-| No remote code           | Manifest V3 prohibits remotely hosted code, and the build ships unminified bundles that can be reviewed directly.                                                                 |
-| No markup injection      | Remote data is only ever written with `textContent`. Lint rules prohibit `innerHTML`, `eval` and similar APIs ([`eslint.config.js`](eslint.config.js)), and a test verifies this. |
-| No analytics or tracking | RoLens contains no telemetry. See [PRIVACY.md](PRIVACY.md).                                                                                                                       |
-| Verifiable builds        | Releases are built by GitHub Actions from a tagged commit ([`release.yml`](.github/workflows/release.yml)).                                                                       |
+| Commitment               | How it is enforced                                                                                                                                                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No account changes       | RoLens never reads cookies and does not request the `cookies` permission. Its only use of your Roblox session is reading your own trades for list previews, which can be turned off. It never sends, accepts or declines a trade.                                      |
+| Minimal permissions      | `storage`, plus network access to `api.rolimons.com` and `routility.io` only. See [`src/manifest.json`](src/manifest.json).                                                                                                                                            |
+| No other network access  | A strict Content Security Policy limits extension pages to `api.rolimons.com` and `routility.io`. The service worker makes every request to those sources, without cookies. Requests to Roblox are made from one module, [`roblox-api.ts`](src/content/roblox-api.ts). |
+| No remote code           | Manifest V3 prohibits remotely hosted code, and the build ships unminified bundles that can be reviewed directly.                                                                                                                                                      |
+| No markup injection      | Remote data is only ever written with `textContent`. Lint rules prohibit `innerHTML`, `eval` and similar APIs ([`eslint.config.js`](eslint.config.js)), and a test verifies this.                                                                                      |
+| No analytics or tracking | RoLens contains no telemetry. See [PRIVACY.md](PRIVACY.md).                                                                                                                                                                                                            |
+| Verifiable builds        | Releases are built by GitHub Actions from a tagged commit ([`release.yml`](.github/workflows/release.yml)).                                                                                                                                                            |
 
 To report a vulnerability, please see [SECURITY.md](SECURITY.md).
 
@@ -77,17 +80,19 @@ npm run package      # build and create a release zip
 
 ```
 src/
-  background/   service worker: fetches and caches data (the only code with network access)
+  background/   service worker: fetches and caches data from Rolimon's and RoUtility
   content/      runs on roblox.com: finds item cards and trades, and renders RoLens widgets
   popup/        toolbar popup: data status, sources and display settings
   core/         shared logic, fully unit tested: parsing, caching, formatting and sources
 ```
 
-Content scripts never access the network. They request data for the items on the page from the
-service worker, which responds from a local cache.
+Content scripts never contact Rolimon's or RoUtility. They request data for the items on the
+page from the service worker, which responds from a local cache.
 
 - **Rolimon's:** the full value table is refreshed at most every 10 minutes, and never more than once per minute, in line with Rolimon's rate limit.
 - **RoUtility:** data is requested per item, only for items on screen, with at most three requests at a time. Results are cached for 30 minutes. Requests pause for five minutes if RoUtility limits or declines them.
+- **Player inventories:** requested from Rolimon's only for the profile being viewed, at most one every two seconds, and reused for five minutes. Only the 24 most valuable items on a profile request RoUtility estimates; the rest use the fallback rate and are marked as estimates.
+- **Roblox:** [`roblox-api.ts`](src/content/roblox-api.ts) is the only code that contacts Roblox. Item images come from Roblox's public thumbnails API without cookies. Trade list previews read `trades.roblox.com` with your session, using GET requests only, one every 1.2 seconds, and pause for a minute if Roblox limits them.
 
 All assumptions about Roblox's page structure are kept in
 [`src/content/selectors.ts`](src/content/selectors.ts), so a change to the Roblox website
@@ -95,10 +100,10 @@ requires changes to a single file.
 
 ## Data sources
 
-| Source                                | Provides                                                                       | Notes                                                                                         |
-| ------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| [Rolimon's](https://www.rolimons.com) | Values, RAP, demand, trend, and projected, hyped and rare flags                | Public item details API.                                                                      |
-| [RoUtility](https://routility.io)     | USD estimates, confidence, an independent value, copies, RAP, demand and trend | Per-item endpoint used by RoUtility's own website. It is not a documented API and may change. |
+| Source                                | Provides                                                                            | Notes                                                                                         |
+| ------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Rolimon's](https://www.rolimons.com) | Values, RAP, demand, trend, and projected, hyped and rare flags; player inventories | Public item details and player assets APIs.                                                   |
+| [RoUtility](https://routility.io)     | USD estimates, confidence, an independent value, copies, RAP, demand and trend      | Per-item endpoint used by RoUtility's own website. It is not a documented API and may change. |
 
 Either source can be disabled in the popup, and at least one always remains enabled. Values are
 community estimates, not guaranteed prices. The market can move quickly, so please use your own
@@ -108,7 +113,6 @@ judgement when trading.
 
 - Live totals on the trade creation page as items are added
 - Robux in trades, counted after Roblox's 30% fee
-- Total inventory value on profiles
 - Firefox support
 
 Suggestions and bug reports are welcome in [Issues](https://github.com/Simon-commit/rolens/issues).

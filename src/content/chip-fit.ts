@@ -57,7 +57,7 @@ function largestThumbnail(card: Element): { node: HTMLElement; rect: DOMRect } |
  * Makes `target` the box the chip is positioned in. Roblox's own positioning is left
  * alone; only an unpositioned (static) element is made relative, which changes no size.
  */
-function makeAnchor(target: HTMLElement): void {
+export function makeAnchor(target: HTMLElement): void {
   if (target.hasAttribute(ANCHOR_ATTR)) return;
   if (getComputedStyle(target).position === 'static') {
     target.style.setProperty('position', 'relative');

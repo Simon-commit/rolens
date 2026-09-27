@@ -1,0 +1,164 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { parseTradeList, parseTradeOffers } from '../src/content/roblox-api';
+import { profileIdFromPath } from '../src/content/selectors';
+import {
+  activeTradeList,
+  renderTradeList,
+  resetTradeList,
+  rowMatches,
+  signedInUserId,
+} from '../src/content/trade-list';
+import type { RenderContext } from '../src/content/ui/context';
+import { renderProfileBox } from '../src/content/ui/profile-box';
+import { formatRobux } from '../src/core/format';
+import { summariseInventory } from '../src/core/inventory';
+import { DEFAULT_SETTINGS } from '../src/core/settings';
+import { item } from './fixtures/items';
+
+const ctx: RenderContext = { settings: { ...DEFAULT_SETTINGS, usdRate: null }, status: null };
+const setBody = (html: string) => {
+  document.body.innerHTML = html; // eslint-disable-line no-restricted-properties
+};
+
+describe('Roblox trade parsers', () => {
+  it('reads a page of the trades list', () => {
+    expect(
+      parseTradeList({
+        nextPageCursor: 'abc',
+        data: [{ id: 5, user: { id: 2, name: 'kyrie', displayName: 'Kyrie' } }, { id: 'x' }],
+      }),
+    ).toEqual({ rows: [{ id: 5, partner: { name: 'kyrie', displayName: 'Kyrie' } }], next: 'abc' });
+    expect(parseTradeList({ error: 'nope' })).toBeNull();
+  });
+
+  it("reads both API versions from the signed-in user's side", () => {
+    const v1 = {
+      offers: [
+        { user: { id: 9 }, userAssets: [{ assetId: 3 }], robux: 100 },
+        { user: { id: 1 }, userAssets: [{ assetId: 1 }, { assetId: 2 }], robux: 0 },
+      ],
+    };
+    expect(parseTradeOffers(v1, 1)).toEqual({
+      give: { itemIds: [1, 2], robux: 0 },
+      receive: { itemIds: [3], robux: 100 },
+    });
+    const v2 = {
+      participantAOffer: { user: { id: 1 }, items: [{ itemTarget: { targetId: '4' } }], robux: 0 },
+      participantBOffer: { user: { id: 9 }, items: [{ itemTarget: { targetId: '5' } }], robux: 50 },
+    };
+    expect(parseTradeOffers(v2, 1)).toEqual({ give: { itemIds: [4], robux: 0 }, receive: { itemIds: [5], robux: 50 } });
+    expect(parseTradeOffers(v2, 77)).toBeNull();
+  });
+});
+
+describe('Trades list', () => {
+  const rows = (names: string[]) =>
+    names.map((name) => `<div class="trade-row"><span class="paired-name">${name}</span></div>`).join('');
+
+  beforeEach(() => {
+    resetTradeList();
+    setBody('');
+    document.head.querySelector('meta[name="user-data"]')?.remove();
+  });
+
+  it('knows the list and user from the page', () => {
+    setBody('<div class="trades-list-header"><span class="rbx-tab active">Outbound</span></div>');
+    expect(activeTradeList()).toBe('outbound');
+    expect(signedInUserId()).toBeNull();
+    const meta = document.createElement('meta');
+    meta.name = 'user-data';
+    meta.dataset.userid = '42';
+    document.head.append(meta);
+    expect(signedInUserId()).toBe(42);
+  });
+
+  it('matches rows to trades by partner', () => {
+    setBody(rows(['Kyrie @kyrie_trades']));
+    const row = document.querySelector('.trade-row')!;
+    expect(rowMatches(row, { id: 1, partner: { name: 'kyrie_trades', displayName: 'Kyrie' } })).toBe(true);
+    expect(rowMatches(row, { id: 1, partner: { name: 'nova', displayName: 'Nova' } })).toBe(false);
+  });
+
+  it('previews trades in view and skips rows that do not match', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'user-data';
+    meta.dataset.userid = '1';
+    document.head.append(meta);
+    setBody(rows(['Kyrie', 'Someone else']));
+    // jsdom has no layout: treat every row as in view.
+    globalThis.IntersectionObserver = class {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+      observe(target: Element) {
+        this.callback([{ target, isIntersecting: true } as IntersectionObserverEntry], this as never);
+      }
+    } as unknown as typeof IntersectionObserver;
+    const table = new Map([
+      [1, item({ id: 1, rap: 900, value: 1000 })],
+      [2, item({ id: 2, rap: 1400, value: 1500 })],
+    ]);
+    const requested: number[] = [];
+    let redraws = 0;
+    const deps = {
+      loadValues: () => Promise.resolve(),
+      lookup: (id: number) => table.get(id) ?? null,
+      redraw: () => (redraws += 1),
+      fetchList: () =>
+        Promise.resolve({
+          rows: [
+            { id: 10, partner: { name: 'kyrie', displayName: 'Kyrie' } },
+            { id: 11, partner: { name: 'nova', displayName: 'Nova' } },
+          ],
+          next: null,
+        }),
+      fetchOffers: (id: number) => {
+        requested.push(id);
+        return Promise.resolve({ give: { itemIds: [1], robux: 0 }, receive: { itemIds: [2], robux: 0 } });
+      },
+    };
+    await renderTradeList(ctx, deps);
+    await Promise.resolve();
+    await renderTradeList(ctx, deps);
+    await Promise.resolve();
+    await renderTradeList(ctx, deps);
+    expect(requested).toEqual([10]);
+    expect(redraws).toBeGreaterThan(0);
+    const [first, second] = document.querySelectorAll('.trade-row');
+    const pill = first!.querySelector('[data-rolens="trade-preview"]')?.shadowRoot?.querySelector('.pill');
+    expect(pill?.getAttribute('data-verdict')).toBe('win');
+    expect(pill?.textContent).toContain('+500');
+    expect(second!.querySelector('[data-rolens="trade-preview"]')).toBeNull();
+  });
+});
+
+describe('Profile', () => {
+  it('reads the user id of profile pages only', () => {
+    expect(profileIdFromPath('/users/156/profile')).toBe(156);
+    expect(profileIdFromPath('/users/156/inventory')).toBeNull();
+    expect(profileIdFromPath('/users/abc/profile')).toBeNull();
+  });
+
+  it('shows totals, opens on Enter and explains every other state', () => {
+    const summary = summariseInventory(
+      { '1': 2 },
+      () => item({ id: 1, rap: 900, value: 1000, rare: true }),
+      ctx.settings,
+    );
+    let opened = 0;
+    const actions = { open: () => (opened += 1), retry: () => {} };
+    const host = renderProfileBox(null, { kind: 'ready', summary, scannedAt: null }, ctx, actions);
+    const box = host.shadowRoot!.querySelector<HTMLElement>('.box')!;
+    expect(box.getAttribute('role')).toBe('button');
+    expect(host.shadowRoot!.textContent).toContain(formatRobux(2000, true));
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(opened).toBe(1);
+
+    renderProfileBox(host, { kind: 'private' }, ctx, actions);
+    expect(box.getAttribute('role')).toBeNull();
+    expect(host.shadowRoot!.textContent).toContain('Inventory is private');
+    box.click();
+    expect(opened).toBe(1);
+
+    renderProfileBox(host, { kind: 'error', message: "Rolimon's could not be reached." }, ctx, actions);
+    expect(host.shadowRoot!.querySelector('.retry')).not.toBeNull();
+  });
+});

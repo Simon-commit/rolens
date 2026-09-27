@@ -21,6 +21,19 @@ export const SELECTORS = {
   itemPageTitle: '#item-container h1, .item-details-name-row h1, h1',
   /** The title's row; the stats card goes after it so it sits under any subtitle. */
   itemPageTitleRow: '.item-details-name-row, .item-name-container',
+  /** One trade in the list on the Trades page (partner, status and date). */
+  tradeRow: '.trade-row',
+  /** The selected list on the Trades page: a tab, or the type dropdown's current option. */
+  tradeListTab:
+    '.trades-list-header .rbx-tab.active, .trade-type-selector .rbx-selection-label, [role="tab"][aria-selected="true"], .rbx-tab.active',
+  /** Roblox's own record of the signed-in user. */
+  userData: 'meta[name="user-data"]',
+  /** The profile's header card; the RoLens box goes directly after it. */
+  profileHeader: '.profile-header, #profile-header-container, .profile-header-container, [class*="profile-header"]',
+  /** Where the box goes when no header matches: the top of the profile's content. */
+  profileContainer: '.profile-container, #profile-container, .profile-platform-container, #content',
+  /** The player's name in the header, display name first. */
+  profileName: '.profile-display-name, .profile-name, .profile-header-title h1, .header-title h1, h1',
 } as const;
 
 const CATALOG_PATH = /^\/catalog\/(\d+)(?:\/|$)/;
@@ -35,6 +48,16 @@ export function catalogIdFromHref(href: string, base = 'https://www.roblox.com/'
   }
   if (!/(^|\.)roblox\.com$/.test(url.hostname)) return null;
   const match = CATALOG_PATH.exec(url.pathname);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+const PROFILE_PATH = /^\/users\/(\d+)\/profile\/?$/;
+
+/** The user id of a profile page, or null on any other page. */
+export function profileIdFromPath(pathname: string): number | null {
+  const match = PROFILE_PATH.exec(pathname);
   if (!match) return null;
   const id = Number(match[1]);
   return Number.isSafeInteger(id) && id > 0 ? id : null;

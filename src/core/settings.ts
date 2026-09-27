@@ -16,6 +16,13 @@ export interface Settings {
   showTradeTotals: boolean;
   /** Stats panel on catalog item pages. */
   showItemPanel: boolean;
+  /** Inventory value on player profiles, with the full inventory on demand. */
+  showProfileValue: boolean;
+  /**
+   * Value previews on every row of the trades list. Reads trade details from Roblox with
+   * the user's own session, read-only.
+   */
+  showTradePreviews: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -25,8 +32,8 @@ export interface Settings {
   /** Fetch USD, confidence and a second value from RoUtility for items on screen. */
   useRoutility: boolean;
   /**
-   * The user's own trading rate in USD per 1,000 value, used for USD estimates when no
-   * source provides one. Null means "don't estimate".
+   * The fallback rate in USD per 1,000 value, used for USD estimates when no source
+   * provides one. Defaults to $3, the prevailing market reference. Null means "don't estimate".
    */
   usdRate: number | null;
 }
@@ -38,11 +45,13 @@ export const DEFAULT_SETTINGS: Settings = {
   showBadges: true,
   showTradeTotals: true,
   showItemPanel: true,
+  showProfileValue: true,
+  showTradePreviews: true,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
   useRoutility: true,
-  usdRate: null,
+  usdRate: 3,
 };
 
 /** Merges stored settings over defaults, dropping unknown or mistyped keys. */
@@ -56,6 +65,8 @@ export function normaliseSettings(stored: unknown): Settings {
     'showBadges',
     'showTradeTotals',
     'showItemPanel',
+    'showProfileValue',
+    'showTradePreviews',
     'compactNumbers',
     'showUsd',
     'useRolimons',
@@ -65,7 +76,8 @@ export function normaliseSettings(stored: unknown): Settings {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }
   if (!result.useRolimons && !result.useRoutility) result.useRolimons = true;
-  if (typeof raw.usdRate === 'number' && Number.isFinite(raw.usdRate) && raw.usdRate > 0 && raw.usdRate < 1000) {
+  if (raw.usdRate === null) result.usdRate = null;
+  else if (typeof raw.usdRate === 'number' && Number.isFinite(raw.usdRate) && raw.usdRate > 0 && raw.usdRate < 1000) {
     result.usdRate = raw.usdRate;
   }
   return result;

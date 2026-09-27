@@ -14,10 +14,14 @@ You can expect a response within a few days.
 
 RoLens will never:
 
-- Read Roblox cookies or session tokens, or call Roblox APIs on your behalf.
-- Send, accept or decline trades.
+- Read Roblox cookies or session tokens.
+- Change anything on your Roblox account. RoLens makes read-only requests to Roblox and never sends, accepts, declines or counters a trade.
+- Call Roblox APIs with your session for anything other than reading your own trades for the optional trade list previews.
 - Load or run code from the network.
 - Collect analytics or send any data about you anywhere.
+
+All requests to Roblox are made from [`src/content/roblox-api.ts`](src/content/roblox-api.ts), which
+contains only GET requests. Any change to that file should be reviewed with this list in mind.
 
 Any change to `permissions` or `host_permissions` in `src/manifest.json` is listed in the
 changelog and requires a stated justification in its pull request.

@@ -17,14 +17,14 @@ describe('usdFor', () => {
   });
 
   it('shows nothing without a rate or when USD is off', () => {
-    expect(usdFor(item({ id: 1 }), DEFAULT_SETTINGS)).toBeNull();
+    expect(usdFor(item({ id: 1 }), { ...DEFAULT_SETTINGS, usdRate: null })).toBeNull();
     expect(usdFor(item({ id: 1, usd: source }), { ...DEFAULT_SETTINGS, showUsd: false })).toBeNull();
   });
 });
 
 describe('totalUsd', () => {
   it('sums, but refuses partial totals', () => {
-    const settings = DEFAULT_SETTINGS;
+    const settings = { ...DEFAULT_SETTINGS, usdRate: null };
     expect(totalUsd([item({ id: 1, usd: source }), item({ id: 2, usd: source })], settings)).toEqual({
       value: 100,
       estimated: false,

@@ -27,7 +27,7 @@ npm run build && npm run test:e2e
 ## Ground rules for code
 
 - Remote data is untrusted: render it with `textContent` or the `el()` helper, never HTML strings.
-- Only the service worker talks to the network.
+- Only the service worker talks to Rolimon's and RoUtility, and only `src/content/roblox-api.ts` talks to Roblox. Requests to Roblox must be read-only GET requests.
 - No new runtime dependencies without discussion; the extension currently has none.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, `chore:`).

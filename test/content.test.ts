@@ -19,7 +19,8 @@ const table = new Map([
   [3, item({ id: 3, name: 'Projected Hat', rap: 5000, value: 4000, projected: true, rare: true })],
 ]);
 const lookup = (id: number) => table.get(id) ?? null;
-const ctx: RenderContext = { settings: DEFAULT_SETTINGS, status: null };
+// Without a fallback rate, so USD appears only where a source provides it.
+const ctx: RenderContext = { settings: { ...DEFAULT_SETTINGS, usdRate: null }, status: null };
 const withRate: RenderContext = { ...ctx, settings: { ...DEFAULT_SETTINGS, usdRate: 4 } };
 
 const shadowText = (host: Element | null | undefined) => host?.shadowRoot?.textContent ?? '';
