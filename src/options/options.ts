@@ -10,6 +10,7 @@ import {
   ROBLOX_TRADES_ORIGIN,
   type AlertSettings,
 } from '../core/alerts';
+import type { CheckResult } from '../background/inbound-alerts';
 import { formatAge } from '../core/format';
 import { send } from '../core/messages';
 import { normaliseSettings } from '../core/settings';
@@ -191,13 +192,39 @@ function renderTest(): void {
   });
 }
 
+function describeResult(result: CheckResult): string {
+  if (result.primed) return 'Trades already in your inbound list were noted. New trades from now on will alert.';
+  if (!result.newTrades) return 'No new inbound trades since the last check.';
+  const parts = [`${result.newTrades} new ${result.newTrades === 1 ? 'trade' : 'trades'}`];
+  if (result.alerted) parts.push(`${result.alerted} alerted`);
+  if (result.filtered) parts.push(`${result.filtered} below your filters`);
+  return `${parts.join(', ')}.`;
+}
+
+function renderCheckNow(): void {
+  const button = $<HTMLButtonElement>('#check-now');
+  button.addEventListener('click', () => {
+    button.disabled = true;
+    button.textContent = 'Checking…';
+    void send({ type: 'rolens:checkAlerts' })
+      .catch(() => undefined)
+      .then(async (response) => {
+        button.disabled = false;
+        button.textContent = 'Check now';
+        await renderState();
+        if (!response) $('#check-detail').textContent = 'RoLens could not run the check. Please reload the extension.';
+      });
+  });
+}
+
 async function renderState(): Promise<void> {
   const row = $('#check-row');
   row.hidden = !alerts.enabled;
   if (!alerts.enabled) return;
   const stored = await chrome.storage.local.get(ALERT_STATE_KEY);
   const state = stored[ALERT_STATE_KEY] as
-    { lastCheck?: number | null; lastAlert?: number | null; lastError?: string | null } | undefined;
+    | { lastCheck?: number | null; lastAlert?: number | null; lastError?: string | null; lastResult?: CheckResult }
+    | undefined;
   const title = $('#check-status');
   const detail = $('#check-detail');
   if (state?.lastError) {
@@ -207,11 +234,13 @@ async function renderState(): Promise<void> {
   } else if (state?.lastCheck) {
     row.dataset.state = 'ok';
     title.textContent = 'Watching your inbound trades';
-    detail.textContent = `Last checked ${formatAge(state.lastCheck)}${state.lastAlert ? ` · last alert ${formatAge(state.lastAlert)}` : ''}`;
+    const summary = state.lastResult ? ` ${describeResult(state.lastResult)}` : '';
+    detail.textContent = `Last checked ${formatAge(state.lastCheck)}${state.lastAlert ? ` · last alert ${formatAge(state.lastAlert)}` : ''}.${summary}`;
   } else {
     row.dataset.state = 'waiting';
     title.textContent = 'Waiting for the first check';
-    detail.textContent = 'Trades already in your inbound list will not alert; only new ones will.';
+    detail.textContent =
+      'Trades already in your inbound list will not alert; only new ones will. Press Check now to start.';
   }
 }
 
@@ -227,6 +256,7 @@ async function main(): Promise<void> {
   renderNtfy();
   renderFilters();
   renderTest();
+  renderCheckNow();
   await renderState();
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes[ALERT_STATE_KEY]) void renderState();

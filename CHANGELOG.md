@@ -5,6 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-27
+
+### Fixed
+
+- Inbound trade alerts could stay silent. Chrome may leave the Roblox session off requests the extension makes in the background, so Roblox refused them and RoLens recorded nothing. Checks now go through an open Roblox tab when there is one, as the Trades page previews do, and fall back to the background request otherwise. Alerts are also scheduled again when Chrome starts.
+
+### Added
+
+- A Check now button on the alerts page, and a clear explanation there when a check fails, such as Roblox refusing the request or a destination RoLens may not reach. The popup shows when alerts need attention.
+
 ## [0.8.0] - 2026-09-27
 
 ### Added

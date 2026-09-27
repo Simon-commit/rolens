@@ -1,5 +1,5 @@
 import { STALE_AFTER_MS } from '../core/cache';
-import { ALERTS_KEY, normaliseAlerts } from '../core/alerts';
+import { ALERT_STATE_KEY, ALERTS_KEY, normaliseAlerts } from '../core/alerts';
 import { formatAge } from '../core/format';
 import { send, type CacheStatus } from '../core/messages';
 import { ROUTILITY_BACKOFF_MS } from '../core/routility-cache';
@@ -209,15 +209,18 @@ async function refreshStatus(): Promise<void> {
 
 /** Summarises the alert setup; the options page holds the details. */
 async function renderAlerts(): Promise<void> {
-  const stored = await chrome.storage.local.get(ALERTS_KEY);
+  const stored = await chrome.storage.local.get([ALERTS_KEY, ALERT_STATE_KEY]);
   const alerts = normaliseAlerts(stored[ALERTS_KEY]);
+  const failing = Boolean((stored[ALERT_STATE_KEY] as { lastError?: string | null } | undefined)?.lastError);
   const channels = [
     alerts.desktop ? 'desktop' : '',
     alerts.discordWebhook ? 'Discord' : '',
     alerts.ntfyTopic ? 'phone' : '',
   ].filter(Boolean);
   $('#alerts-note').textContent = alerts.enabled
-    ? `On · ${channels.length ? channels.join(', ') : 'no destination set'}`
+    ? failing
+      ? 'Needs attention: open Manage for details'
+      : `On · ${channels.length ? channels.join(', ') : 'no destination set'}`
     : 'Notifies you of new inbound trades on your phone, Discord or desktop';
   const open = $<HTMLButtonElement>('#alerts-open');
   open.textContent = alerts.enabled ? 'Manage' : 'Set up';

@@ -20,7 +20,15 @@ import {
 import { setNumberSeparators } from '../core/format';
 import { balanceTrade, totalSide } from '../core/trade';
 import { effectiveValue, type ItemValue } from '../core/types';
-import { fetchTradeList, fetchTradeOffersWith, tradesPaused, type TradeSide } from '../content/roblox-api';
+import {
+  fetchTradeList,
+  fetchTradeOffersWith,
+  lastTradeFailure,
+  tradesPaused,
+  type TradeOffers,
+  type TradeSide,
+  type TradeSummaryRow,
+} from '../content/roblox-api';
 import { ROBUX_AFTER_FEE } from '../content/trade-values';
 
 /*
@@ -41,6 +49,7 @@ export interface AlertState {
   lastCheck: number | null;
   lastAlert: number | null;
   lastError: string | null;
+  lastResult?: CheckResult;
 }
 
 const EMPTY_STATE: AlertState = {
@@ -155,7 +164,8 @@ export async function deliver(alert: TradeAlert, settings: AlertSettings): Promi
       failures.push('Chrome notification');
     }
   }
-  if (settings.discordWebhook && (await hasOrigins([DISCORD_ORIGIN]))) {
+  if (settings.discordWebhook && !(await hasOrigins([DISCORD_ORIGIN]))) failures.push('Discord (access not allowed)');
+  else if (settings.discordWebhook) {
     const response = await fetch(settings.discordWebhook, {
       method: 'POST',
       credentials: 'omit',
@@ -164,7 +174,8 @@ export async function deliver(alert: TradeAlert, settings: AlertSettings): Promi
     }).catch(() => null);
     if (!response?.ok) failures.push(`Discord${response ? ` (HTTP ${response.status})` : ''}`);
   }
-  if (settings.ntfyTopic && (await hasOrigins([NTFY_ORIGIN]))) {
+  if (settings.ntfyTopic && !(await hasOrigins([NTFY_ORIGIN]))) failures.push('ntfy (access not allowed)');
+  else if (settings.ntfyTopic) {
     const { url, init } = ntfyRequest(alert, settings.ntfyTopic);
     const response = await fetch(url, init).catch(() => null);
     if (!response?.ok) failures.push(`ntfy${response ? ` (HTTP ${response.status})` : ''}`);
@@ -180,63 +191,118 @@ async function applyNumberFormat(): Promise<void> {
   }
 }
 
-let running = false;
+/** Reads inbound trades for a check; the service worker passes one that prefers an open Roblox tab. */
+export interface InboundReader {
+  list(): Promise<{ rows: TradeSummaryRow[] } | null>;
+  offers(tradeId: number, partnerId: number): Promise<TradeOffers | null>;
+  /** Why the last read failed, such as "HTTP 401". */
+  failure(): string | null;
+}
 
-/** One check of the inbound trades list. */
-export async function checkInbound(values: AlertValues): Promise<void> {
-  if (running) return;
-  running = true;
-  try {
-    const settings = await readAlerts();
-    if (!settings.enabled || !(await hasOrigins([ROBLOX_TRADES_ORIGIN])) || tradesPaused()) return;
-    const state = await readAlertState();
-    const { robloxUserId } = await chrome.storage.local.get('robloxUserId');
-    const userId = typeof robloxUserId === 'number' ? robloxUserId : null;
-    if (userId !== state.userId) {
-      // Another Roblox account: its existing trades are not new.
-      Object.assign(state, { userId, seen: [], primed: false });
-    }
+/** Reads directly from the service worker, with the session Chrome attaches for trades.roblox.com. */
+export const directReader: InboundReader = {
+  list: () => fetchTradeList('inbound', null),
+  offers: (tradeId, partnerId) => fetchTradeOffersWith(tradeId, partnerId),
+  failure: lastTradeFailure,
+};
 
-    const page = await fetchTradeList('inbound', null);
-    state.lastCheck = Date.now();
-    if (!page) {
-      state.lastError = tradesPaused()
-        ? 'Roblox is limiting requests. RoLens will check again shortly.'
-        : 'Roblox did not return your inbound trades. Please make sure you are signed in to Roblox in this browser.';
-      await saveState(state);
-      return;
-    }
-    state.lastError = null;
-    const seen = new Set(state.seen);
-    const fresh = page.rows.filter((row) => !seen.has(row.id));
-    if (!state.primed) {
-      state.seen = [...page.rows.map((row) => row.id), ...state.seen];
-      state.primed = true;
-      await saveState(state);
-      return;
-    }
+/** What one check found, shown on the alerts page. */
+export interface CheckResult {
+  at: number;
+  /** Trades that arrived since the previous check. */
+  newTrades: number;
+  alerted: number;
+  /** New trades that did not pass the filters. */
+  filtered: number;
+  /** True for the first check, which only records the trades already waiting. */
+  primed: boolean;
+  error: string | null;
+}
 
-    await applyNumberFormat();
-    const sources = await values.sources();
-    const failures = new Set<string>();
-    for (const row of fresh.slice(0, ALERT_MAX_PER_CHECK)) {
-      if (row.partner.id === null) continue;
-      const offers = await fetchTradeOffersWith(row.id, row.partner.id);
-      // Could not be read (for example, rate limited): leave it for the next check.
-      if (!offers) break;
-      state.seen.unshift(row.id);
-      const all = [...offers.give.itemIds, ...offers.receive.itemIds];
-      const names = [...offers.give.names, ...offers.receive.names];
-      const alert = buildAlert(row.id, row.partner, offers, await values.lookup(all, names), sources);
-      if (!shouldAlert(alert, settings)) continue;
-      for (const failure of await deliver(alert, settings)) failures.add(failure);
-      state.lastAlert = Date.now();
-    }
-    if (failures.size) state.lastError = `The alert could not be delivered to ${[...failures].join(' and ')}.`;
-    await saveState(state);
-  } finally {
-    running = false;
+let running: Promise<CheckResult | null> | null = null;
+
+function describeFailure(failure: string | null): string {
+  if (failure === 'HTTP 401' || failure === 'HTTP 403') {
+    return `Roblox did not accept the background request (${failure}). Keep a Roblox tab open while signed in, and RoLens will check through it.`;
   }
+  if (failure === 'HTTP 429') return 'Roblox is limiting requests. RoLens will check again shortly.';
+  return `Roblox did not return your inbound trades${failure ? ` (${failure})` : ''}. RoLens will try again at the next check.`;
+}
+
+/** One check of the inbound trades list. Resolves null when alerts are off. */
+export function checkInbound(values: AlertValues, reader: InboundReader = directReader): Promise<CheckResult | null> {
+  running ??= runCheck(values, reader).finally(() => {
+    running = null;
+  });
+  return running;
+}
+
+async function runCheck(values: AlertValues, reader: InboundReader): Promise<CheckResult | null> {
+  const settings = await readAlerts();
+  if (!settings.enabled || !(await hasOrigins([ROBLOX_TRADES_ORIGIN]))) return null;
+  const state = await readAlertState();
+  const result: CheckResult = { at: Date.now(), newTrades: 0, alerted: 0, filtered: 0, primed: false, error: null };
+  const finish = async () => {
+    state.lastCheck = result.at;
+    state.lastError = result.error;
+    state.lastResult = result;
+    await saveState(state);
+    return result;
+  };
+  if (tradesPaused()) {
+    result.error = describeFailure('HTTP 429');
+    return finish();
+  }
+  const { robloxUserId } = await chrome.storage.local.get('robloxUserId');
+  const userId = typeof robloxUserId === 'number' ? robloxUserId : null;
+  if (userId !== state.userId) {
+    // Another Roblox account: its existing trades are not new.
+    Object.assign(state, { userId, seen: [], primed: false });
+  }
+
+  const page = await reader.list();
+  if (!page) {
+    result.error = describeFailure(reader.failure());
+    return finish();
+  }
+  const seen = new Set(state.seen);
+  const fresh = page.rows.filter((row) => !seen.has(row.id));
+  if (!state.primed) {
+    state.seen = [...page.rows.map((row) => row.id), ...state.seen];
+    state.primed = true;
+    result.primed = true;
+    return finish();
+  }
+
+  await applyNumberFormat();
+  const sources = await values.sources();
+  const failures = new Set<string>();
+  result.newTrades = fresh.length;
+  for (const row of fresh.slice(0, ALERT_MAX_PER_CHECK)) {
+    if (row.partner.id === null) {
+      state.seen.unshift(row.id);
+      continue;
+    }
+    const offers = await reader.offers(row.id, row.partner.id);
+    if (!offers) {
+      // Left unseen, so the next check tries it again.
+      result.error = `RoLens could not read the items of a new trade${reader.failure() ? ` (${reader.failure()})` : ''}. It will try again at the next check.`;
+      break;
+    }
+    state.seen.unshift(row.id);
+    const all = [...offers.give.itemIds, ...offers.receive.itemIds];
+    const names = [...offers.give.names, ...offers.receive.names];
+    const alert = buildAlert(row.id, row.partner, offers, await values.lookup(all, names), sources);
+    if (!shouldAlert(alert, settings)) {
+      result.filtered += 1;
+      continue;
+    }
+    for (const failure of await deliver(alert, settings)) failures.add(failure);
+    result.alerted += 1;
+    state.lastAlert = Date.now();
+  }
+  if (failures.size) result.error = `The alert could not be delivered to ${[...failures].join(' and ')}.`;
+  return finish();
 }
 
 /** Opens the Trades page when an alert notification is clicked. */

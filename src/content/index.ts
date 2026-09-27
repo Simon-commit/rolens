@@ -12,6 +12,7 @@ import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
 import { activeTradeList, renderTradeList, resetTradeList, signedInUserId } from './trade-list';
 import { createProof } from './proof';
 import { renderCancelTools } from './cancel-trades';
+import { serveAlertReads } from './alerts-relay';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
 import { applyThemePreference, detectTheme } from './ui/shadow';
@@ -196,6 +197,7 @@ function recordSignedInUser(): void {
 function start(): void {
   registerFont();
   recordSignedInUser();
+  serveAlertReads();
   // Until Roblox's own prices are on the page, follow the browser's language.
   setNumberLocale(navigator.language || document.documentElement.lang);
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.

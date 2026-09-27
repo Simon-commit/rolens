@@ -1,3 +1,4 @@
+import type { CheckResult } from '../background/inbound-alerts';
 import type { PlayerInventory } from './player';
 import type { RoutilityStatus } from './routility-cache';
 import type { ItemValue, RoutilityData, SourceId } from './types';
@@ -11,7 +12,9 @@ export type Request =
   | { type: 'rolens:getStatus' }
   | { type: 'rolens:refresh' }
   | { type: 'rolens:clearCache' }
-  | { type: 'rolens:testAlert' };
+  | { type: 'rolens:testAlert' }
+  | { type: 'rolens:checkAlerts' }
+  | { type: 'rolens:hello' };
 
 export interface CacheStatus {
   source: SourceId;
@@ -32,6 +35,11 @@ export interface TestAlertResponse {
   failures: string[];
   /** False when no destination is set up. */
   sent: boolean;
+}
+
+/** What "Check now" found, or null when alerts are off. */
+export interface CheckAlertsResponse {
+  result: CheckResult | null;
 }
 
 /** A player's inventory, or why it couldn't be fetched. */
@@ -61,7 +69,11 @@ export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems'
         ? PlayerResponse
         : R extends { type: 'rolens:testAlert' }
           ? TestAlertResponse
-          : CacheStatus;
+          : R extends { type: 'rolens:checkAlerts' }
+            ? CheckAlertsResponse
+            : R extends { type: 'rolens:hello' }
+              ? null
+              : CacheStatus;
 
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
@@ -70,7 +82,9 @@ export function isRequest(message: unknown): message is Request {
     type === 'rolens:getStatus' ||
     type === 'rolens:refresh' ||
     type === 'rolens:clearCache' ||
-    type === 'rolens:testAlert'
+    type === 'rolens:testAlert' ||
+    type === 'rolens:checkAlerts' ||
+    type === 'rolens:hello'
   ) {
     return true;
   }

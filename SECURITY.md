@@ -39,7 +39,10 @@ Roblox endpoints RoLens calls:
 The trades endpoints are called only while trade list previews, the duplicate trade warning or the outbound trade tools are turned on, and the decline endpoint only for trades you confirmed. Whether you still own an item is checked against Roblox's own inventory at that moment, never against Rolimon's scans, which can be hours old. Any change to that file should be reviewed with this list in mind.
 
 Inbound trade alerts run in the service worker ([`src/background/inbound-alerts.ts`](src/background/inbound-alerts.ts))
-and read the first page of your inbound trades about once a minute, read-only. They use optional permissions that are
+and read the first page of your inbound trades about once a minute, read-only. When a Roblox tab is open, the service
+worker asks that tab's RoLens content script to make the same two read-only requests
+([`src/content/alerts-relay.ts`](src/content/alerts-relay.ts)); the content script answers only RoLens's own service
+worker. Without a Roblox tab, the service worker makes them itself. They use optional permissions that are
 requested only when you turn on each part and removed when you turn it off:
 
 | Permission                              | Requested when you                     | Used for                                            |

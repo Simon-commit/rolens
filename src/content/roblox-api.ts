@@ -163,10 +163,25 @@ function throttled<T>(task: () => Promise<T>): Promise<T | null> {
   return run.catch(() => null);
 }
 
+let lastFailure: string | null = null;
+
+/** Why the last trades request failed, such as "HTTP 401", or null when it succeeded. */
+export const lastTradeFailure = () => lastFailure;
+
 async function getJson(url: string, fetchFn: typeof fetch): Promise<unknown> {
-  const response = await fetchFn(url, { credentials: 'include', headers: { Accept: 'application/json' } });
+  let response: Response;
+  try {
+    response = await fetchFn(url, { credentials: 'include', headers: { Accept: 'application/json' } });
+  } catch (error) {
+    lastFailure = 'no connection';
+    throw error;
+  }
   if (response.status === 429) blockedUntil = Date.now() + TRADE_BACKOFF_MS;
-  if (!response.ok) throw new Error(`Roblox responded with HTTP ${response.status}`);
+  if (!response.ok) {
+    lastFailure = `HTTP ${response.status}`;
+    throw new Error(`Roblox responded with HTTP ${response.status}`);
+  }
+  lastFailure = null;
   return response.json();
 }
 

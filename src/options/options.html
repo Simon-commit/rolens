@@ -26,15 +26,16 @@
             <span
               ><b>Alert me about new inbound trades</b
               ><small
-                >While Chrome is open, RoLens checks your inbound trades about once a minute. It reads them with your
-                Roblox session and never changes them. Chrome asks for access to trades.roblox.com when you turn this
-                on.</small
+                >While Chrome is open, RoLens checks your inbound trades about once a minute, through an open Roblox tab
+                when there is one. It reads them with your Roblox session and never changes them. Chrome asks for access
+                to trades.roblox.com when you turn this on.</small
               ></span
             >
             <input id="enabled" type="checkbox" role="switch" />
           </label>
           <div class="setting status-row" id="check-row" hidden>
             <span><b id="check-status">Waiting for the first check</b><small id="check-detail"></small></span>
+            <button id="check-now" type="button" class="text-button">Check now</button>
           </div>
         </div>
       </section>

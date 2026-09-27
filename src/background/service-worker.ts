@@ -7,6 +7,7 @@ import {
   type PlayerResponse,
   type Request,
   type RoutilityResponse,
+  type CheckAlertsResponse,
   type TestAlertResponse,
 } from '../core/messages';
 import { ALERT_ALARM, ALERTS_KEY, testAlert } from '../core/alerts';
@@ -16,10 +17,14 @@ import {
   checkInbound,
   deliver,
   openTradesOnClick,
+  directReader,
   readAlerts,
   syncAlertSchedule,
   type AlertValues,
+  type InboundReader,
 } from './inbound-alerts';
+import { rememberTab, viaRobloxTab } from './roblox-relay';
+import type { TradeOffers, TradeSummaryRow } from '../content/roblox-api';
 import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
 import { TRADE_CACHE_KEY } from '../core/trade-cache';
@@ -76,7 +81,23 @@ function nameIndex(snapshot: ValueSnapshot): Map<string, number | null> {
 
 async function handle(
   request: Request,
-): Promise<ItemsResponse | NamesResponse | RoutilityResponse | PlayerResponse | TestAlertResponse | CacheStatus> {
+  sender: chrome.runtime.MessageSender,
+): Promise<
+  | ItemsResponse
+  | NamesResponse
+  | RoutilityResponse
+  | PlayerResponse
+  | TestAlertResponse
+  | CheckAlertsResponse
+  | CacheStatus
+  | null
+> {
+  if (request.type === 'rolens:hello') {
+    if (sender.tab?.id !== undefined && sender.url?.startsWith('https://www.roblox.com/'))
+      await rememberTab(sender.tab.id);
+    return null;
+  }
+  if (request.type === 'rolens:checkAlerts') return { result: await checkInbound(alertValues, alertReader) };
   if (request.type === 'rolens:testAlert') {
     const alerts = await readAlerts();
     const sent = alerts.desktop || Boolean(alerts.discordWebhook || alerts.ntfyTopic);
@@ -133,7 +154,7 @@ async function handle(
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   // Only accept messages from this extension's own pages and content scripts.
   if (sender.id !== chrome.runtime.id || !isRequest(message)) return false;
-  handle(message).then(sendResponse, (error: unknown) => {
+  handle(message, sender).then(sendResponse, (error: unknown) => {
     console.error('[RoLens]', error);
     sendResponse(undefined);
   });
@@ -181,6 +202,29 @@ const alertValues: AlertValues = {
   },
 };
 
+/**
+ * Reads inbound trades through an open Roblox tab when there is one, as roblox.com does
+ * itself, and directly from the service worker otherwise.
+ */
+let lastRelayFailure: string | null = null;
+const alertReader: InboundReader = {
+  async list() {
+    const relayed = await viaRobloxTab<{ rows: TradeSummaryRow[] }>({ type: 'rolens:relayTrades', op: 'list' });
+    if (relayed?.data) return ((lastRelayFailure = null), relayed.data);
+    const direct = await directReader.list();
+    lastRelayFailure = direct ? null : (directReader.failure() ?? relayed?.failure ?? null);
+    return direct;
+  },
+  async offers(tradeId, partnerId) {
+    const relayed = await viaRobloxTab<TradeOffers>({ type: 'rolens:relayTrades', op: 'offers', tradeId, partnerId });
+    if (relayed?.data) return ((lastRelayFailure = null), relayed.data);
+    const direct = await directReader.offers(tradeId, partnerId);
+    lastRelayFailure = direct ? null : (directReader.failure() ?? relayed?.failure ?? null);
+    return direct;
+  },
+  failure: () => lastRelayFailure,
+};
+
 let alarmsBound = false;
 let notificationsBound = false;
 
@@ -189,7 +233,7 @@ function bindAlertListeners(): void {
   if (chrome.alarms && !alarmsBound) {
     alarmsBound = true;
     chrome.alarms.onAlarm.addListener((alarm) => {
-      if (alarm.name === ALERT_ALARM) void checkInbound(alertValues);
+      if (alarm.name === ALERT_ALARM) void checkInbound(alertValues, alertReader);
     });
   }
   if (chrome.notifications && !notificationsBound) {
@@ -204,6 +248,8 @@ chrome.permissions.onAdded.addListener(() => {
   bindAlertListeners();
   void syncAlertSchedule();
 });
+// Chrome may drop alarms when it restarts; make sure the check is scheduled again.
+chrome.runtime.onStartup.addListener(() => void syncAlertSchedule());
 chrome.permissions.onRemoved.addListener(() => void syncAlertSchedule());
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes[ALERTS_KEY]) void syncAlertSchedule();
