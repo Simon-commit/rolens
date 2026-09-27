@@ -40,7 +40,7 @@ function renderStatus(status: CacheStatus | undefined): void {
   }
   const label = PROVIDERS[status.source].label;
   if (status.fetchedAt) {
-    title.textContent = `${status.itemCount.toLocaleString('en-US')} items tracked`;
+    title.textContent = `${status.itemCount.toLocaleString()} items tracked`;
     sub.textContent = status.error
       ? `Update failed: ${status.error}`
       : `${label} · Updated ${formatAge(status.fetchedAt)}`;

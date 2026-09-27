@@ -8,7 +8,6 @@ function box(node: Element, left: number, top: number, width: number, height: nu
 
 let card: HTMLElement;
 let thumb: HTMLElement;
-let column: HTMLElement;
 let caption: HTMLElement;
 let host: HTMLElement;
 
@@ -17,41 +16,53 @@ beforeEach(() => {
   card = document.createElement('div');
   thumb = document.createElement('div');
   thumb.className = 'item-card-thumb-container';
-  column = document.createElement('div');
   caption = document.createElement('div');
   caption.className = 'item-card-name';
-  column.append(caption, document.createElement('span'));
-  card.append(thumb, column);
+  const price = document.createElement('span');
+  card.append(thumb, caption, price);
   document.body.append(card);
   host = document.createElement('span');
-  box(card, 0, 0, 120, 200);
+  box(host, 0, 0, 100, 22);
 });
 
 describe('chip placement', () => {
-  it('keeps the chip inline when it fits', () => {
-    box(host, 0, 150, 100, 22);
-    expect(fitChip(host, card, caption)).toBe(true);
-    expect(host.parentElement).toBe(caption);
-    expect(host.dataset.placement).toBe('inline');
-  });
-
-  it('moves the chip under the text when the caption clips it', () => {
-    caption.style.overflow = 'hidden';
-    box(caption, 0, 150, 60, 20);
-    let calls = 0;
-    // Inline it is cut off by the caption; below it fits within the card.
-    host.getBoundingClientRect = () => (calls++ === 0 ? new DOMRect(40, 150, 100, 22) : new DOMRect(0, 170, 100, 22));
-    expect(fitChip(host, card, caption)).toBe(true);
-    expect(host.parentElement).toBe(column);
-    expect(host.dataset.placement).toBe('below');
-  });
-
-  it('overlays the thumbnail when the card has no room', () => {
-    box(host, 0, 190, 100, 22);
+  it('floats over the thumbnail in tiles, leaving the card layout untouched', () => {
+    box(card, 0, 0, 125, 215);
+    box(thumb, 0, 0, 125, 125);
     expect(fitChip(host, card, caption)).toBe(true);
     expect(host.parentElement).toBe(thumb);
     expect(host.dataset.placement).toBe('overlay');
     expect(thumb.hasAttribute(ANCHOR_ATTR)).toBe(true);
+    expect(caption.children).toHaveLength(0);
+  });
+
+  it('sits right-aligned beside the price in list rows, below the name', () => {
+    box(card, 0, 100, 330, 70);
+    box(thumb, 10, 113, 44, 44);
+    box(caption, 64, 110, 200, 22);
+    expect(fitChip(host, card, caption)).toBe(true);
+    expect(host.parentElement).toBe(card);
+    expect(host.dataset.placement).toBe('row');
+    expect(card.hasAttribute(ANCHOR_ATTR)).toBe(true);
+    // Name ends 32px into the row; the chip is centred in the 38px below it.
+    expect(host.style.top).toBe('40px');
+    expect(host.style.right).toBe('10px');
+  });
+
+  it('centres a row chip when there is no room under the name', () => {
+    box(card, 0, 0, 330, 40);
+    box(thumb, 10, 4, 32, 32);
+    box(caption, 50, 4, 200, 30);
+    fitChip(host, card, caption);
+    expect(host.style.top).toBe('9px');
+  });
+
+  it('stays in the caption when the card has no thumbnail', () => {
+    thumb.remove();
+    box(card, 0, 0, 200, 60);
+    fitChip(host, card, caption);
+    expect(host.parentElement).toBe(caption);
+    expect(host.dataset.placement).toBe('inline');
   });
 
   it('waits when the card is not laid out yet', () => {

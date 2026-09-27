@@ -1,3 +1,4 @@
+import { setNumberLocale } from '../core/format';
 import { send } from '../core/messages';
 import { normaliseSettings, type Settings } from '../core/settings';
 import { resolveProvider } from '../providers';
@@ -64,6 +65,8 @@ function schedule(): void {
 
 function start(): void {
   registerFont();
+  // Numbers follow Roblox's own language, so RoLens reads "3.507" wherever Roblox does.
+  setNumberLocale(document.documentElement.lang || navigator.language);
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.
   new MutationObserver((mutations) => {
     const relevant = mutations.some((m) =>

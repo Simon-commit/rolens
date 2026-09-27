@@ -1,104 +1,100 @@
 /*
- * Roblox lays item cards out differently on each page: roomy catalog cards, fixed-height
- * inventory tiles on the trade page, and single-line offer rows. Rather than guess each
- * layout, RoLens places a chip, measures it, and moves it to the next placement if it is
- * clipped or spills out of its card:
+ * Where a value chip goes inside a Roblox item card.
  *
- *   1. inline, in the card's caption (the default), when it lands on a line of its own
- *   2. on its own line under the caption's text column (offer rows)
- *   3. over the item's thumbnail, stacked compactly (fixed-height tiles)
+ * Roblox sizes many of its cards and rows exactly (the trade page's inventory grid and
+ * offer lists in particular), so adding a line of content pushes prices out of rows and
+ * chips into the next row. RoLens therefore never inserts the chip into Roblox's layout
+ * when the card has a thumbnail; it floats it over the card instead:
+ *
+ *   overlay  tiles (large thumbnail): top-left corner of the thumbnail, the one corner
+ *            Roblox leaves free (serial badges sit bottom-left, checkboxes top-right)
+ *   row      list rows (small thumbnail): right-aligned in the row, in the free space
+ *            beside the price, below the item name
+ *   inline   cards without a thumbnail: in the caption, as before
+ *
+ * None of these change the size of any Roblox element.
  */
 
-export type Placement = 'inline' | 'below' | 'overlay';
+export type Placement = 'inline' | 'overlay' | 'row';
 
-/** Set on a thumbnail RoLens overlays, so content.css can make it a positioning context. */
+/** Set on the element a chip floats over, so content.css can make it a positioning context. */
 export const ANCHOR_ATTR = 'data-rolens-anchor';
 
 const THUMBNAIL = '.item-card-thumb-container, .thumbnail-2d-container, [class*="thumbnail"], img';
-const TOLERANCE = 1;
+/** Thumbnails at least this wide are tiles; smaller ones are list rows. */
+const TILE_MIN = 64;
+const ROW_INSET = 10;
 
-function inside(inner: DOMRect, outer: DOMRect): boolean {
-  return (
-    inner.left >= outer.left - TOLERANCE &&
-    inner.right <= outer.right + TOLERANCE &&
-    inner.top >= outer.top - TOLERANCE &&
-    inner.bottom <= outer.bottom + TOLERANCE
-  );
-}
-
-function clips(node: Element): boolean {
-  const style = getComputedStyle(node);
-  return [style.overflow, style.overflowX, style.overflowY].some((value) => value !== '' && value !== 'visible');
-}
-
-/** Chips narrower than their card by less than this switch to the compact size. */
-const COMPACT_MARGIN = 12;
-
-/** True when the chip is fully visible within its card and every clipping box up to it. */
-export function fits(host: HTMLElement, card: Element): boolean {
-  const rect = host.getBoundingClientRect();
-  if (rect.width === 0 && rect.height === 0) return false;
-  if (!inside(rect, card.getBoundingClientRect())) return false;
-  for (let node = host.parentElement; node && node !== card; node = node.parentElement) {
-    if (clips(node) && !inside(rect, node.getBoundingClientRect())) return false;
+function largestThumbnail(card: Element): { node: HTMLElement; rect: DOMRect } | null {
+  let best: { node: HTMLElement; rect: DOMRect } | null = null;
+  for (const match of card.querySelectorAll<HTMLElement>(THUMBNAIL)) {
+    if (match.closest('[data-rolens]')) continue;
+    const node = match instanceof HTMLImageElement ? match.parentElement : match;
+    if (!node || !card.contains(node)) continue;
+    const rect = node.getBoundingClientRect();
+    if (!best || rect.width * rect.height > best.rect.width * best.rect.height) best = { node, rect };
   }
-  return true;
-}
-
-function thumbnailOf(card: Element): HTMLElement | null {
-  const match = card.querySelector<HTMLElement>(THUMBNAIL);
-  if (!match) return null;
-  return match instanceof HTMLImageElement ? match.parentElement : match;
-}
-
-function place(host: HTMLElement, placement: Placement, target: Element): void {
-  host.dataset.placement = placement;
-  target.append(host);
-}
-
-/** An inline chip should start its own line, not trail the item name. */
-function onOwnLine(host: HTMLElement, container: Element): boolean {
-  return Math.abs(host.getBoundingClientRect().left - container.getBoundingClientRect().left) <= 4;
-}
-
-/** Uses the smaller chip when the regular one would run edge to edge in a narrow card. */
-function sizeFor(host: HTMLElement, card: Element): void {
-  delete host.dataset.size;
-  if (host.getBoundingClientRect().width > card.getBoundingClientRect().width - COMPACT_MARGIN) {
-    host.dataset.size = 'compact';
-  }
+  return best && best.rect.width > 0 ? best : null;
 }
 
 /**
- * Moves `host` into the first placement where it fits. Returns false when the card isn't
- * laid out yet (hidden or virtualised), so the caller can try again on a later scan.
+ * Makes `target` the box the chip is positioned in. Roblox's own positioning is left
+ * alone; only an unpositioned (static) element is made relative, which changes no size.
+ */
+function makeAnchor(target: HTMLElement): void {
+  if (target.hasAttribute(ANCHOR_ATTR)) return;
+  if (getComputedStyle(target).position === 'static') {
+    target.style.setProperty('position', 'relative');
+    target.setAttribute(ANCHOR_ATTR, 'set');
+  } else {
+    target.setAttribute(ANCHOR_ATTR, '');
+  }
+}
+
+/** Undoes makeAnchor, for when RoLens removes its chips. */
+export function releaseAnchor(target: HTMLElement): void {
+  if (target.getAttribute(ANCHOR_ATTR) === 'set') target.style.removeProperty('position');
+  target.removeAttribute(ANCHOR_ATTR);
+}
+
+function anchor(host: HTMLElement, placement: Placement, target: HTMLElement): void {
+  if (placement !== 'inline') makeAnchor(target);
+  host.dataset.placement = placement;
+  host.style.removeProperty('top');
+  if (host.parentElement !== target) target.append(host);
+}
+
+/** Vertically places a row chip below the item name, or centred when there's no room. */
+function positionInRow(host: HTMLElement, card: Element, caption: Element | null): void {
+  const box = card.getBoundingClientRect();
+  const height = host.getBoundingClientRect().height || 22;
+  const nameBottom = caption ? caption.getBoundingClientRect().bottom - box.top : 0;
+  let top = nameBottom + (box.height - nameBottom - height) / 2;
+  if (!caption || top < nameBottom || top + height > box.height - 2) top = (box.height - height) / 2;
+  host.style.top = `${Math.max(0, Math.round(top))}px`;
+}
+
+/**
+ * Places `host` in `card`. Returns false when the card isn't laid out yet (hidden or
+ * virtualised), so the caller can try again on a later scan.
  */
 export function fitChip(host: HTMLElement, card: Element, caption: Element | null): boolean {
   const box = card.getBoundingClientRect();
   if (box.width === 0 && box.height === 0) return false;
 
-  const inline = caption ?? card;
-  if (host.parentElement !== inline) place(host, 'inline', inline);
-  else host.dataset.placement = 'inline';
-  sizeFor(host, card);
-  if (fits(host, card) && onOwnLine(host, inline)) return true;
-
-  const column = caption?.parentElement;
-  if (column && column !== card && card.contains(column)) {
-    place(host, 'below', column);
-    sizeFor(host, card);
-    if (fits(host, card)) return true;
-  }
-  delete host.dataset.size;
-
-  const thumbnail = thumbnailOf(card);
-  if (thumbnail) {
-    thumbnail.setAttribute(ANCHOR_ATTR, '');
-    place(host, 'overlay', thumbnail);
+  const thumbnail = largestThumbnail(card);
+  if (thumbnail && thumbnail.rect.width >= TILE_MIN) {
+    anchor(host, 'overlay', thumbnail.node);
     return true;
   }
-
-  // Nothing better available: keep it under the card's text rather than hide it.
-  place(host, 'below', column && card.contains(column) ? column : card);
+  if (thumbnail && card instanceof HTMLElement) {
+    anchor(host, 'row', card);
+    host.style.right = `${ROW_INSET}px`;
+    positionInRow(host, card, caption);
+    return true;
+  }
+  const inline = caption ?? card;
+  host.dataset.placement = 'inline';
+  if (host.parentElement !== inline) inline.append(host);
   return true;
 }

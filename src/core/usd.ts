@@ -1,3 +1,4 @@
+import { localiseDigits } from './format';
 import type { Settings } from './settings';
 import { effectiveValue, type ItemValue, type UsdEstimate } from './types';
 
@@ -35,8 +36,8 @@ const usdWhole = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
 /** $0.85, $42, $1,290, or $12.5K when compact. */
 export function formatUsd(amount: number, compact = true): string {
   const abs = Math.abs(amount);
-  if (compact && abs >= 10_000) return usdCompact.format(amount);
-  return abs < 100 ? usdSmall.format(amount) : usdWhole.format(amount);
+  if (compact && abs >= 10_000) return localiseDigits(usdCompact.format(amount));
+  return localiseDigits(abs < 100 ? usdSmall.format(amount) : usdWhole.format(amount));
 }
 
 export function formatUsdDelta(amount: number, compact = true): string {

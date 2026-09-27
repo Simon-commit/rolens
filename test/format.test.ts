@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { formatAge, formatDelta, formatPercent, formatRobux, percentChange } from '../src/core/format';
+import { afterEach, describe, expect, it } from 'vitest';
+import { formatAge, formatDelta, formatPercent, formatRobux, percentChange, setNumberLocale } from '../src/core/format';
+import { formatUsd } from '../src/core/usd';
 
 describe('format', () => {
   it('formats Robux compactly above 10K', () => {
@@ -27,5 +28,23 @@ describe('format', () => {
     expect(formatAge(now - 5_000, now)).toBe('just now');
     expect(formatAge(now - 3 * 60_000, now)).toBe('3 min ago');
     expect(formatAge(now - 2 * 3_600_000, now)).toBe('2 h ago');
+  });
+});
+
+describe('number locale', () => {
+  afterEach(() => setNumberLocale(undefined));
+
+  it("matches Roblox's grouping for the page language", () => {
+    setNumberLocale('da-DK');
+    expect(formatRobux(4000, false)).toBe('4.000');
+    expect(formatRobux(1_500_000)).toBe('1,5M');
+    expect(formatUsd(38.6)).toBe('$38,60');
+    expect(formatUsd(1400)).toBe('$1.400');
+    expect(formatPercent(73.94)).toBe('+73,9%');
+  });
+
+  it('keeps English formatting by default', () => {
+    expect(formatRobux(4000, false)).toBe('4,000');
+    expect(formatUsd(38.6)).toBe('$38.60');
   });
 });

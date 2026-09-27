@@ -86,7 +86,7 @@ export function buildHoverCard(item: ItemValue, ctx: RenderContext): HTMLElement
       demandStat(item),
       trendStat(item),
       routilityStat(item, ctx),
-      item.routility?.copies ? stat('Copies', item.routility.copies.toLocaleString('en-US')) : null,
+      item.routility?.copies ? stat('Copies', formatRobux(item.routility.copies, false)) : null,
     ),
     insight ? el('div', 'insight', insight) : null,
     flags.length ? el('div', 'flags', ...flags) : null,

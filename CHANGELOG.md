@@ -5,6 +5,16 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-27
+
+### Fixed
+
+- Value chips no longer change the size of Roblox's cards or rows. On the trade page they previously spilled into the next row, were cut off at the bottom of the inventory, and pushed prices out of offer rows.
+  - Item tiles: the chip now floats over the top-left corner of the thumbnail, clear of serial badges and selection checkboxes.
+  - Offer rows: the chip sits right-aligned beside the price, below the item name.
+- Numbers follow Roblox's language, for example "4.000" and "$38,60" where Roblox shows "3.507".
+- Chips for items without a value now match the others in style.
+
 ## [0.4.1] - 2026-09-27
 
 ### Changed

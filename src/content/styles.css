@@ -12,23 +12,20 @@ html[data-rolens-dark] body:not(.dark-theme) {
   background-color: #191b1d !important;
 }
 
-/* Chip placements chosen by chip-fit.ts when the default spot would be clipped. */
-[data-rolens-anchor] {
-  position: relative;
-}
+/* Chips float over Roblox's cards (see chip-fit.ts), so Roblox's own layout never changes size. */
 [data-rolens='badge'][data-placement='overlay'] {
   position: absolute;
   top: 6px;
   left: 6px;
   z-index: 2;
   margin: 0;
-  max-width: calc(100% - 12px);
+  /* Leaves room for Roblox's selection checkbox in the top-right corner. */
+  max-width: calc(100% - 44px);
 }
-[data-rolens='badge'][data-placement='below'] {
-  display: block;
-  width: fit-content;
-  max-width: 100%;
-  margin-top: 6px;
+[data-rolens='badge'][data-placement='row'] {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
 }
 
 [data-rolens-rare] {
