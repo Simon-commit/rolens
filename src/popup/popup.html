@@ -7,39 +7,81 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="top">
-      <img src="icons/icon-48.png" alt="" width="28" height="28" />
-      <div>
-        <h1>RoLens</h1>
-        <p class="tagline">Trade values on Roblox</p>
+    <header class="hero">
+      <div class="brand">
+        <img src="icons/icon-48.png" alt="" width="32" height="32" />
+        <div>
+          <h1>RoLens</h1>
+          <p>Trade values, right where you trade</p>
+        </div>
+      </div>
+      <div class="status" id="status-card">
+        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <div class="status-text">
+          <strong id="status">Loading…</strong>
+          <span id="status-sub"></span>
+        </div>
+        <button id="refresh" type="button" class="icon-button" aria-label="Refresh values" title="Refresh values">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+            <path d="M20 4v7h-7" />
+          </svg>
+        </button>
       </div>
     </header>
 
-    <section class="card" aria-labelledby="status-title">
-      <div class="row">
-        <h2 id="status-title">Value data</h2>
-        <button id="refresh" type="button" class="button">Refresh</button>
-      </div>
-      <p id="status" class="status" role="status">Loading…</p>
-      <p id="error" class="error" hidden></p>
-    </section>
+    <main>
+      <section aria-labelledby="show-title">
+        <h2 id="show-title">On Roblox</h2>
+        <div class="list">
+          <label class="setting">
+            <span><b>Value chips</b><small>On every limited, with a hover card</small></span>
+            <input type="checkbox" role="switch" data-setting="showBadges" />
+          </label>
+          <label class="setting">
+            <span><b>Trade analysis</b><small>Net value, balance and summary on trades</small></span>
+            <input type="checkbox" role="switch" data-setting="showTradeTotals" />
+          </label>
+          <label class="setting">
+            <span><b>Item page card</b><small>Full stats on catalog pages</small></span>
+            <input type="checkbox" role="switch" data-setting="showItemPanel" />
+          </label>
+        </div>
+      </section>
 
-    <section class="card" aria-labelledby="source-title">
-      <h2 id="source-title">Source</h2>
-      <div id="sources" class="sources"></div>
-    </section>
+      <section aria-labelledby="money-title">
+        <h2 id="money-title">Numbers &amp; USD</h2>
+        <div class="list">
+          <div class="setting">
+            <span><b>Number style</b><small id="format-example"></small></span>
+            <div class="segmented" role="radiogroup" aria-label="Number style">
+              <button type="button" role="radio" data-format="compact">1.2M</button>
+              <button type="button" role="radio" data-format="full">1,234,567</button>
+            </div>
+          </div>
+          <label class="setting">
+            <span><b>Show USD</b><small id="usd-note">Uses your rate until a USD source is connected</small></span>
+            <input type="checkbox" role="switch" data-setting="showUsd" />
+          </label>
+          <label class="setting" for="usd-rate">
+            <span><b>Your rate</b><small>USD per 1,000 value. Leave empty to hide estimates.</small></span>
+            <span class="money-input">
+              <span aria-hidden="true">$</span>
+              <input id="usd-rate" type="number" inputmode="decimal" min="0" max="999" step="0.1" placeholder="—" />
+            </span>
+          </label>
+        </div>
+      </section>
 
-    <section class="card" aria-labelledby="display-title">
-      <h2 id="display-title">Show</h2>
-      <label class="toggle"><input type="checkbox" data-setting="showBadges" /> Value badges on items</label>
-      <label class="toggle"><input type="checkbox" data-setting="showTradeTotals" /> Trade win/loss totals</label>
-      <label class="toggle"><input type="checkbox" data-setting="showItemPanel" /> Stats panel on item pages</label>
-      <label class="toggle"><input type="checkbox" data-setting="compactNumbers" /> Compact numbers (1.2M)</label>
-    </section>
+      <section aria-labelledby="source-title">
+        <h2 id="source-title">Sources</h2>
+        <div class="list" id="sources"></div>
+      </section>
+    </main>
 
-    <footer class="foot">
-      <span>Open source, MIT. Never reads your Roblox account.</span>
-      <a href="https://github.com/Simon-commit/rolens" target="_blank" rel="noopener noreferrer">Source code</a>
+    <footer>
+      <span>Open source · No account access · No tracking</span>
+      <a href="https://github.com/Simon-commit/rolens" target="_blank" rel="noopener noreferrer">GitHub</a>
     </footer>
     <script src="popup.js"></script>
   </body>

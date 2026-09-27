@@ -6,6 +6,20 @@ export type Trend = 'lowering' | 'unstable' | 'stable' | 'raising' | 'fluctuatin
 
 export type SourceId = 'rolimons' | 'routility';
 
+export type Confidence = 'low' | 'medium' | 'high';
+
+/** A US dollar estimate for one item. */
+export interface UsdEstimate {
+  value: number;
+  /** Optional range around `value` when the source provides one. */
+  low?: number;
+  high?: number;
+  /** How sure the source is. Null when it doesn't say (e.g. a user-set rate). */
+  confidence: Confidence | null;
+  /** Where the estimate came from: a data source, or the user's own Robux rate. */
+  origin: SourceId | 'rate';
+}
+
 /** One limited item's market data, normalised across sources. */
 export interface ItemValue {
   id: number;
@@ -22,6 +36,8 @@ export interface ItemValue {
   projected: boolean;
   hyped: boolean;
   rare: boolean;
+  /** Market USD estimate from a source that provides one. Absent when none does. */
+  usd?: UsdEstimate;
 }
 
 /** A full table of item values from one source, as cached by the extension. */
@@ -35,4 +51,9 @@ export interface ValueSnapshot {
 /** The figure traders actually use: the value if the item has one, otherwise its RAP. */
 export function effectiveValue(item: ItemValue): number {
   return item.value ?? item.rap;
+}
+
+/** Demand as a 1-5 level, for meters. 0 when unrated. */
+export function demandLevel(demand: Demand | null): number {
+  return demand ? (['terrible', 'low', 'normal', 'high', 'amazing'] as const).indexOf(demand) + 1 : 0;
 }

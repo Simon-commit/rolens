@@ -1,0 +1,102 @@
+:host {
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: 4px;
+  max-width: 100%;
+}
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  max-width: 100%;
+  padding: 0 8px 0 4px;
+  border-radius: 999px;
+  border: 1px solid var(--rl-border);
+  background: var(--rl-bg-raised);
+  box-shadow: var(--rl-shadow-sm);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  outline: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  animation: rl-rise 0.25s ease both;
+}
+.chip:hover,
+.chip:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--rl-shadow);
+  border-color: var(--rl-border-strong);
+}
+.chip:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--rl-bg),
+    0 0 0 4px var(--rl-accent);
+}
+.chip .rl-glyph {
+  width: 14px;
+  height: 14px;
+}
+.value {
+  color: var(--rl-text);
+}
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--rl-text-3);
+}
+.sep {
+  width: 1px;
+  height: 11px;
+  background: var(--rl-border-strong);
+}
+.usd {
+  color: var(--rl-accent);
+  font-weight: 600;
+}
+.flag {
+  display: inline-flex;
+}
+.flag .rl-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.chip.is-unvalued .value {
+  color: var(--rl-text-2);
+}
+.chip.is-projected {
+  border-color: color-mix(in srgb, var(--rl-warn) 45%, transparent);
+}
+.chip.is-projected .flag--warn {
+  color: var(--rl-warn);
+}
+.chip.is-rare {
+  border-color: transparent;
+}
+.chip.is-rare::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, var(--rl-rare-a), var(--rl-rare-b), var(--rl-rare-c), var(--rl-rare-a));
+  background-size: 300% 100%;
+  animation: rl-shimmer 6s linear infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.chip.is-rare .flag--rare {
+  color: var(--rl-rare-text);
+}

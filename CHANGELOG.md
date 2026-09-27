@@ -7,6 +7,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- Redesigned interface: value chips with hover cards, a trade analysis card with balance bar and copyable summary, a full item page card, and a new popup. Widgets use Shadow DOM, follow Roblox's theme and use the bundled Inter typeface (SIL Open Font License).
+- Rare items are highlighted on item cards, chips, the item page and in trades.
+- USD values: from a USD source when available (with confidence and range), otherwise from the user's own rate.
+- "RAP vs value" insight on hover cards and item pages.
+- Web-accessible resource: the font file only, on roblox.com, behind a per-session URL.
+
 - Value badges on Roblox item cards, with projected-RAP warnings.
 - Trade win/loss summary on the trades page.
 - Stats panel on catalog item pages.

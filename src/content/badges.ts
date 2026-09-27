@@ -1,9 +1,11 @@
-import { formatDemand, formatRobux, formatTrend } from '../core/format';
-import type { Settings } from '../core/settings';
 import type { ItemValue } from '../core/types';
-import { effectiveValue } from '../core/types';
-import { el, isOwnNode, ROLENS_ATTR } from './dom';
+import { isOwnNode, ROLENS_ATTR } from './dom';
 import { catalogIdFromHref, SELECTORS } from './selectors';
+import { createChip } from './ui/chip';
+import type { RenderContext } from './ui/context';
+
+/** Marks an item card whose item is rare, so page-level CSS can outline it. */
+export const RARE_ATTR = 'data-rolens-rare';
 
 /** Maps each item card on the page to the item id it shows. */
 export function findItemCards(root: ParentNode): Map<Element, number> {
@@ -18,56 +20,24 @@ export function findItemCards(root: ParentNode): Map<Element, number> {
   return cards;
 }
 
-export function describeItem(item: ItemValue, compact: boolean): string {
-  const lines = [
-    item.name,
-    `Value: ${item.value === null ? 'Unvalued' : `${formatRobux(item.value, compact)} R$`}`,
-    `RAP: ${formatRobux(item.rap, compact)} R$`,
-    `Demand: ${formatDemand(item.demand)}`,
-    `Trend: ${formatTrend(item.trend)}`,
-  ];
-  if (item.projected) lines.push('⚠ Projected: RAP is likely manipulated');
-  if (item.hyped) lines.push('Hyped');
-  if (item.rare) lines.push('Rare');
-  return lines.join('\n');
-}
-
-export function createBadge(item: ItemValue, settings: Settings): HTMLElement {
-  const compact = settings.compactNumbers;
-  const badge = el(
-    'span',
-    'rolens-badge',
-    item.projected ? el('span', 'rolens-badge__flag', '⚠') : null,
-    el('span', 'rolens-badge__value', formatRobux(effectiveValue(item), compact)),
-    item.value !== null && item.value !== item.rap
-      ? el('span', 'rolens-badge__rap', `RAP ${formatRobux(item.rap, compact)}`)
-      : null,
-  );
-  badge.setAttribute(ROLENS_ATTR, 'badge');
-  badge.dataset.rolensId = String(item.id);
-  if (item.value === null) badge.classList.add('is-unvalued');
-  if (item.projected) badge.classList.add('is-projected');
-  badge.title = describeItem(item, compact);
-  return badge;
-}
-
 /**
- * Adds or updates one value badge per item card. Only touches the DOM when
- * something changed, so it's safe to call from a MutationObserver.
+ * Adds or updates one value chip per item card, and marks rare items' cards. Only
+ * touches the DOM when something changed, so it's safe to call from a MutationObserver.
  */
 export function renderBadges(
   cards: Map<Element, number>,
   lookup: (id: number) => ItemValue | null | undefined,
-  settings: Settings,
+  ctx: RenderContext,
 ): void {
   for (const [card, id] of cards) {
     const existing = card.querySelector<HTMLElement>(':scope [data-rolens="badge"]');
     if (existing?.dataset.rolensId === String(id)) continue;
     existing?.remove();
+    card.removeAttribute(RARE_ATTR);
     const item = lookup(id);
     if (!item) continue;
-    const badge = createBadge(item, settings);
+    if (item.rare) card.setAttribute(RARE_ATTR, '');
     const caption = card.querySelector(SELECTORS.cardCaption);
-    (caption ?? card).append(badge);
+    (caption ?? card).append(createChip(item, ctx));
   }
 }

@@ -1,10 +1,10 @@
-import { formatDelta, formatPercent, formatRobux, percentChange } from '../core/format';
-import type { Settings } from '../core/settings';
-import { balanceTrade, totalSide, type SideTotals, type TradeBalance } from '../core/trade';
+import { balanceTrade, totalSide, type TradeBalance } from '../core/trade';
 import type { ItemValue } from '../core/types';
+import { totalUsd } from '../core/usd';
 import { findItemCards } from './badges';
-import { el, ROLENS_ATTR } from './dom';
 import { SELECTORS } from './selectors';
+import type { RenderContext } from './ui/context';
+import { createTradeCard, type TradeView } from './ui/trade-card';
 
 export interface TradeOffers {
   give: { element: Element; ids: number[] };
@@ -29,47 +29,11 @@ export function findTradeOffers(root: ParentNode): TradeOffers | null {
   return { give, receive };
 }
 
-function sideLine(label: string, totals: SideTotals, compact: boolean): HTMLElement {
-  return el(
-    'div',
-    'rolens-trade__side',
-    el('span', 'rolens-trade__label', label),
-    el('span', 'rolens-trade__value', `${formatRobux(totals.value, compact)} value`),
-    el('span', 'rolens-trade__rap', `${formatRobux(totals.rap, compact)} RAP`),
-    totals.hasProjected ? el('span', 'rolens-tag rolens-tag--warn', 'Has projected') : null,
-  );
-}
-
-export function createTradeSummary(balance: TradeBalance, settings: Settings): HTMLElement {
-  const compact = settings.compactNumbers;
-  const pct = percentChange(balance.valueDelta, balance.give.value);
-  const verdict = balance.valueDelta > 0 ? 'win' : balance.valueDelta < 0 ? 'loss' : 'even';
-  const unknown = balance.give.unknownIds.length + balance.receive.unknownIds.length;
-  const summary = el(
-    'section',
-    'rolens-trade',
-    el(
-      'div',
-      'rolens-trade__verdict',
-      el('span', 'rolens-panel__brand', 'RoLens'),
-      el('strong', 'rolens-trade__delta', `${formatDelta(balance.valueDelta, compact)} value`),
-      pct === null ? null : el('span', 'rolens-trade__pct', formatPercent(pct)),
-      el('span', 'rolens-trade__rapdelta', `${formatDelta(balance.rapDelta, compact)} RAP`),
-    ),
-    sideLine('You give', balance.give, compact),
-    sideLine('You get', balance.receive, compact),
-    unknown > 0 ? el('div', 'rolens-trade__note', `${unknown} item(s) have no value data and are not counted.`) : null,
-  );
-  summary.dataset.verdict = verdict;
-  summary.setAttribute(ROLENS_ATTR, 'trade');
-  return summary;
-}
-
-/** Renders the win/loss summary above the trade's first offer. Returns the balance for testing. */
+/** Renders the trade card above the trade's first offer. Returns the balance for testing. */
 export function renderTradeSummary(
   root: ParentNode,
   lookup: (id: number) => ItemValue | null | undefined,
-  settings: Settings,
+  ctx: RenderContext,
 ): TradeBalance | null {
   const offers = findTradeOffers(root);
   const existing = root.querySelector<HTMLElement>('[data-rolens="trade"]');
@@ -78,15 +42,22 @@ export function renderTradeSummary(
     return null;
   }
   const find = (id: number) => lookup(id) ?? undefined;
-  const balance = balanceTrade(totalSide(offers.give.ids, find), totalSide(offers.receive.ids, find));
-  const signature = JSON.stringify([offers.give.ids, offers.receive.ids, balance.valueDelta, balance.rapDelta]);
-  if (existing?.dataset.signature === signature) return balance;
+  const known = (ids: number[]) => ids.map(find).filter((item): item is ItemValue => item !== undefined);
+  const giveItems = known(offers.give.ids);
+  const receiveItems = known(offers.receive.ids);
+  const view: TradeView = {
+    balance: balanceTrade(totalSide(offers.give.ids, find), totalSide(offers.receive.ids, find)),
+    give: { items: giveItems, usd: totalUsd(giveItems, ctx.settings) },
+    receive: { items: receiveItems, usd: totalUsd(receiveItems, ctx.settings) },
+  };
+  const signature = JSON.stringify([offers.give.ids, offers.receive.ids, view.balance.valueDelta, view.give.usd]);
+  if (existing?.dataset.signature === signature) return view.balance;
   existing?.remove();
-  const summary = createTradeSummary(balance, settings);
-  summary.dataset.signature = signature;
+  const card = createTradeCard(view, ctx);
+  card.dataset.signature = signature;
   const firstOffer = [offers.give.element, offers.receive.element].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
   )[0];
-  firstOffer?.before(summary);
-  return balance;
+  firstOffer?.before(card);
+  return view.balance;
 }

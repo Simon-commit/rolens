@@ -35,5 +35,12 @@
   "host_permissions": ["https://api.rolimons.com/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/inter-latin.woff2"],
+      "matches": ["https://www.roblox.com/*"],
+      "use_dynamic_url": true
+    }
+  ]
 }

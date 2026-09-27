@@ -43,23 +43,22 @@ try {
   const page = await context.newPage();
 
   await page.goto('https://www.roblox.com/trades');
-  await page.waitForSelector('.rolens-trade');
-  assert.match(await page.textContent('.rolens-trade'), /\+1,700 value/);
-  assert.deepEqual(await page.$$eval('.rolens-badge', (badges) => badges.map((badge) => badge.dataset.rolensId)), [
-    '1',
-    '2',
-    '3',
-  ]);
+  await page.waitForSelector('[data-rolens="trade"]');
+  const shadowText = (selector) => page.$eval(selector, (host) => host.shadowRoot.textContent);
+  assert.match(await shadowText('[data-rolens="trade"]'), /\+1,700/);
+  const chipIds = await page.$$eval('[data-rolens="badge"]', (chips) => chips.map((chip) => chip.dataset.rolensId));
+  assert.deepEqual(chipIds, ['1', '2', '3']);
+  assert.ok(await page.evaluate(() => document.fonts.check('12px "RoLens Inter"')), 'bundled font should load');
 
   await page.goto('https://www.roblox.com/catalog/1/Valued-Hat');
-  await page.waitForSelector('.rolens-panel');
-  assert.match(await page.textContent('.rolens-panel'), /1,500 R\$/);
+  await page.waitForSelector('[data-rolens="panel"]');
+  assert.match(await shadowText('[data-rolens="panel"]'), /1,500/);
 
   const extensionId = new URL(worker.url()).host;
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await popup.waitForFunction(() => !document.querySelector('#status')?.textContent?.includes('Loading'));
-  assert.match(await popup.textContent('#status'), /3 items from Rolimon's/);
+  assert.match(await popup.textContent('#status'), /3 items tracked/);
 
   assert.equal(apiRequests, 1, 'values should be fetched once and then served from cache');
   console.log('E2E smoke test passed');

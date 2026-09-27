@@ -3,9 +3,12 @@ import { normaliseSettings, type Settings } from '../core/settings';
 import { resolveProvider } from '../providers';
 import { findItemCards, renderBadges } from './badges';
 import { isOwnNode, removeOwnNodes } from './dom';
+import { registerFont } from './fonts';
 import { renderItemPanel } from './item-panel';
 import { catalogIdFromPath } from './selectors';
 import { renderTradeSummary } from './trade-summary';
+import type { RenderContext } from './ui/context';
+import { detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
 
 const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
@@ -20,13 +23,14 @@ async function update(): Promise<void> {
   if (pageItemId !== null) ids.add(pageItemId);
   await store.load(ids);
 
+  const ctx: RenderContext = { settings, provider: resolveProvider(settings.source), status: store.status };
   const lookup = (id: number) => store.peek(id);
-  if (settings.showBadges) renderBadges(cards, lookup, settings);
+  if (settings.showBadges) renderBadges(cards, lookup, ctx);
   if (pageItemId !== null) {
     const item = store.peek(pageItemId);
-    if (item) renderItemPanel(document, item, settings, resolveProvider(settings.source), store.status);
+    if (item) renderItemPanel(document, item, ctx);
   }
-  if (settings.showTradeTotals) renderTradeSummary(document, lookup, settings);
+  if (settings.showTradeTotals) renderTradeSummary(document, lookup, ctx);
 }
 
 function schedule(): void {
@@ -36,6 +40,7 @@ function schedule(): void {
 }
 
 function start(): void {
+  registerFont();
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.
   new MutationObserver((mutations) => {
     const relevant = mutations.some((m) =>
@@ -43,6 +48,15 @@ function start(): void {
     );
     if (relevant) schedule();
   }).observe(document.body, { childList: true, subtree: true });
+
+  // Re-render when Roblox switches between light and dark theme.
+  let theme = detectTheme();
+  new MutationObserver(() => {
+    if (detectTheme() === theme) return;
+    theme = detectTheme();
+    removeOwnNodes(document);
+    schedule();
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync' && changes.settings) {

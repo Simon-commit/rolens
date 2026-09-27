@@ -1,0 +1,253 @@
+/*
+ * RoLens design tokens. Every widget lives in its own Shadow DOM, so these never
+ * touch Roblox's styles and Roblox's styles never touch these.
+ */
+:host {
+  --rl-font: 'RoLens Inter', 'Builder Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --rl-bg: #ffffff;
+  --rl-bg-raised: #ffffff;
+  --rl-surface: #f4f5f7;
+  --rl-surface-2: #eceef1;
+  --rl-border: rgba(15, 23, 42, 0.09);
+  --rl-border-strong: rgba(15, 23, 42, 0.16);
+  --rl-text: #0f1419;
+  --rl-text-2: #4b5563;
+  --rl-text-3: #8b93a1;
+
+  --rl-accent: #059669;
+  --rl-accent-soft: rgba(5, 150, 105, 0.1);
+  --rl-brand-a: #10b981;
+  --rl-brand-b: #06b6d4;
+
+  --rl-win: #059669;
+  --rl-win-soft: rgba(5, 150, 105, 0.1);
+  --rl-loss: #e11d48;
+  --rl-loss-soft: rgba(225, 29, 72, 0.09);
+  --rl-warn: #d97706;
+  --rl-warn-soft: rgba(217, 119, 6, 0.1);
+
+  --rl-rare-a: #f5b83d;
+  --rl-rare-b: #e879f9;
+  --rl-rare-c: #60a5fa;
+  --rl-rare-text: #b7791f;
+  --rl-rare-soft: rgba(245, 184, 61, 0.14);
+
+  --rl-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --rl-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -6px rgba(15, 23, 42, 0.12);
+  --rl-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.06), 0 24px 48px -12px rgba(15, 23, 42, 0.25);
+
+  --rl-radius-sm: 6px;
+  --rl-radius: 12px;
+  --rl-radius-lg: 16px;
+
+  font-family: var(--rl-font);
+  font-feature-settings:
+    'tnum' 1,
+    'cv11' 1,
+    'ss01' 1;
+  -webkit-font-smoothing: antialiased;
+  color: var(--rl-text);
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+:host([data-theme='dark']) {
+  --rl-bg: #111418;
+  --rl-bg-raised: #171b21;
+  --rl-surface: #1c2128;
+  --rl-surface-2: #242a33;
+  --rl-border: rgba(255, 255, 255, 0.07);
+  --rl-border-strong: rgba(255, 255, 255, 0.13);
+  --rl-text: #f3f5f7;
+  --rl-text-2: #aab2bd;
+  --rl-text-3: #6b7480;
+
+  --rl-accent: #34d399;
+  --rl-accent-soft: rgba(52, 211, 153, 0.12);
+  --rl-brand-a: #34d399;
+  --rl-brand-b: #22d3ee;
+
+  --rl-win: #34d399;
+  --rl-win-soft: rgba(52, 211, 153, 0.12);
+  --rl-loss: #fb7185;
+  --rl-loss-soft: rgba(251, 113, 133, 0.12);
+  --rl-warn: #fbbf24;
+  --rl-warn-soft: rgba(251, 191, 36, 0.12);
+
+  --rl-rare-text: #fcd34d;
+  --rl-rare-soft: rgba(252, 211, 77, 0.12);
+
+  --rl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -6px rgba(0, 0, 0, 0.5);
+  --rl-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.3), 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Shared atoms */
+.rl-glyph {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.rl-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rl-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rl-text-3);
+}
+.rl-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--rl-text);
+}
+.rl-muted {
+  color: var(--rl-text-2);
+}
+.rl-faint {
+  color: var(--rl-text-3);
+}
+
+.rl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--rl-surface);
+  color: var(--rl-text-2);
+}
+.rl-pill .rl-icon {
+  width: 12px;
+  height: 12px;
+}
+.rl-pill--warn {
+  background: var(--rl-warn-soft);
+  color: var(--rl-warn);
+}
+.rl-pill--win {
+  background: var(--rl-win-soft);
+  color: var(--rl-win);
+}
+.rl-pill--loss {
+  background: var(--rl-loss-soft);
+  color: var(--rl-loss);
+}
+.rl-pill--rare {
+  position: relative;
+  background: var(--rl-rare-soft);
+  color: var(--rl-rare-text);
+}
+.rl-pill--rare::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, var(--rl-rare-a), var(--rl-rare-b), var(--rl-rare-c), var(--rl-rare-a));
+  background-size: 300% 100%;
+  animation: rl-shimmer 6s linear infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Demand meter: five bars */
+.rl-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.rl-meter span {
+  width: 4px;
+  border-radius: 1.5px;
+  background: var(--rl-surface-2);
+}
+.rl-meter span:nth-child(1) {
+  height: 40%;
+}
+.rl-meter span:nth-child(2) {
+  height: 55%;
+}
+.rl-meter span:nth-child(3) {
+  height: 70%;
+}
+.rl-meter span:nth-child(4) {
+  height: 85%;
+}
+.rl-meter span:nth-child(5) {
+  height: 100%;
+}
+.rl-meter span.is-on {
+  background: var(--rl-accent);
+}
+.rl-meter[data-level='1'] span.is-on,
+.rl-meter[data-level='2'] span.is-on {
+  background: var(--rl-loss);
+}
+.rl-meter[data-level='3'] span.is-on {
+  background: var(--rl-warn);
+}
+
+/* Confidence: three dots */
+.rl-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.rl-confidence i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rl-surface-2);
+}
+.rl-confidence i.is-on {
+  background: var(--rl-accent);
+}
+
+@keyframes rl-shimmer {
+  to {
+    background-position: 300% 0;
+  }
+}
+@keyframes rl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

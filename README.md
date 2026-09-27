@@ -25,11 +25,12 @@ ships is in this repository.
 
 ## Features
 
-- **Value badges** on item cards across Roblox: value, RAP, and a warning when an item's RAP is projected.
-- **Trade win/loss** on the trades page: total value and RAP for each side, the difference, and the percentage.
-- **Item stats panel** on catalog pages: value, RAP, demand and trend, with a link to the item on Rolimon's.
-- **Light and dark themes** that follow Roblox's own theme.
-- **Settings** to turn each feature on or off and switch between compact (1.2M) and full numbers.
+- **Value chips** on every limited across Roblox: value, USD, and markers for rare and projected items. Hover or focus a chip for a full card with RAP, demand, trend and how RAP compares with value.
+- **Trade analysis** on the trades page: net value, a win/loss verdict with percentage, a balance bar, value, RAP and USD per side, warnings for projected items, and a one-click summary to paste into Discord.
+- **Item page card** on catalog pages: value, USD with confidence, RAP, demand meter, trend, rare and hyped tags, and a link to the item on Rolimon's.
+- **Rare items stand out**: an iridescent outline on the item's card and a rare marker on its chip.
+- **USD values**: shown from a USD source when one is connected (with its confidence and range), or from your own rate in USD per 1,000 value.
+- **Designed to fit Roblox**: follows Roblox's light and dark theme, uses a bundled Inter typeface, respects reduced motion, and is keyboard accessible. Every widget is isolated in Shadow DOM, so it can't break Roblox's layout.
 
 RoUtility support is planned; see [Data sources](#data-sources).
 
@@ -97,6 +98,7 @@ Values are community estimates, not prices. The market moves fast; always use yo
 
 ## Roadmap
 
+- RoUtility USD estimates with confidence, and a "sources disagree" warning when Rolimon's and RoUtility differ
 - Live totals on the trade creation page as you add items
 - Robux in trades, counted after Roblox's 30% fee
 - Total inventory value on profiles

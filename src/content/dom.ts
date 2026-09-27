@@ -23,6 +23,8 @@ export function isOwnNode(node: Node): boolean {
   return node instanceof Element && node.hasAttribute(ROLENS_ATTR);
 }
 
+/** Removes everything RoLens added, including markers on Roblox's own elements. */
 export function removeOwnNodes(root: ParentNode): void {
   for (const node of root.querySelectorAll(`[${ROLENS_ATTR}]`)) node.remove();
+  for (const node of root.querySelectorAll('[data-rolens-rare]')) node.removeAttribute('data-rolens-rare');
 }

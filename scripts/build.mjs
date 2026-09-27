@@ -8,18 +8,43 @@ const dist = new URL('dist/', root);
 const watch = process.argv.includes('--watch');
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
+const STATIC_FILES = {
+  'src/popup/popup.html': 'popup.html',
+  'src/popup/popup.css': 'popup.css',
+  'src/content/styles.css': 'content.css',
+  'node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2': 'fonts/inter-latin.woff2',
+  'node_modules/@fontsource-variable/inter/LICENSE': 'fonts/LICENSE-Inter.txt',
+  'src/icons/icon-16.png': 'icons/icon-16.png',
+  'src/icons/icon-32.png': 'icons/icon-32.png',
+  'src/icons/icon-48.png': 'icons/icon-48.png',
+  'src/icons/icon-128.png': 'icons/icon-128.png',
+};
+
 async function copyStatic() {
   const manifest = JSON.parse(await readFile(new URL('src/manifest.json', root), 'utf8'));
   manifest.version = pkg.version;
   await writeFile(new URL('manifest.json', dist), `${JSON.stringify(manifest, null, 2)}\n`);
-  await cp(new URL('src/popup/popup.html', root), new URL('popup.html', dist));
-  await cp(new URL('src/popup/popup.css', root), new URL('popup.css', dist));
-  await cp(new URL('src/content/styles.css', root), new URL('content.css', dist));
-  await mkdir(new URL('icons/', dist), { recursive: true });
-  for (const size of [16, 32, 48, 128]) {
-    await cp(new URL(`src/icons/icon-${size}.png`, root), new URL(`icons/icon-${size}.png`, dist));
+  for (const [from, to] of Object.entries(STATIC_FILES)) {
+    const target = new URL(to, dist);
+    await mkdir(new URL('.', target), { recursive: true });
+    await cp(new URL(from, root), target);
   }
 }
+
+/** Lets `import css from './x.css?raw'` inline a stylesheet as a string (Vite does the same in tests). */
+const rawPlugin = {
+  name: 'raw',
+  setup(build) {
+    build.onResolve({ filter: /\?raw$/ }, (args) => ({
+      path: new URL(args.path.replace(/\?raw$/, ''), `file://${args.resolveDir}/`).pathname,
+      namespace: 'raw',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'raw' }, async (args) => ({
+      contents: await readFile(args.path, 'utf8'),
+      loader: 'text',
+    }));
+  },
+};
 
 const common = {
   bundle: true,
@@ -28,6 +53,7 @@ const common = {
   sourcemap: false,
   legalComments: 'none',
   logLevel: 'info',
+  plugins: [rawPlugin],
 };
 
 const builds = [

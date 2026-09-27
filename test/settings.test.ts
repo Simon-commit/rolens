@@ -8,6 +8,13 @@ describe('normaliseSettings', () => {
     expect(normaliseSettings('junk')).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('accepts a sane USD rate only', () => {
+    expect(normaliseSettings({ usdRate: 3.5 }).usdRate).toBe(3.5);
+    expect(normaliseSettings({ usdRate: -1 }).usdRate).toBeNull();
+    expect(normaliseSettings({ usdRate: '3' }).usdRate).toBeNull();
+    expect(normaliseSettings({ usdRate: 1e9 }).usdRate).toBeNull();
+  });
+
   it('keeps valid keys and drops invalid ones', () => {
     expect(normaliseSettings({ showBadges: false, source: 'evil', compactNumbers: 'yes' })).toEqual({
       ...DEFAULT_SETTINGS,
