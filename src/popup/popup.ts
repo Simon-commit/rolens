@@ -119,10 +119,20 @@ function renderToggles(): void {
       | 'showProfileValue'
       | 'showItemPanel'
       | 'showUsd'
-      | 'darkRoblox';
+      | 'darkRoblox'
+      | 'hideSerials';
     input.checked = settings[key];
     input.addEventListener('change', () => void save({ [key]: input.checked }));
   }
+}
+
+/** Names the serial shortcut as the user has it set, or says none is assigned. */
+function renderSerialShortcut(): void {
+  void chrome.commands.getAll().then((commands) => {
+    const shortcut = commands.find((command) => command.name === 'toggle-serials')?.shortcut;
+    if (shortcut)
+      $('#serials-note').textContent = `Blurs Limited U serial numbers across roblox.com. Shortcut: ${shortcut}`;
+  });
 }
 
 function renderFormat(): void {
@@ -200,6 +210,7 @@ async function main(): Promise<void> {
   renderTheme();
   renderSources();
   renderToggles();
+  renderSerialShortcut();
   renderFormat();
   renderRate();
 

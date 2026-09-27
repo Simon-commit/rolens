@@ -122,3 +122,12 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
   });
   return true;
 });
+
+/* Keyboard shortcut (Alt+Shift+S by default, changeable in chrome://extensions/shortcuts). */
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'toggle-serials') return;
+  void (async () => {
+    const settings = await currentSettings();
+    await chrome.storage.sync.set({ settings: { ...settings, hideSerials: !settings.hideSerials } });
+  })();
+});

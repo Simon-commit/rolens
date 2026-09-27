@@ -36,6 +36,12 @@
       "run_at": "document_idle"
     }
   ],
+  "commands": {
+    "toggle-serials": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Hide or show serial numbers"
+    }
+  },
   "permissions": ["storage"],
   "host_permissions": ["https://api.rolimons.com/*", "https://routility.io/*"],
   "content_security_policy": {

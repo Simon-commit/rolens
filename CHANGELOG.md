@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-27
+
+### Added
+
+- Hide serial numbers: an optional setting that blurs the serial numbers of Limited U items wherever roblox.com shows them, including serials in hover titles. It applies instantly, before the page is painted, and never changes Roblox's layout. Toggle it from the popup or with the keyboard shortcut Alt+Shift+S, which can be changed at chrome://extensions/shortcuts.
+
 ## [0.6.4] - 2026-09-27
 
 ### Added

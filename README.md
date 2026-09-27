@@ -36,6 +36,7 @@ published in this repository.
 - **Rare item highlighting** with a quiet gold outline on the item card and a marker on its chip.
 - **Explanations on hover** for every warning, tag and price trend.
 - **Light and dark themes** that follow Roblox automatically or can be set manually, with smooth transitions.
+- **Serial hiding.** An optional setting blurs the serial numbers of Limited U items across roblox.com, including serials in hover titles, without changing Roblox's layout. Toggle it from the popup or with Alt+Shift+S.
 - **Dark mode for Roblox**, an optional setting that applies Roblox's own dark appearance to roblox.com in your browser, without changing your Roblox account settings.
 - **Built to fit Roblox.** RoLens uses a bundled Inter typeface, respects reduced-motion preferences and is fully keyboard accessible. Every widget is isolated in Shadow DOM, so it cannot affect Roblox's layout.
 

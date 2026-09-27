@@ -12,6 +12,8 @@ export interface Settings {
   tradeDetails: boolean;
   /** The item page card is folded to a one-line bar. */
   itemCardCollapsed: boolean;
+  /** Blurs serial numbers of Limited U items across roblox.com. */
+  hideSerials: boolean;
   /** Value badges on item cards across Roblox. */
   showBadges: boolean;
   /** Totals and win/loss on the trades page. */
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   darkRoblox: false,
   tradeDetails: false,
   itemCardCollapsed: false,
+  hideSerials: false,
   showBadges: true,
   showTradeTotals: true,
   showItemPanel: true,
@@ -76,6 +79,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'useRolimons',
     'useRoutility',
     'darkRoblox',
+    'hideSerials',
   ] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }

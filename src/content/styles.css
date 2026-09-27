@@ -40,3 +40,11 @@ html[data-rolens-dark] body:not(.dark-theme) {
   outline: 1.5px solid rgba(214, 158, 46, 0.75);
   outline-offset: -1.5px;
 }
+
+/* Hidden serials (see serials.ts): blurred in place, so Roblox's layout keeps its size. */
+html[data-rolens-serials-hidden] [data-rolens-serial],
+html[data-rolens-serials-hidden] .limited-number,
+html[data-rolens-serials-hidden] .limited-number-container {
+  filter: blur(5px);
+  user-select: none;
+}
