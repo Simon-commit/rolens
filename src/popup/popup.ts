@@ -42,7 +42,7 @@ function renderStatus(status: CacheStatus | undefined): void {
   }
   const label = SOURCES.rolimons.label;
   if (status.fetchedAt) {
-    title.textContent = `${status.itemCount.toLocaleString()} items tracked`;
+    title.textContent = `${status.itemCount.toLocaleString()} ${status.itemCount === 1 ? 'item' : 'items'} tracked`;
     sub.textContent = status.error
       ? `Update failed: ${status.error}`
       : `${label} · Updated ${formatAge(status.fetchedAt)}`;

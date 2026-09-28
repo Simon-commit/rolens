@@ -5,6 +5,10 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+
+- The popup reads "1 item tracked", not "1 items tracked"; the same for USD coverage on inventories.
+
 ## [0.9.1] - 2026-09-28
 
 ### Fixed

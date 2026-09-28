@@ -24,7 +24,9 @@ export function inventoryUsdTip(summary: InventorySummary): Tip {
       : 'This total is the sum of RoUtility estimates.',
   ];
   if (usd.covered < summary.copies) {
-    parts.push(`It covers ${usd.covered} of ${summary.copies} items; the remainder have no USD figure.`);
+    parts.push(
+      `It covers ${usd.covered} of ${summary.copies} ${summary.copies === 1 ? 'item' : 'items'}; the remainder have no USD figure.`,
+    );
   }
   parts.push('It should be regarded as indicative only.');
   return ['Estimated USD value', parts.join(' ')];
