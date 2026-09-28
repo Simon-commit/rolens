@@ -11,6 +11,7 @@ import {
   type TestAlertResponse,
 } from '../core/messages';
 import { ALERT_ALARM, ALERTS_KEY, testAlert } from '../core/alerts';
+import { migrateStorage } from '../core/migrations';
 import { itemFromRoutility, withRoutility } from '../core/routility';
 import { sourceNames, enabledSources } from '../core/sources';
 import {
@@ -243,8 +244,14 @@ function bindAlertListeners(): void {
   }
 }
 
+// Carries settings over from earlier releases before anything reads them.
+const migrated = migrateStorage({ sync: chrome.storage.sync, local: chrome.storage.local }).catch(() => undefined);
+chrome.runtime.onInstalled.addListener(() => {
+  void migrated.then(() => syncAlertSchedule());
+});
+
 bindAlertListeners();
-void syncAlertSchedule();
+void migrated.then(() => syncAlertSchedule());
 chrome.permissions.onAdded.addListener(() => {
   bindAlertListeners();
   void applyPendingChange();

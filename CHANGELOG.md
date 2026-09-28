@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-09-28
+
+### Added
+
+- Versioned settings. RoLens records which storage format an install uses and carries settings over step by step when an update changes it, so the Discord webhook, ntfy topic, theme and every switch survive updates. Settings from releases before 0.5 are carried over too. The rules for future releases are in CONTRIBUTING.md.
+
 ## [0.13.0] - 2026-09-28
 
 ### Added

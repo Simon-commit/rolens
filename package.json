@@ -1,6 +1,6 @@
 {
   "name": "rolens",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "private": true,
   "description": "Open source, privacy-first Chrome extension that shows Roblox limited trade values on Roblox pages.",
   "license": "MIT",
