@@ -52,7 +52,11 @@ body.ready * {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   width: 360px;
+  /* Every tab opens at the same height, so switching tabs does not resize the popup. */
+  min-height: 566px;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -69,54 +73,68 @@ body {
 }
 
 .hero {
-  position: relative;
-  padding: 18px 16px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 14px 16px 0;
   background:
-    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--brand-a) 22%, transparent), transparent 60%),
-    radial-gradient(100% 120% at 100% 0%, color-mix(in srgb, var(--brand-b) 18%, transparent), transparent 55%);
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--brand-a) 16%, transparent), transparent 60%),
+    radial-gradient(100% 120% at 100% 0%, color-mix(in srgb, var(--brand-b) 12%, transparent), transparent 55%),
+    var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .brand img {
-  border-radius: 9px;
+  flex: none;
+  border-radius: 8px;
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--brand-a) 60%, transparent);
+}
+.brand-text {
+  flex: 1;
+  min-width: 0;
 }
 h1 {
   margin: 0;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-.brand p {
-  margin: 1px 0 0;
-  font-size: 12px;
-  color: var(--text-2);
-}
-
 .status {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 10px 10px 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: var(--shadow);
+  gap: 6px;
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.status #status {
+  font-weight: 600;
+}
+.status-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-3);
+}
+.status-sub:not(:empty)::before {
+  content: '·';
+  margin-right: 6px;
 }
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   flex: none;
   border-radius: 50%;
   background: var(--text-3);
 }
 .status[data-state='fresh'] .dot {
   background: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .status[data-state='stale'] .dot {
   background: var(--warn);
@@ -124,29 +142,15 @@ h1 {
 .status[data-state='error'] .dot {
   background: var(--bad);
 }
-.status-text {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-}
-.status-text strong {
-  font-weight: 600;
-}
-.status-text span {
-  font-size: 11.5px;
-  color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .icon-button {
   display: grid;
   place-items: center;
+  flex: none;
   width: 30px;
   height: 30px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: transparent;
+  background: var(--card);
   color: var(--text-2);
   cursor: pointer;
 }
@@ -172,11 +176,62 @@ h1 {
   }
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin: 12px -4px 0;
+}
+.tabs button {
+  position: relative;
+  flex: 1;
+  height: 34px;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabs button:hover {
+  color: var(--text);
+}
+.tabs button[aria-selected='true'] {
+  color: var(--text);
+}
+.tabs button[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
+}
+.tabs button:focus-visible {
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.tab-dot {
+  position: absolute;
+  top: 9px;
+  margin-left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+.tab-dot[data-tone='bad'] {
+  background: var(--bad);
+}
+
 main {
-  padding: 4px 16px 0;
+  padding: 12px 16px 0;
 }
 h2 {
-  margin: 14px 2px 8px;
+  margin: 14px 2px 7px;
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -195,7 +250,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 9px 12px;
   cursor: pointer;
 }
 .setting + .setting {
@@ -348,9 +403,10 @@ button:focus-visible {
 }
 
 footer {
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
-  padding: 14px 18px 16px;
+  padding: 12px 18px 14px;
   font-size: 11px;
   color: var(--text-3);
 }
@@ -426,6 +482,176 @@ input[role='switch']:disabled {
   color: var(--bad);
 }
 
+/* Primary button */
+.text-button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.text-button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+:root[data-theme='dark'] .text-button.primary {
+  color: #04221a;
+}
+
+/* Folding rows: a summary row that opens its fields underneath */
+.fold + .setting,
+.setting + .fold,
+.fold + .fold {
+  border-top: 1px solid var(--border);
+}
+.fold > summary {
+  list-style: none;
+}
+.fold > summary::-webkit-details-marker {
+  display: none;
+}
+.fold > summary::after {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: var(--text-3);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.fold[open] > summary::after {
+  transform: rotate(180deg);
+}
+.fold[open] > summary {
+  background: var(--surface);
+}
+.fold-body {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.fold-grid {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  row-gap: 8px;
+}
+.fold-grid .field-label {
+  margin: 0;
+}
+.fold-grid .money-input input {
+  width: 84px;
+}
+.field-label {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.field-row {
+  display: flex;
+  gap: 6px;
+}
+.text-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.text-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.text-input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+.field-row .text-button {
+  height: 30px;
+  padding: 0 10px;
+}
+.field-note {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.field-note.is-good {
+  color: var(--accent);
+}
+.field-note.is-bad {
+  color: var(--bad);
+}
+
+/* Alerts */
+.alert-switch[data-state='off'] {
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+}
+.status-row {
+  cursor: default;
+}
+.status-row b {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.status-row b::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.status-row[data-state='error'] b::before {
+  background: var(--bad);
+}
+.status-row[data-state='waiting'] b::before {
+  background: var(--text-3);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.link-button {
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.link-button:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
 [hidden] {
   display: none !important;
+}
+.section-note.is-good {
+  color: var(--accent);
+}
+.section-note.is-bad {
+  color: var(--bad);
+}
+.fold-grid input[role='switch'] {
+  justify-self: end;
+}
+.fold > summary .badge {
+  margin-left: auto;
+}
+.fold > summary {
+  gap: 8px;
+}
+.fold > summary > span:first-child {
+  margin-right: 4px;
 }

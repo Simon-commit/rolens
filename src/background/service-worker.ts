@@ -24,6 +24,7 @@ import {
   type InboundReader,
 } from './inbound-alerts';
 import { rememberTab, viaRobloxTab } from './roblox-relay';
+import { applyPendingChange } from './alert-grants';
 import type { TradeOffers, TradeSummaryRow } from '../content/roblox-api';
 import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
@@ -246,6 +247,7 @@ bindAlertListeners();
 void syncAlertSchedule();
 chrome.permissions.onAdded.addListener(() => {
   bindAlertListeners();
+  void applyPendingChange();
   void syncAlertSchedule();
 });
 // Chrome may drop alarms when it restarts; make sure the check is scheduled again.

@@ -11,8 +11,6 @@ const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 const STATIC_FILES = {
   'src/popup/popup.html': 'popup.html',
   'src/popup/popup.css': 'popup.css',
-  'src/options/options.html': 'options.html',
-  'src/options/options.css': 'options.css',
   'src/content/styles.css': 'content.css',
   'node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2': 'fonts/inter-latin.woff2',
   'node_modules/@fontsource-variable/inter/LICENSE': 'fonts/LICENSE-Inter.txt',
@@ -63,7 +61,6 @@ const builds = [
   { ...common, entryPoints: ['src/content/early.ts'], outfile: 'dist/early.js', format: 'iife' },
   { ...common, entryPoints: ['src/content/index.ts'], outfile: 'dist/content.js', format: 'iife' },
   { ...common, entryPoints: ['src/popup/popup.ts'], outfile: 'dist/popup.js', format: 'iife' },
-  { ...common, entryPoints: ['src/options/options.ts'], outfile: 'dist/options.js', format: 'iife' },
 ];
 
 await rm(dist, { recursive: true, force: true });

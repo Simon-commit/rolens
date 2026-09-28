@@ -1,5 +1,5 @@
 import { STALE_AFTER_MS } from '../core/cache';
-import { ALERT_STATE_KEY, ALERTS_KEY, normaliseAlerts } from '../core/alerts';
+import { initAlerts } from './alerts';
 import { formatAge } from '../core/format';
 import { send, type CacheStatus } from '../core/messages';
 import { ROUTILITY_BACKOFF_MS } from '../core/routility-cache';
@@ -98,7 +98,7 @@ function renderSources(): void {
     }
     $('#source-note').hidden = onCount > 1;
     $('#usd-note').textContent = settings.useRoutility
-      ? 'RoUtility estimates, with the fallback rate where none is published'
+      ? 'RoUtility estimates, or the fallback rate'
       : 'Calculated at the fallback rate';
   };
   for (const input of inputs) {
@@ -133,8 +133,7 @@ function renderToggles(): void {
 function renderSerialShortcut(): void {
   void chrome.commands.getAll().then((commands) => {
     const shortcut = commands.find((command) => command.name === 'toggle-serials')?.shortcut;
-    if (shortcut)
-      $('#serials-note').textContent = `Blurs Limited U serial numbers across roblox.com. Shortcut: ${shortcut}`;
+    if (shortcut) $('#serials-note').textContent = `Blurs Limited U serials · ${shortcut}`;
   });
 }
 
@@ -175,9 +174,9 @@ function applyTheme(): void {
 function renderTheme(): void {
   const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]');
   const notes: Record<ThemePreference, string> = {
-    auto: 'Matches Roblox and your system',
-    light: 'Light at all times',
-    dark: 'Dark at all times',
+    auto: 'Follows Roblox',
+    light: 'Always light',
+    dark: 'Always dark',
   };
   const paint = () => {
     for (const button of buttons) {
@@ -207,26 +206,45 @@ async function refreshStatus(): Promise<void> {
   renderAllStatus(await send({ type: 'rolens:getStatus' }).catch(() => undefined));
 }
 
-/** Summarises the alert setup; the options page holds the details. */
-async function renderAlerts(): Promise<void> {
-  const stored = await chrome.storage.local.get([ALERTS_KEY, ALERT_STATE_KEY]);
-  const alerts = normaliseAlerts(stored[ALERTS_KEY]);
-  const failing = Boolean((stored[ALERT_STATE_KEY] as { lastError?: string | null } | undefined)?.lastError);
-  const channels = [
-    alerts.desktop ? 'desktop' : '',
-    alerts.discordWebhook ? 'Discord' : '',
-    alerts.ntfyTopic ? 'phone' : '',
-  ].filter(Boolean);
-  $('#alerts-note').textContent = alerts.enabled
-    ? failing
-      ? 'Needs attention: open Manage for details'
-      : `On · ${channels.length ? channels.join(', ') : 'no destination set'}`
-    : channels.length
-      ? 'Off · turn alerts on to start receiving them'
-      : 'Notifies you of new inbound trades on your phone, Discord or desktop';
-  const open = $<HTMLButtonElement>('#alerts-open');
-  open.textContent = alerts.enabled || channels.length ? 'Manage' : 'Set up';
-  open.addEventListener('click', () => void chrome.runtime.openOptionsPage());
+const TAB_KEY = 'rolens:tab';
+const TABS = ['features', 'alerts', 'display', 'sources'] as const;
+type Tab = (typeof TABS)[number];
+
+/** Four tabs keep the popup short. The last one used is reopened; popup.html#alerts opens a given tab. */
+function renderTabs(): void {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const show = (tab: Tab, focus = false) => {
+    for (const button of buttons) {
+      const selected = button.dataset.tab === tab;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      if (selected && focus) button.focus();
+      $(`#panel-${button.dataset.tab}`).hidden = !selected;
+    }
+    try {
+      localStorage.setItem(TAB_KEY, tab);
+    } catch {
+      // Remembering the tab is a convenience only.
+    }
+  };
+  for (const [i, button] of buttons.entries()) {
+    button.addEventListener('click', () => show(button.dataset.tab as Tab));
+    button.addEventListener('keydown', (event) => {
+      const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      if (!step) return;
+      event.preventDefault();
+      show(buttons[(i + step + buttons.length) % buttons.length]!.dataset.tab as Tab, true);
+    });
+  }
+  let initial: string | null = location.hash.slice(1);
+  if (!initial) {
+    try {
+      initial = localStorage.getItem(TAB_KEY);
+    } catch {
+      initial = null;
+    }
+  }
+  show(TABS.includes(initial as Tab) ? (initial as Tab) : 'features');
 }
 
 async function main(): Promise<void> {
@@ -238,7 +256,8 @@ async function main(): Promise<void> {
   renderSerialShortcut();
   renderFormat();
   renderRate();
-  void renderAlerts();
+  renderTabs();
+  void initAlerts();
 
   const refresh = $<HTMLButtonElement>('#refresh');
   refresh.addEventListener('click', () => {
@@ -261,7 +280,7 @@ async function main(): Promise<void> {
       .then((status) => {
         renderAllStatus(status);
         clear.textContent = 'Cleared';
-        $('#clear-note').textContent = 'Saved trades, inventories and estimates have been removed';
+        $('#clear-note').textContent = 'Saved trades and estimates removed';
       });
   });
 

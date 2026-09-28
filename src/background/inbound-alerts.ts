@@ -206,7 +206,7 @@ export const directReader: InboundReader = {
   failure: lastTradeFailure,
 };
 
-/** What one check found, shown on the alerts page. */
+/** What one check found, shown in the popup's Alerts tab. */
 export interface CheckResult {
   at: number;
   /** Trades that arrived since the previous check. */

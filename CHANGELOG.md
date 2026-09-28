@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-28
+
+### Changed
+
+- The popup is organised into four tabs, Features, Alerts, Display and Sources, so each opens at a compact, fixed height instead of one long scroll. The header is a single line with the value status.
+- Trade alerts are set up inside the popup's Alerts tab; the separate alerts page is gone. Discord, phone and filter settings open underneath their row, and a dot on the tab flags a setup that is half done or failing.
+- If Chrome closes the popup while it asks for a permission, the change is still applied once the permission is granted.
+
 ## [0.8.2] - 2026-09-27
 
 ### Changed

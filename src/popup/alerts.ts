@@ -1,110 +1,89 @@
+import { applyAlertChange, readAlertSettings, requestAlertChange } from '../background/alert-grants';
+import type { CheckResult } from '../background/inbound-alerts';
 import {
   ALERT_STATE_KEY,
   ALERTS_KEY,
   DISCORD_ORIGIN,
   isDiscordUserId,
   isNtfyTopic,
-  normaliseAlerts,
   normaliseWebhook,
   NTFY_ORIGIN,
   ROBLOX_TRADES_ORIGIN,
   type AlertSettings,
 } from '../core/alerts';
-import type { CheckResult } from '../background/inbound-alerts';
-import { formatAge } from '../core/format';
+import { formatAge, formatRobux } from '../core/format';
 import { send } from '../core/messages';
-import { normaliseSettings } from '../core/settings';
 
 /*
- * The inbound trade alerts page. Every permission is requested here, at the moment the
- * user turns on the feature that needs it, and returned when it is turned off again.
+ * The Alerts tab. Every permission is requested at the moment the user turns on the part
+ * that needs it, and returned when it is turned off. Saving a destination also turns alerts
+ * on, in the same Chrome prompt.
  */
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 
 let alerts: AlertSettings;
 
-async function save(patch: Partial<AlertSettings>): Promise<void> {
-  alerts = { ...alerts, ...patch };
-  await chrome.storage.local.set({ [ALERTS_KEY]: alerts });
+/**
+ * A destination's permissions plus what alerts themselves need, so one Chrome prompt covers
+ * both. Chrome does not prompt again for permissions already granted.
+ */
+function withAlerts(needed: chrome.permissions.Permissions = {}): chrome.permissions.Permissions {
+  return {
+    permissions: [...(needed.permissions ?? []), 'alarms'],
+    origins: [...(needed.origins ?? []), ROBLOX_TRADES_ORIGIN],
+  };
 }
 
-const request = (permissions: chrome.permissions.Permissions) =>
-  chrome.permissions.request(permissions).catch(() => false);
 const release = (permissions: chrome.permissions.Permissions) =>
   chrome.permissions.remove(permissions).catch(() => false);
+
+async function save(patch: Partial<AlertSettings>): Promise<void> {
+  alerts = await applyAlertChange(patch);
+}
 
 function note(selector: string, text: string, tone?: 'good' | 'bad'): void {
   const node = $(selector);
   node.textContent = text;
-  node.className = `field-note${tone ? ` is-${tone}` : ''}`;
+  node.classList.remove('is-good', 'is-bad');
+  if (tone) node.classList.add(`is-${tone}`);
 }
 
-const ALERT_PERMISSIONS: chrome.permissions.Permissions = { permissions: ['alarms'], origins: [ROBLOX_TRADES_ORIGIN] };
-
-/**
- * A destination's permissions, plus what alerts themselves need while they are off, so one
- * Chrome prompt covers both and saving a destination turns alerts on.
- */
-function withAlerts(needed: chrome.permissions.Permissions): chrome.permissions.Permissions {
-  if (alerts.enabled) return needed;
-  return {
-    permissions: [...(needed.permissions ?? []), ...ALERT_PERMISSIONS.permissions!],
-    origins: [...(needed.origins ?? []), ...ALERT_PERMISSIONS.origins!],
-  };
-}
-
-/** Turns alerts on once their permissions are granted. */
-async function turnOn(): Promise<void> {
-  if (alerts.enabled) return;
-  // Start fresh: trades already waiting are not new, whatever happened while alerts were off.
-  await chrome.storage.local.remove(ALERT_STATE_KEY);
-  await save({ enabled: true });
-  $<HTMLInputElement>('#enabled').checked = true;
-  await renderState();
-}
-
-async function requestAndTurnOn(): Promise<boolean> {
-  // Requested from the click itself, as Chrome requires.
-  if (!(await request(ALERT_PERMISSIONS))) return false;
-  await turnOn();
-  return true;
+function paintBadge(selector: string, connected: boolean): void {
+  const badge = $(selector);
+  badge.textContent = connected ? 'Connected' : 'Not set up';
+  badge.className = `badge${connected ? '' : ' is-idle'}`;
 }
 
 function renderSwitches(): void {
   const enabled = $<HTMLInputElement>('#enabled');
-  enabled.checked = alerts.enabled;
   enabled.addEventListener('change', () => {
     void (async () => {
       if (enabled.checked) {
-        if (!(await requestAndTurnOn())) enabled.checked = false;
+        if (!(await requestAlertChange({ enabled: true }, withAlerts()))) {
+          enabled.checked = false;
+        }
         return;
       }
       await save({ enabled: false });
       await release({ origins: [ROBLOX_TRADES_ORIGIN] });
-      void renderState();
     })();
   });
-  $('#turn-on').addEventListener('click', () => void requestAndTurnOn());
 
   const desktop = $<HTMLInputElement>('#desktop');
-  void chrome.permissions.contains({ permissions: ['notifications'] }).then((granted) => {
-    desktop.checked = alerts.desktop && granted;
-  });
   desktop.addEventListener('change', () => {
     void (async () => {
-      if (desktop.checked && !(await request(withAlerts({ permissions: ['notifications'] })))) {
-        desktop.checked = false;
+      if (!desktop.checked) {
+        await save({ desktop: false });
+        await release({ permissions: ['notifications'] });
         return;
       }
-      await save({ desktop: desktop.checked });
-      if (desktop.checked) await turnOn();
-      if (!desktop.checked) await release({ permissions: ['notifications'] });
+      const patch = { desktop: true, enabled: true };
+      if (!(await requestAlertChange(patch, withAlerts({ permissions: ['notifications'] })))) desktop.checked = false;
     })();
   });
 
   const rare = $<HTMLInputElement>('#rare-bypass');
-  rare.checked = alerts.rareBypass;
   rare.addEventListener('change', () => void save({ rareBypass: rare.checked }));
 }
 
@@ -113,7 +92,6 @@ function renderDiscord(): void {
   const user = $<HTMLInputElement>('#discord-user');
   webhook.value = alerts.discordWebhook;
   user.value = alerts.discordUserId;
-  if (alerts.discordWebhook) note('#discord-note', 'Connected. Alerts are posted to this webhook.', 'good');
   $('#discord-save').addEventListener('click', () => {
     void (async () => {
       const url = webhook.value.trim();
@@ -131,17 +109,12 @@ function renderDiscord(): void {
         user.value = '';
         return note('#discord-note', 'Discord alerts are off.');
       }
-      if (!(await request(withAlerts({ origins: [DISCORD_ORIGIN] })))) {
+      const patch = { discordWebhook: canonical, discordUserId: id, enabled: true };
+      if (!(await requestAlertChange(patch, withAlerts({ origins: [DISCORD_ORIGIN] })))) {
         return note('#discord-note', 'Chrome did not allow RoLens to reach Discord.', 'bad');
       }
-      await save({ discordWebhook: canonical, discordUserId: id });
-      await turnOn();
       webhook.value = canonical;
-      note(
-        '#discord-note',
-        id ? 'Saved. Alerts will mention you, so Discord notifies you.' : 'Saved. Alerts are posted to this webhook.',
-        'good',
-      );
+      note('#discord-note', id ? 'Saved. Alerts mention you, so Discord notifies you.' : 'Saved.', 'good');
     })();
   });
 }
@@ -154,7 +127,6 @@ function randomTopic(): string {
 function renderNtfy(): void {
   const topic = $<HTMLInputElement>('#ntfy-topic');
   topic.value = alerts.ntfyTopic;
-  if (alerts.ntfyTopic) note('#ntfy-note', `Connected. Subscribe to "${alerts.ntfyTopic}" in the ntfy app.`, 'good');
   $('#ntfy-generate').addEventListener('click', () => {
     topic.value = randomTopic();
     topic.setAttribute('aria-invalid', 'false');
@@ -167,19 +139,25 @@ function renderNtfy(): void {
       if (!value) {
         await save({ ntfyTopic: '' });
         await release({ origins: [NTFY_ORIGIN] });
-        return note('#ntfy-note', 'Phone alerts through ntfy are off.');
+        return note('#ntfy-note', 'Phone alerts are off.');
       }
       if (!isNtfyTopic(value)) {
         return note('#ntfy-note', 'Use 6 to 64 letters, digits, dashes or underscores.', 'bad');
       }
-      if (!(await request(withAlerts({ origins: [NTFY_ORIGIN] })))) {
+      if (!(await requestAlertChange({ ntfyTopic: value, enabled: true }, withAlerts({ origins: [NTFY_ORIGIN] })))) {
         return note('#ntfy-note', 'Chrome did not allow RoLens to reach ntfy.sh.', 'bad');
       }
-      await save({ ntfyTopic: value });
-      await turnOn();
       note('#ntfy-note', `Saved. Subscribe to "${value}" in the ntfy app.`, 'good');
     })();
   });
+}
+
+function filtersSummary(): string {
+  const parts: string[] = [];
+  if (alerts.minReceive) parts.push(`receive ${formatRobux(alerts.minReceive, true)}+`);
+  if (alerts.minGain !== null) parts.push(`gain ${formatRobux(alerts.minGain, true)}+`);
+  if (alerts.minGainPercent !== null) parts.push(`gain ${alerts.minGainPercent}%+`);
+  return parts.length ? `Only trades that ${parts.join(', ')}` : 'Every new trade alerts';
 }
 
 function renderFilters(): void {
@@ -207,24 +185,28 @@ function renderTest(): void {
       .catch(() => undefined)
       .then((result) => {
         button.disabled = false;
-        const text = !result
-          ? 'RoLens could not send the test. Please reload the extension and try again.'
-          : !result.sent
-            ? 'Set up at least one destination first.'
-            : result.failures.length
-              ? `Sent, but ${result.failures.join(' and ')} did not accept it.`
-              : 'Sent. Check each destination.';
-        $('#test-note').textContent = text;
+        const failed = !result || !result.sent || result.failures.length > 0;
+        note(
+          '#test-note',
+          !result
+            ? 'The test could not be sent. Please reload the extension.'
+            : !result.sent
+              ? 'Set up a destination first, then send a test.'
+              : result.failures.length
+                ? `The test was not accepted by ${result.failures.join(' and ')}.`
+                : 'Test sent. Check each destination.',
+          failed ? 'bad' : 'good',
+        );
       });
   });
 }
 
 function describeResult(result: CheckResult): string {
-  if (result.primed) return 'Trades already in your inbound list were noted. New trades from now on will alert.';
-  if (!result.newTrades) return 'No new inbound trades since the last check.';
-  const parts = [`${result.newTrades} new ${result.newTrades === 1 ? 'trade' : 'trades'}`];
+  if (result.primed) return 'Waiting trades noted; new ones will alert.';
+  if (!result.newTrades) return 'No new trades.';
+  const parts = [`${result.newTrades} new`];
   if (result.alerted) parts.push(`${result.alerted} alerted`);
-  if (result.filtered) parts.push(`${result.filtered} below your filters`);
+  if (result.filtered) parts.push(`${result.filtered} filtered`);
   return `${parts.join(', ')}.`;
 }
 
@@ -239,51 +221,73 @@ function renderCheckNow(): void {
         button.disabled = false;
         button.textContent = 'Check now';
         await renderState();
-        if (!response) $('#check-detail').textContent = 'RoLens could not run the check. Please reload the extension.';
+        if (!response) $('#check-detail').textContent = 'The check could not run. Please reload the extension.';
       });
   });
 }
 
+interface StoredState {
+  lastCheck?: number | null;
+  lastAlert?: number | null;
+  lastError?: string | null;
+  lastResult?: CheckResult;
+}
+
+/** Paints everything that follows from the stored settings and the last check. */
 async function renderState(): Promise<void> {
+  const stored = await chrome.storage.local.get(ALERT_STATE_KEY);
+  const state = stored[ALERT_STATE_KEY] as StoredState | undefined;
+  const has = (permissions: chrome.permissions.Permissions) =>
+    chrome.permissions.contains(permissions).catch(() => false);
+  const hasPermissions = await has({ origins: [ROBLOX_TRADES_ORIGIN] });
+  const notifications = await has({ permissions: ['notifications'] });
+  const on = alerts.enabled && hasPermissions;
+
+  $<HTMLInputElement>('#enabled').checked = on;
+  $<HTMLInputElement>('#desktop').checked = alerts.desktop && notifications;
+  $<HTMLInputElement>('#rare-bypass').checked = alerts.rareBypass;
+  paintBadge('#discord-badge', Boolean(alerts.discordWebhook));
+  paintBadge('#ntfy-badge', Boolean(alerts.ntfyTopic));
+  $('#filters-note').textContent = filtersSummary();
+
+  const destinations = [alerts.discordWebhook, alerts.ntfyTopic, alerts.desktop && notifications].filter(
+    Boolean,
+  ).length;
+  const failing = on && Boolean(state?.lastError);
+  $('#alert-switch').dataset.state = on ? (failing ? 'error' : 'on') : 'off';
+  // Flags a setup that is half done or failing; untouched alerts stay quiet.
+  $('#alerts-dot').hidden = !(failing || (on && !destinations) || (!on && destinations));
+  $('#alerts-dot').dataset.tone = failing ? 'bad' : 'idle';
+  $('#alerts-note').textContent = !on
+    ? destinations
+      ? 'Off. Turn on to start receiving alerts.'
+      : 'Off. Choose where to send alerts below.'
+    : destinations
+      ? 'On. Checks your inbound trades every minute.'
+      : 'On. Choose where to send alerts below.';
+
   const row = $('#check-row');
+  row.hidden = !on;
+  if (!on) return;
   const title = $('#check-status');
   const detail = $('#check-detail');
-  $('#turn-on').hidden = alerts.enabled;
-  $('#check-now').hidden = !alerts.enabled;
-  if (!alerts.enabled) {
-    row.dataset.state = 'off';
-    title.textContent = 'Alerts are off';
-    detail.textContent = 'Turn them on to be notified of new inbound trades.';
-    return;
-  }
-  const stored = await chrome.storage.local.get(ALERT_STATE_KEY);
-  const state = stored[ALERT_STATE_KEY] as
-    | { lastCheck?: number | null; lastAlert?: number | null; lastError?: string | null; lastResult?: CheckResult }
-    | undefined;
   if (state?.lastError) {
     row.dataset.state = 'error';
     title.textContent = 'Needs attention';
     detail.textContent = state.lastError;
   } else if (state?.lastCheck) {
     row.dataset.state = 'ok';
-    title.textContent = 'Watching your inbound trades';
-    const summary = state.lastResult ? ` ${describeResult(state.lastResult)}` : '';
-    detail.textContent = `Last checked ${formatAge(state.lastCheck)}${state.lastAlert ? ` · last alert ${formatAge(state.lastAlert)}` : ''}.${summary}`;
+    title.textContent = `Checked ${formatAge(state.lastCheck)}`;
+    detail.textContent = state.lastResult ? describeResult(state.lastResult) : '';
   } else {
     row.dataset.state = 'waiting';
     title.textContent = 'Waiting for the first check';
-    detail.textContent =
-      'Trades already in your inbound list will not alert; only new ones will. Press Check now to start.';
+    detail.textContent = 'Trades already waiting will not alert.';
   }
 }
 
-async function main(): Promise<void> {
-  const [local, sync] = await Promise.all([chrome.storage.local.get(ALERTS_KEY), chrome.storage.sync.get('settings')]);
-  alerts = normaliseAlerts(local[ALERTS_KEY]);
-  const theme = normaliseSettings(sync.settings).theme;
-  const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-
+export async function initAlerts(): Promise<void> {
+  alerts = await readAlertSettings();
   renderSwitches();
   renderDiscord();
   renderNtfy();
@@ -292,9 +296,11 @@ async function main(): Promise<void> {
   renderCheckNow();
   await renderState();
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes[ALERT_STATE_KEY]) void renderState();
+    if (area !== 'local' || !(changes[ALERT_STATE_KEY] || changes[ALERTS_KEY])) return;
+    void readAlertSettings().then((next) => {
+      alerts = next;
+      return renderState();
+    });
   });
   window.setInterval(() => void renderState(), 30_000);
 }
-
-void main();

@@ -9,17 +9,13 @@
   <body>
     <header class="hero">
       <div class="brand">
-        <img src="icons/icon-48.png" alt="" width="32" height="32" />
-        <div>
+        <img src="icons/icon-48.png" alt="" width="30" height="30" />
+        <div class="brand-text">
           <h1>RoLens</h1>
-          <p>Item values and trade tools for Roblox</p>
-        </div>
-      </div>
-      <div class="status" id="status-card">
-        <span class="dot" aria-hidden="true"></span>
-        <div class="status-text">
-          <strong id="status">Loading values…</strong>
-          <span id="status-sub"></span>
+          <p class="status" id="status-card">
+            <span class="dot" aria-hidden="true"></span><span id="status">Loading values…</span
+            ><span class="status-sub" id="status-sub"></span>
+          </p>
         </div>
         <button id="refresh" type="button" class="icon-button" aria-label="Refresh values" title="Refresh values">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -28,14 +24,178 @@
           </svg>
         </button>
       </div>
+      <nav class="tabs" role="tablist" aria-label="Settings">
+        <button type="button" role="tab" id="tab-features" aria-controls="panel-features" data-tab="features">
+          Features
+        </button>
+        <button type="button" role="tab" id="tab-alerts" aria-controls="panel-alerts" data-tab="alerts">
+          Alerts<span class="tab-dot" id="alerts-dot" hidden></span>
+        </button>
+        <button type="button" role="tab" id="tab-display" aria-controls="panel-display" data-tab="display">
+          Display
+        </button>
+        <button type="button" role="tab" id="tab-sources" aria-controls="panel-sources" data-tab="sources">
+          Sources
+        </button>
+      </nav>
     </header>
 
     <main>
-      <section aria-labelledby="look-title">
-        <h2 id="look-title">Appearance</h2>
+      <section class="panel" role="tabpanel" id="panel-features" aria-labelledby="tab-features">
+        <div class="list">
+          <label class="setting">
+            <span><b>Value chips</b><small>Value and USD on limited items</small></span>
+            <input type="checkbox" role="switch" data-setting="showBadges" />
+          </label>
+          <label class="setting">
+            <span><b>Trade analysis</b><small>Net value and balance on every trade</small></span>
+            <input type="checkbox" role="switch" data-setting="showTradeTotals" />
+          </label>
+          <label class="setting">
+            <span><b>Trade list previews</b><small>Net value on each trade in your list</small></span>
+            <input type="checkbox" role="switch" data-setting="showTradePreviews" />
+          </label>
+          <label class="setting">
+            <span><b>Duplicate trade warning</b><small>Notes pending trades with the same player</small></span>
+            <input type="checkbox" role="switch" data-setting="warnDuplicateTrades" />
+          </label>
+          <label class="setting">
+            <span><b>Outbound trade tools</b><small>Cancel outdated or all outbound trades</small></span>
+            <input type="checkbox" role="switch" data-setting="showCancelTools" />
+          </label>
+          <label class="setting">
+            <span><b>Profile inventory</b><small>Inventory value on player profiles</small></span>
+            <input type="checkbox" role="switch" data-setting="showProfileValue" />
+          </label>
+          <label class="setting">
+            <span><b>Item page card</b><small>Market data on catalog item pages</small></span>
+            <input type="checkbox" role="switch" data-setting="showItemPanel" />
+          </label>
+        </div>
+        <p class="section-note">
+          Trades are read with your Roblox session. RoLens cancels only the trades you review and confirm.
+        </p>
+      </section>
+
+      <section class="panel" role="tabpanel" id="panel-alerts" aria-labelledby="tab-alerts" hidden>
+        <div class="list">
+          <label class="setting alert-switch" id="alert-switch">
+            <span
+              ><b>Inbound trade alerts</b><small id="alerts-note">Checks your inbound trades every minute</small></span
+            >
+            <input id="enabled" type="checkbox" role="switch" />
+          </label>
+          <div class="setting status-row" id="check-row" hidden>
+            <span><b id="check-status">Waiting for the first check</b><small id="check-detail"></small></span>
+            <button id="check-now" type="button" class="text-button">Check now</button>
+          </div>
+        </div>
+
+        <div class="section-head">
+          <h2>Send alerts to</h2>
+          <button id="test" type="button" class="link-button">Send test</button>
+        </div>
+        <div class="list">
+          <details class="fold" id="fold-discord">
+            <summary class="setting">
+              <span><b>Discord</b><small>A webhook in your server</small></span>
+              <span class="badge is-idle" id="discord-badge">Not set up</span>
+            </summary>
+            <div class="fold-body">
+              <label class="field-label" for="discord-webhook">Webhook URL</label>
+              <div class="field-row">
+                <input
+                  id="discord-webhook"
+                  class="text-input"
+                  type="url"
+                  inputmode="url"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="https://discord.com/api/webhooks/…"
+                />
+                <button id="discord-save" type="button" class="text-button primary">Save</button>
+              </div>
+              <label class="field-label" for="discord-user">Discord user ID to mention (optional)</label>
+              <div class="field-row">
+                <input
+                  id="discord-user"
+                  class="text-input"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="123456789012345678"
+                />
+              </div>
+              <small class="field-note" id="discord-note"
+                >Create a webhook under Server Settings, Integrations, Webhooks.</small
+              >
+            </div>
+          </details>
+          <details class="fold" id="fold-ntfy">
+            <summary class="setting">
+              <span><b>Phone</b><small>Push alerts with the ntfy app</small></span>
+              <span class="badge is-idle" id="ntfy-badge">Not set up</span>
+            </summary>
+            <div class="fold-body">
+              <label class="field-label" for="ntfy-topic">ntfy topic</label>
+              <div class="field-row">
+                <input
+                  id="ntfy-topic"
+                  class="text-input"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Topic name"
+                />
+                <button id="ntfy-generate" type="button" class="text-button">Generate</button>
+                <button id="ntfy-save" type="button" class="text-button primary">Save</button>
+              </div>
+              <small class="field-note" id="ntfy-note"
+                >Install ntfy on Android or iOS and subscribe to this topic. Keep the name private.</small
+              >
+            </div>
+          </details>
+          <label class="setting">
+            <span><b>This computer</b><small>A Chrome notification that opens your trades</small></span>
+            <input id="desktop" type="checkbox" role="switch" />
+          </label>
+        </div>
+
+        <h2>Rules</h2>
+        <div class="list">
+          <details class="fold" id="fold-filters">
+            <summary class="setting">
+              <span><b>Filters</b><small id="filters-note">Every new trade alerts</small></span>
+            </summary>
+            <div class="fold-body fold-grid">
+              <label class="field-label" for="min-receive">Minimum value received</label>
+              <span class="money-input"
+                ><input id="min-receive" type="number" inputmode="numeric" min="0" step="1000" placeholder="Any"
+              /></span>
+              <label class="field-label" for="min-gain">Minimum gain</label>
+              <span class="money-input"
+                ><input id="min-gain" type="number" inputmode="numeric" step="1000" placeholder="Any"
+              /></span>
+              <label class="field-label" for="min-percent">Minimum gain in percent</label>
+              <span class="money-input"
+                ><input id="min-percent" type="number" inputmode="decimal" step="1" placeholder="Any" /><span
+                  aria-hidden="true"
+                  >%</span
+                ></span
+              >
+              <label class="field-label" for="rare-bypass">Rare items always alert</label>
+              <input id="rare-bypass" type="checkbox" role="switch" />
+            </div>
+          </details>
+        </div>
+        <p class="section-note" id="test-note">Only the trader's name, the items and their values are sent.</p>
+      </section>
+
+      <section class="panel" role="tabpanel" id="panel-display" aria-labelledby="tab-display" hidden>
         <div class="list">
           <div class="setting">
-            <span><b>RoLens theme</b><small id="theme-note">Matches Roblox and your system</small></span>
+            <span><b>Theme</b><small id="theme-note">Follows Roblox</small></span>
             <div class="segmented theme-switch" role="radiogroup" aria-label="Theme">
               <button type="button" role="radio" data-theme-choice="auto">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -59,86 +219,18 @@
             </div>
           </div>
           <label class="setting">
-            <span
-              ><b>Dark mode for Roblox</b
-              ><small
-                >Applies a dark appearance to roblox.com in this browser. Your Roblox account settings are not
-                affected.</small
-              ></span
-            >
+            <span><b>Dark mode for Roblox</b><small>This browser only; account unchanged</small></span>
             <input type="checkbox" role="switch" data-setting="darkRoblox" />
           </label>
           <label class="setting">
             <span
-              ><b>Hide serial numbers</b
-              ><small id="serials-note">Blurs the serial numbers of Limited U items across roblox.com</small></span
+              ><b>Hide serial numbers</b><small id="serials-note">Blurs Limited U serials on roblox.com</small></span
             >
             <input type="checkbox" role="switch" data-setting="hideSerials" />
           </label>
         </div>
-      </section>
 
-      <section aria-labelledby="show-title">
-        <h2 id="show-title">On Roblox</h2>
-        <div class="list">
-          <label class="setting">
-            <span><b>Value chips</b><small>Value and USD on limited items, with full details on hover</small></span>
-            <input type="checkbox" role="switch" data-setting="showBadges" />
-          </label>
-          <label class="setting">
-            <span><b>Trade analysis</b><small>Net value, balance and a shareable summary on every trade</small></span>
-            <input type="checkbox" role="switch" data-setting="showTradeTotals" />
-          </label>
-          <label class="setting">
-            <span
-              ><b>Trade list previews</b
-              ><small
-                >Net value on each trade in your Trades list. Trades are read with your session and never
-                changed.</small
-              ></span
-            >
-            <input type="checkbox" role="switch" data-setting="showTradePreviews" />
-          </label>
-          <label class="setting">
-            <span
-              ><b>Duplicate trade warning</b
-              ><small>Notes a pending trade with the same player when you send another</small></span
-            >
-            <input type="checkbox" role="switch" data-setting="warnDuplicateTrades" />
-          </label>
-          <label class="setting">
-            <span
-              ><b>Outbound trade tools</b
-              ><small>Cancel trades offering items you no longer own, or all outbound trades, after review</small></span
-            >
-            <input type="checkbox" role="switch" data-setting="showCancelTools" />
-          </label>
-          <label class="setting">
-            <span
-              ><b>Profile inventory</b
-              ><small>Inventory value on profiles, with the full inventory one click away</small></span
-            >
-            <input type="checkbox" role="switch" data-setting="showProfileValue" />
-          </label>
-          <label class="setting">
-            <span><b>Item page card</b><small>Complete market data on catalog item pages</small></span>
-            <input type="checkbox" role="switch" data-setting="showItemPanel" />
-          </label>
-        </div>
-      </section>
-
-      <section aria-labelledby="alerts-title">
-        <h2 id="alerts-title">Trade alerts</h2>
-        <div class="list">
-          <div class="setting">
-            <span><b>Inbound trade alerts</b><small id="alerts-note">Off</small></span>
-            <button id="alerts-open" type="button" class="text-button">Set up</button>
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="money-title">
-        <h2 id="money-title">Numbers and USD</h2>
+        <h2>Numbers and USD</h2>
         <div class="list">
           <div class="setting">
             <span><b>Number style</b><small id="format-example"></small></span>
@@ -148,19 +240,12 @@
             </div>
           </div>
           <label class="setting">
-            <span
-              ><b>Show USD</b
-              ><small id="usd-note">RoUtility estimates, with the fallback rate where none is published</small></span
-            >
+            <span><b>Show USD</b><small id="usd-note">RoUtility estimates, or the fallback rate</small></span>
             <input type="checkbox" role="switch" data-setting="showUsd" />
           </label>
           <label class="setting" for="usd-rate">
-            <span
-              ><b>Fallback rate</b
-              ><small
-                >USD per 1,000 value, applied when RoUtility has no estimate. $3 is the prevailing market
-                reference.</small
-              ></span
+            <span title="$3 per 1,000 value is the prevailing market reference"
+              ><b>Fallback rate</b><small>USD per 1,000 value</small></span
             >
             <span class="money-input">
               <span aria-hidden="true">$</span>
@@ -170,8 +255,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="source-title">
-        <h2 id="source-title">Sources</h2>
+      <section class="panel" role="tabpanel" id="panel-sources" aria-labelledby="tab-sources" hidden>
         <div class="list">
           <label class="setting" for="use-rolimons">
             <span class="source-left">
@@ -188,23 +272,18 @@
               <span class="source-mark source-mark--routility" aria-hidden="true">U</span>
               <span
                 ><b>RoUtility <span id="routility-badge" class="badge is-idle">Ready</span></b
-                ><small>USD estimates, confidence and an independent value</small></span
+                ><small>USD estimates and confidence</small></span
               >
             </span>
             <input id="use-routility" type="checkbox" role="switch" data-source="useRoutility" />
           </label>
         </div>
         <p class="section-note" id="source-note">At least one source must remain enabled</p>
-      </section>
 
-      <section aria-labelledby="data-title">
-        <h2 id="data-title">Data on this device</h2>
+        <h2>Data on this device</h2>
         <div class="list">
           <div class="setting">
-            <span
-              ><b>Saved data</b
-              ><small id="clear-note">Trades and estimates RoLens has read, kept only on this device</small></span
-            >
+            <span><b>Saved data</b><small id="clear-note">Trades and estimates RoLens has read</small></span>
             <button id="clear-cache" type="button" class="text-button">Clear</button>
           </div>
         </div>
