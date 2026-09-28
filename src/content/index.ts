@@ -14,6 +14,7 @@ import { createProof } from './proof';
 import { renderCancelTools } from './cancel-trades';
 import { serveAlertReads } from './alerts-relay';
 import { renderTradeSummary } from './trade-summary';
+import { renderTradeWindow, resetTradeWindow } from './trade-window';
 import type { RenderContext } from './ui/context';
 import { applyColorBlind, applyThemePreference, detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
@@ -132,6 +133,7 @@ async function update(): Promise<void> {
       },
     });
   }
+  if (settings.showTradeWindowTools) renderTradeWindow({ lookup, redraw: schedule });
   if (settings.warnDuplicateTrades) {
     await renderDuplicateTrade(ctx, {
       loadValues: (ids) => store.load(ids),
@@ -237,6 +239,7 @@ function start(): void {
       }
       if (!next.showTradePreviews) resetTradeList();
       if (!next.warnDuplicateTrades) resetDuplicateTrade();
+      if (!next.showTradeWindowTools) resetTradeWindow();
       removeOwnNodes(document);
       schedule();
     } else if (area === 'local' && changes[TRADE_CACHE_KEY] && changes[TRADE_CACHE_KEY].newValue === undefined) {

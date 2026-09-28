@@ -39,6 +39,11 @@ export interface Settings {
    * longer owns, or all outbound trades. Nothing is cancelled without confirmation.
    */
   showCancelTools: boolean;
+  /**
+   * In the window for sending a trade: a filter bar above each inventory and "On hold"
+   * tags, from Roblox's public inventory API read without cookies.
+   */
+  showTradeWindowTools: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -68,6 +73,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showTradePreviews: true,
   warnDuplicateTrades: true,
   showCancelTools: true,
+  showTradeWindowTools: true,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
@@ -91,6 +97,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'showTradePreviews',
     'warnDuplicateTrades',
     'showCancelTools',
+    'showTradeWindowTools',
     'compactNumbers',
     'showUsd',
     'useRolimons',

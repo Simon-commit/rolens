@@ -48,3 +48,8 @@ html[data-rolens-serials-hidden] .limited-number-container {
   filter: blur(5px);
   user-select: none;
 }
+
+/* Items the trade window filter bar hides from view (see trade-window.ts). */
+[data-rolens-filtered] {
+  display: none !important;
+}

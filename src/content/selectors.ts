@@ -35,6 +35,18 @@ export const SELECTORS = {
   itemPageTitleRow: '.item-details-name-row, .item-name-container',
   /** The offers on the page for sending a trade; the duplicate trade notice goes directly above them. */
   sendTradeOffers: '.trade-request-window-offers',
+  /** One inventory in the window for sending a trade: yours, then the other player's. */
+  inventoryPanel: '.trade-inventory-panel',
+  /** The inventory's heading ("Your Inventory"). */
+  inventoryHeading: '.inventory-panel-header, .inventory-label',
+  /** Roblox's own filter and search row; the RoLens filter bar goes directly after it. */
+  inventoryFilterRow: '.inventory-filter-row',
+  /** One item in an inventory; hidden by the filter bar. */
+  inventoryTile: '.trade-item-card, li.list-item',
+  /** An item card's thumbnail, which the on-hold tag floats over. */
+  cardThumb: '.item-card-thumb-container',
+  /** The serial number on a Limited U item card. */
+  serialNumber: '.limited-number',
   /** One trade in the list on the Trades page (partner, status and date). */
   tradeRow: '.trade-row',
   /** The trade row whose details are open. */

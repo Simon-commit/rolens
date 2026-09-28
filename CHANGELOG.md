@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-28
+
+### Added
+
+- Trade window tools. When sending a trade, a filter bar above each inventory finds items by name, acronym or minimum value (for example "50K"), and can show only rare items or hide items on hold. It complements Roblox's own name search and hides items without changing Roblox's layout.
+- On-hold tags. Items that cannot be traded yet carry an "On hold" tag in both inventories of the trade window, read from Roblox's public inventory without your session.
+- A "Trade window tools" switch in the popup's Features tab.
+
 ## [0.10.0] - 2026-09-28
 
 ### Added
