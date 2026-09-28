@@ -120,6 +120,7 @@ function renderToggles(): void {
       | 'warnDuplicateTrades'
       | 'showCancelTools'
       | 'showTradeWindowTools'
+      | 'showTradeHistory'
       | 'showProfileValue'
       | 'showItemPanel'
       | 'showUsd'

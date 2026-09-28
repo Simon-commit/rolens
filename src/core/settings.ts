@@ -44,6 +44,8 @@ export interface Settings {
    * tags, from Roblox's public inventory API read without cookies.
    */
   showTradeWindowTools: boolean;
+  /** A trade history button above the completed Trades list: totals, best and worst trades. */
+  showTradeHistory: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -74,6 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   warnDuplicateTrades: true,
   showCancelTools: true,
   showTradeWindowTools: true,
+  showTradeHistory: true,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
@@ -98,6 +101,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'warnDuplicateTrades',
     'showCancelTools',
     'showTradeWindowTools',
+    'showTradeHistory',
     'compactNumbers',
     'showUsd',
     'useRolimons',

@@ -12,6 +12,7 @@ import { renderDuplicateTrade, resetDuplicateTrade } from './duplicate-trade';
 import { activeTradeList, renderTradeList, resetTradeList, signedInUserId } from './trade-list';
 import { createProof } from './proof';
 import { renderCancelTools } from './cancel-trades';
+import { renderHistoryButton } from './trade-history';
 import { serveAlertReads } from './alerts-relay';
 import { renderTradeSummary } from './trade-summary';
 import { renderTradeWindow, resetTradeWindow } from './trade-window';
@@ -133,6 +134,7 @@ async function update(): Promise<void> {
       },
     });
   }
+  if (settings.showTradeHistory) renderHistoryButton(ctx, { ...valuer, tradeCache });
   if (settings.showTradeWindowTools) renderTradeWindow({ lookup, redraw: schedule });
   if (settings.warnDuplicateTrades) {
     await renderDuplicateTrade(ctx, {

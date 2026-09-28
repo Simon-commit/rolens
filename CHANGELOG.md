@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-28
+
+### Added
+
+- Trade history. A Trade history button above your completed trades shows totals for the last 30 days, 90 days or all trades: net value, value given and received, how many trades gained value, and your best and worst trade, with a partner filter. Values are today's, and trades read once are not read again.
+
 ## [0.11.0] - 2026-09-28
 
 ### Added
