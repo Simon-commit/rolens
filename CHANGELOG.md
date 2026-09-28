@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-09-28
+
+### Fixed
+
+- Chrome notifications no longer fail silently. If notification access was never granted, or Chrome blocks RoLens's notifications, the alert status and Send test name the cause. A successful test now points to the system setting that can still hide Chrome's notifications.
+
 ## [0.12.0] - 2026-09-28
 
 ### Added

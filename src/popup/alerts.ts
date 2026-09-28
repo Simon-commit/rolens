@@ -194,7 +194,9 @@ function renderTest(): void {
               ? 'Set up a destination first, then send a test.'
               : result.failures.length
                 ? `The test was not accepted by ${result.failures.join(' and ')}.`
-                : 'Test sent. Check each destination.',
+                : alerts.desktop
+                  ? 'Test sent. If no Chrome notification appeared, allow notifications for Google Chrome in your system settings.'
+                  : 'Test sent. Check each destination.',
           failed ? 'bad' : 'good',
         );
       });

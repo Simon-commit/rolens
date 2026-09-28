@@ -91,6 +91,16 @@ const hasOrigins = (origins: string[]) => chrome.permissions.contains({ origins 
 const hasPermission = (permission: 'alarms' | 'notifications') =>
   chrome.permissions.contains({ permissions: [permission] }).catch(() => false);
 
+/** Whether Chrome lets RoLens show notifications; macOS settings are not visible to extensions. */
+const notificationLevel = () =>
+  new Promise<string>((resolve) => {
+    try {
+      chrome.notifications.getPermissionLevel((level) => resolve(level));
+    } catch {
+      resolve('granted');
+    }
+  });
+
 /** Starts or stops the minute check to match the settings and granted permissions. */
 export async function syncAlertSchedule(): Promise<void> {
   const settings = await readAlerts();
@@ -151,7 +161,11 @@ export function buildAlert(
 export async function deliver(alert: TradeAlert, settings: AlertSettings): Promise<string[]> {
   const failures: string[] = [];
   const { title, body } = alertText(alert);
-  if (settings.desktop && (await hasPermission('notifications'))) {
+  if (settings.desktop && !(await hasPermission('notifications'))) {
+    failures.push('Chrome notification (permission not granted)');
+  } else if (settings.desktop && (await notificationLevel()) === 'denied') {
+    failures.push('Chrome notification (blocked in Chrome)');
+  } else if (settings.desktop) {
     try {
       await chrome.notifications.create(`rolens-trade-${alert.tradeId}-${Date.now()}`, {
         type: 'basic',
