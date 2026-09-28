@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-28
+
+### Fixed
+
+- Trade list previews now appear on the Outbound, Completed and Inactive lists, not only Inbound. RoLens no longer relies on reading which list Roblox has selected: it matches the trades on the page to Roblox's lists, reading another list only until one matches. The proof option on completed trades and the outbound trade tools use the same match.
+
 ## [0.9.0] - 2026-09-28
 
 ### Changed

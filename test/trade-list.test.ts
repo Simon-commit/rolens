@@ -182,6 +182,53 @@ describe('Trades list', () => {
     expect(resolved.has('Two')).toBe(false);
     expect(second!.querySelector('[data-rolens="trade-preview"]')).toBeNull();
   });
+  it('finds the list the rows belong to when the page does not name it', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'user-data';
+    meta.dataset.userid = '1';
+    document.head.append(meta);
+    // No tab Roblox marks as selected, so the page itself suggests Inbound.
+    setBody(rows(['Nova']));
+    globalThis.IntersectionObserver = class {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+      observe(target: Element) {
+        this.callback([{ target, isIntersecting: true } as IntersectionObserverEntry], this as never);
+      }
+    } as unknown as typeof IntersectionObserver;
+    const lists: Record<string, ReturnType<typeof tradeRow>[]> = {
+      inbound: [tradeRow(10, 'kyrie', 'Kyrie')],
+      outbound: [],
+      completed: [tradeRow(30, 'nova', 'Nova')],
+      inactive: [tradeRow(40, 'nova', 'Nova')],
+    };
+    const asked: string[] = [];
+    const requested: number[] = [];
+    const deps = {
+      loadValues: () => Promise.resolve(),
+      lookup: (id: number) => item({ id, rap: 100, value: 100 }),
+      redraw: () => {},
+      fetchList: (list: string) => {
+        asked.push(list);
+        return Promise.resolve({ rows: lists[list]!, next: null });
+      },
+      fetchOffers: (id: number) => {
+        requested.push(id);
+        return Promise.resolve({
+          give: { itemIds: [1], names: [''], robux: 0 },
+          receive: { itemIds: [2], names: [''], robux: 0 },
+        });
+      },
+    };
+    for (let i = 0; i < 6; i += 1) {
+      await renderTradeList(ctx, deps as never);
+      await Promise.resolve();
+    }
+    expect(asked).toEqual(['inbound', 'outbound', 'completed']);
+    expect(requested).toEqual([30]);
+    expect(activeTradeList()).toBe('completed');
+    expect(document.querySelector('[data-rolens="trade-preview"]')).not.toBeNull();
+  });
+
   it('uses saved trades instead of asking Roblox again', async () => {
     const meta = document.createElement('meta');
     meta.name = 'user-data';

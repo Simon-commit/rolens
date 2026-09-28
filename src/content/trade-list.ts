@@ -29,7 +29,11 @@ interface Listing {
   complete: boolean;
   loading: boolean;
   fetchedAt: number;
+  /** When the last request for this list failed; it is not asked again for a while. */
+  failedAt?: number;
 }
+
+const ALL_LISTS: TradeList[] = ['inbound', 'outbound', 'completed', 'inactive'];
 
 const listings = new Map<TradeList, Listing>();
 const offers = new Map<number, TradeOffers | null | 'pending'>();
@@ -38,8 +42,22 @@ const inView = new WeakSet<Element>();
 let seededFor: number | null = null;
 let observer: IntersectionObserver | null = null;
 
-/** Which list the page is showing, from the address or the selected tab. */
+/** The list whose trades were found to match the rows on the page, and the first row's text then. */
+let matched: { list: TradeList; first: string } | null = null;
+let lastReread = 0;
+
+const firstRowText = (doc: Document) => doc.querySelector(SELECTORS.tradeRow)?.textContent ?? '';
+
+/**
+ * Which list the page is showing. Once RoLens has matched the rows on the page to one of
+ * Roblox's lists, that match decides; until then, the address or the selected tab does.
+ */
 export function activeTradeList(doc: Document = document): TradeList {
+  if (matched && matched.first === firstRowText(doc)) return matched.list;
+  return detectedTradeList(doc);
+}
+
+function detectedTradeList(doc: Document): TradeList {
   const text =
     `${doc.location?.hash ?? ''} ${doc.querySelector(SELECTORS.tradeListTab)?.textContent ?? ''}`.toLowerCase();
   if (/outbound|sent/.test(text)) return 'outbound';
@@ -87,11 +105,15 @@ function extendListing(list: TradeList, wanted: number, deps: TradeListDeps): vo
     listings.set(list, listing);
   }
   if (listing.loading || listing.complete || listing.rows.length >= wanted) return;
+  if (listing.failedAt && Date.now() - listing.failedAt < RETRY_MS) return;
   listing.loading = true;
   const current = listing;
   void (deps.fetchList ?? fetchTradeList)(list, current.next).then((page) => {
     current.loading = false;
-    if (!page) return;
+    if (!page) {
+      current.failedAt = Date.now();
+      return;
+    }
     current.rows.push(...page.rows);
     current.next = page.next;
     current.complete = page.next === null;
@@ -99,22 +121,47 @@ function extendListing(list: TradeList, wanted: number, deps: TradeListDeps): vo
   });
 }
 
+/**
+ * Finds the list the rows on the page belong to: the one the page names first, then the
+ * others, reading the first page of each only while none has matched. Roblox's markup for
+ * the list selector varies, so the trades themselves decide. Returns null while waiting.
+ */
+function matchList(rows: Element[], deps: TradeListDeps): TradeList | null {
+  const detected = detectedTradeList(document);
+  for (const list of [detected, ...ALL_LISTS.filter((other) => other !== detected)]) {
+    const listing = listings.get(list);
+    if (!listing?.rows.length) {
+      if (listing?.complete) continue; // An empty list.
+      if (listing?.failedAt && !listing.loading && Date.now() - listing.failedAt < RETRY_MS) continue;
+      extendListing(list, rows.length, deps);
+      return null;
+    }
+    if (rowMatches(rows[0]!, listing.rows[0]!)) return list;
+  }
+  // No list matches: most likely a new trade arrived at the top, so read the lists again,
+  // at most every half minute in case the rows never match.
+  if (Date.now() - lastReread < 30_000) return null;
+  lastReread = Date.now();
+  for (const list of ALL_LISTS) {
+    const listing = listings.get(list);
+    if (listing && !listing.loading && Date.now() - listing.fetchedAt > 5_000) listings.delete(list);
+  }
+  return null;
+}
+
 /** Draws a preview on every trade row in view whose trade RoLens has read. */
 export async function renderTradeList(ctx: RenderContext, deps: TradeListDeps): Promise<void> {
   const rows = [...document.querySelectorAll(SELECTORS.tradeRow)];
   const me = signedInUserId();
   if (rows.length === 0 || me === null) return;
-  const list = activeTradeList();
   if (deps.tradeCache && seededFor !== me) {
     seededFor = me;
     for (const [id, trade] of await deps.tradeCache.all(me)) if (!offers.has(id)) offers.set(id, trade);
   }
 
-  const listing = listings.get(list);
-  // A new trade at the top shifts every row: start the list again when the first row no longer matches.
-  if (listing?.rows[0] && !rowMatches(rows[0]!, listing.rows[0]) && Date.now() - listing.fetchedAt > 5_000) {
-    listings.delete(list);
-  }
+  const list = matchList(rows, deps);
+  if (list === null) return;
+  matched = { list, first: firstRowText(document) };
   extendListing(list, rows.length, deps);
   const known = listings.get(list)?.rows ?? [];
 
@@ -165,6 +212,8 @@ function place(row: Element, host: HTMLElement): void {
 /** Forgets fetched trades, e.g. when the setting is turned off. */
 export function resetTradeList(): void {
   listings.clear();
+  matched = null;
+  lastReread = 0;
   offers.clear();
   seededFor = null;
 }
