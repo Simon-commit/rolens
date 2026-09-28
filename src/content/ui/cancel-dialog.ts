@@ -37,6 +37,18 @@ const css = `
 .items { grid-column: 2 / 4; font-size: 12px; color: var(--rl-text-2); line-height: 1.5; }
 .items .gone { color: var(--rl-loss); font-weight: 600; }
 .items .label { color: var(--rl-text-3); }
+.select { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+.select .label { font-size: 12px; font-weight: 650; color: var(--rl-text-3); margin-right: 2px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--rl-border);
+  border-radius: 999px; background: var(--rl-bg-raised); color: var(--rl-text-2); font: inherit; font-size: 12px; font-weight: 650; cursor: pointer;
+}
+.chip:hover { background: var(--rl-surface); color: var(--rl-text); }
+.chip:focus-visible, .chip select:focus-visible { outline: 2px solid var(--rl-accent); outline-offset: 1px; }
+.chip[aria-pressed='true'] { border-color: var(--rl-accent); color: var(--rl-accent); background: color-mix(in srgb, var(--rl-accent) 8%, var(--rl-bg-raised)); }
+.chip select {
+  height: 20px; border: 0; border-radius: 5px; background: var(--rl-surface); color: inherit; font: inherit; cursor: pointer;
+}
 .progress { height: 4px; margin: 4px 0 16px; border-radius: 999px; background: var(--rl-surface); overflow: hidden; }
 .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--rl-brand-a), var(--rl-brand-b)); transition: width 0.3s ease; }
 `;
@@ -49,7 +61,7 @@ export interface CancelDialog {
 }
 
 const TITLES: Record<CancelMode, string> = {
-  all: 'Cancel all outbound trades',
+  all: 'Review outbound trades',
   unowned: 'Cancel trades with items you no longer own',
 };
 
@@ -75,6 +87,60 @@ function itemsLine(candidate: CancelCandidate): HTMLElement {
   if (receive.robux) received.push(`${receive.robux} Robux`);
   line.append(el('span', 'label', ' for '), received.join(', ') || 'nothing');
   return line;
+}
+
+const DAY = 86_400_000;
+const AGES = [3, 7, 14, 30];
+
+/**
+ * Quick selections above the list: all, none, trades older than a chosen number of days,
+ * and trades in which you give more value than you receive. Each sets the checkboxes,
+ * which stay editable one by one.
+ */
+function selectionChips(
+  candidates: CancelCandidate[],
+  now: number,
+  boxes: Map<number, HTMLInputElement>,
+  changed: () => void,
+): { element: HTMLElement; clear: () => void } {
+  const chips: HTMLButtonElement[] = [];
+  const chip = (label: string | Node[], pick: (candidate: CancelCandidate) => boolean) => {
+    const node = el('button', 'chip', ...(typeof label === 'string' ? [label] : label));
+    node.type = 'button';
+    node.setAttribute('aria-pressed', 'false');
+    const apply = () => {
+      for (const candidate of candidates) boxes.get(candidate.id)!.checked = pick(candidate);
+      for (const other of chips) other.setAttribute('aria-pressed', String(other === node));
+      changed();
+    };
+    node.addEventListener('click', (event) => {
+      if ((event.target as Element).closest('select')) return;
+      apply();
+    });
+    chips.push(node);
+    return Object.assign(node, { apply });
+  };
+  const age = el('select');
+  age.setAttribute('aria-label', 'Minimum age in days');
+  for (const days of AGES) {
+    const option = el('option', '', `${days} days`);
+    option.value = String(days);
+    age.append(option);
+  }
+  age.value = '7';
+  const older = chip(
+    [document.createTextNode('Older than'), age],
+    (candidate) => candidate.created !== null && now - candidate.created > Number(age.value) * DAY,
+  );
+  age.addEventListener('change', () => older.apply());
+  const losing = chip('Losing value', (candidate) => (candidate.valued?.balance.valueDelta ?? 0) < 0);
+  const all = chip('All', () => true);
+  const none = chip('None', () => false);
+  const element = el('div', 'select', el('span', 'label', 'Select'), all, older, losing, none);
+  element.setAttribute('role', 'group');
+  element.setAttribute('aria-label', 'Select trades');
+  all.setAttribute('aria-pressed', 'true');
+  return { element, clear: () => chips.forEach((node) => node.setAttribute('aria-pressed', 'false')) };
 }
 
 export function openCancelDialog(mode: CancelMode, opener: HTMLElement | null, compact: boolean): CancelDialog {
@@ -127,6 +193,7 @@ export function openCancelDialog(mode: CancelMode, opener: HTMLElement | null, c
           itemsLine(candidate),
         );
       });
+      const select = selectionChips(candidates, now, boxes, () => paint());
       const confirmButton = button('', 'danger');
       const keep = button('Keep trades');
       const paint = () => {
@@ -134,7 +201,7 @@ export function openCancelDialog(mode: CancelMode, opener: HTMLElement | null, c
         confirmButton.textContent = `Cancel ${plural(count, 'trade')}`;
         confirmButton.disabled = count === 0;
       };
-      for (const box of boxes.values()) box.addEventListener('change', paint);
+      for (const box of boxes.values()) box.addEventListener('change', () => (select.clear(), paint()));
       paint();
       keep.addEventListener('click', modal.close);
       confirmButton.addEventListener('click', () => {
@@ -150,6 +217,7 @@ export function openCancelDialog(mode: CancelMode, opener: HTMLElement | null, c
           : `You have ${plural(candidates.length, 'outbound trade')}.`;
       modal.body.replaceChildren(
         el('p', 'intro', `${intro} The selected trades will be cancelled on Roblox. This cannot be undone.`),
+        ...(candidates.length > 1 ? [select.element] : []),
         el('div', 'list', ...rows),
       );
       modal.foot.replaceChildren(el('span', 'note'), keep, confirmButton);

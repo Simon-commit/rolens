@@ -72,6 +72,8 @@ const css = `
 .side .total { margin: 2px 0 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--rl-text-2); line-height: 1.7; }
 .row b { font-weight: 600; color: var(--rl-text); }
+.fee { text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset: 2px; cursor: help; outline: none; }
+.offered { font-weight: 500; color: var(--rl-text-3); }
 .source { margin-top: 10px; font-size: 11px; color: var(--rl-text-3); }
 @media (max-width: 560px) { .meta { display: none; } }
 `;
@@ -79,7 +81,16 @@ const css = `
 export interface TradeSide {
   items: ItemValue[];
   usd: UsdTotal | null;
+  /** Robux added to this side, as offered. */
+  robux?: number;
+  /** For Robux you receive: what arrives after Roblox's 30% fee, which is what the totals count. */
+  robuxAfterFee?: number;
 }
+
+const FEE_TIP: Tip = [
+  'Robux after the fee',
+  'Roblox keeps 30% of Robux exchanged in a trade. RoLens counts the Robux you receive after this fee, and the Robux you give in full, since that is what leaves your account.',
+];
 
 export interface TradeView {
   balance: TradeBalance;
@@ -93,12 +104,15 @@ function verdictOf(delta: number): 'win' | 'loss' | 'even' {
 
 /** Plain-text summary for pasting into Discord or a trade ad. */
 export function tradeSummaryText(view: TradeView, compact: boolean, sources = "Rolimon's"): string {
-  const names = (items: ItemValue[]) => items.map((item) => item.acronym || item.name).join(', ') || 'No items';
+  const names = (items: ItemValue[], robux = 0) =>
+    [...items.map((item) => item.acronym || item.name), robux ? `${formatRobux(robux, compact)} Robux` : '']
+      .filter(Boolean)
+      .join(', ') || 'No items';
   const { balance } = view;
   const pct = percentChange(balance.valueDelta, balance.give.value);
   return [
-    `You offer: ${names(view.give.items)} (${formatRobux(balance.give.value, compact)})`,
-    `You receive: ${names(view.receive.items)} (${formatRobux(balance.receive.value, compact)})`,
+    `You offer: ${names(view.give.items, view.give.robux)} (${formatRobux(balance.give.value, compact)})`,
+    `You receive: ${names(view.receive.items, view.receive.robux)} (${formatRobux(balance.receive.value, compact)})`,
     `Net: ${formatDelta(balance.valueDelta, compact)} value${pct === null ? '' : ` (${formatPercent(pct)})`}, ${formatDelta(balance.rapDelta, compact)} RAP`,
     `Values from ${sources}, via RoLens`,
   ].join('\n');
@@ -141,6 +155,19 @@ function sideBlock(label: string, total: number, rap: number, side: TradeSide, c
           ),
         ),
     el('div', 'row', el('span', '', 'Items'), el('b', '', `${side.items.length}${rare ? ` · ${rare} rare` : ''}`)),
+    side.robux ? robuxRow(side, compact) : null,
+  );
+}
+
+/** The Robux on one side; for Robux received, the amount after Roblox's fee with the offer beside it. */
+function robuxRow(side: TradeSide, compact: boolean): HTMLElement {
+  const offered = formatRobux(side.robux!, compact);
+  if (side.robuxAfterFee === undefined) return el('div', 'row', el('span', '', 'Robux'), el('b', '', offered));
+  return el(
+    'div',
+    'row',
+    attachTip(el('span', 'fee', 'Robux after fee'), ...FEE_TIP),
+    el('b', '', formatRobux(side.robuxAfterFee, compact), el('span', 'offered', ` of ${offered}`)),
   );
 }
 

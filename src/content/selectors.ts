@@ -25,6 +25,10 @@ export const SELECTORS = {
   /** One side of a trade on the trades page. */
   tradeOffer: '.trade-list-detail-offer',
   tradeOfferHeader: '.trade-list-detail-offer-header, h3',
+  /** A line under an offer with a Robux amount: the Robux added to the trade, or the offer's total. */
+  offerRobuxLine: '.robux-line',
+  /** The amount on such a line. */
+  offerRobuxValue: '.robux-line-value, .text-robux-lg, .text-robux',
   /** Title on a catalog item page. */
   itemPageTitle: '#item-container h1, .item-details-name-row h1, h1',
   /** The title's row; the stats card goes after it so it sits under any subtitle. */

@@ -191,6 +191,23 @@ describe('trade card', () => {
     expect(card?.nextElementSibling?.classList.contains('trade-list-detail-offer')).toBe(true);
   });
 
+  it('counts Robux given in full and Robux received after the 30% fee', () => {
+    const robuxLine = (label: string, amount: string) =>
+      `<div class="robux-line"><span class="text-lead">${label}</span><span class="robux-line-amount"><span class="text-robux-lg robux-line-value">${amount}</span></span></div>`;
+    const [give, receive] = document.querySelectorAll('.trade-list-detail-offer');
+    // eslint-disable-next-line no-restricted-properties
+    give!.insertAdjacentHTML('beforeend', robuxLine('Robux Offered:', '1.000') + robuxLine('Total Value:', '9.999'));
+    // eslint-disable-next-line no-restricted-properties
+    receive!.insertAdjacentHTML('beforeend', robuxLine('Robux Offered:', '2,000'));
+    expect(findTradeOffers(document)?.give.robux).toBe(1000);
+    const balance = renderTradeSummary(document, lookup, ctx);
+    // 4,000 + 2,000 × 0.7 received, against 2,300 + 1,000 given.
+    expect(balance?.valueDelta).toBe(4000 + 1400 - 3300);
+    const text = shadowText(document.querySelector('[data-rolens="trade"]'));
+    expect(text).toContain('Robux after fee');
+    expect(text).toContain('1,400 of 2,000');
+  });
+
   it('shows a USD loss in red', () => {
     const cheapGet = new Map(table);
     cheapGet.set(3, item({ id: 3, name: 'Cheap Hat', rap: 100, value: 100 }));

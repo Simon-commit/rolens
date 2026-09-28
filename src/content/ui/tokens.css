@@ -263,6 +263,20 @@
   }
 }
 
+/* Colour-blind palette: blue for gains, orange for losses, told apart by more than hue. */
+:host([data-palette='cb']) {
+  --rl-win: #1d4ed8;
+  --rl-win-soft: rgba(29, 78, 216, 0.1);
+  --rl-loss: #c2410c;
+  --rl-loss-soft: rgba(194, 65, 12, 0.1);
+}
+:host([data-palette='cb'][data-theme='dark']) {
+  --rl-win: #60a5fa;
+  --rl-win-soft: rgba(96, 165, 250, 0.14);
+  --rl-loss: #fb923c;
+  --rl-loss-soft: rgba(251, 146, 60, 0.14);
+}
+
 /* The hidden attribute must win over display rules in widget styles. */
 [hidden] {
   display: none !important;

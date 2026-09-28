@@ -32,6 +32,8 @@ export interface ProofData {
   valuesAt: number;
   compact: boolean;
   theme: 'light' | 'dark';
+  /** Blue and orange for gains and losses, for colour-blind users. */
+  colorBlind?: boolean;
 }
 
 const PALETTE = {
@@ -63,6 +65,11 @@ const PALETTE = {
     brandA: '#34d399',
     brandB: '#22d3ee',
   },
+};
+
+const COLOR_BLIND = {
+  light: { win: '#1d4ed8', loss: '#c2410c' },
+  dark: { win: '#60a5fa', loss: '#fb923c' },
 };
 
 export const PROOF_WIDTH = 1080;
@@ -310,7 +317,7 @@ const timeFormat = new Intl.DateTimeFormat(undefined, {
 
 /** Draws the proof and returns the canvas, at twice its layout size for sharp text. */
 export function drawProof(data: ProofData, doc: Document = document): HTMLCanvasElement {
-  const colors = PALETTE[data.theme];
+  const colors = data.colorBlind ? { ...PALETTE[data.theme], ...COLOR_BLIND[data.theme] } : PALETTE[data.theme];
   const cardWidth = (PROOF_WIDTH - PAD * 2 - GAP) / 2;
   const cardHeight = Math.max(sideHeight(data.give), sideHeight(data.receive));
   const top = PAD + 44 + 28;

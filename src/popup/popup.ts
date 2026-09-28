@@ -123,7 +123,8 @@ function renderToggles(): void {
       | 'showItemPanel'
       | 'showUsd'
       | 'darkRoblox'
-      | 'hideSerials';
+      | 'hideSerials'
+      | 'colorBlind';
     input.checked = settings[key];
     input.addEventListener('change', () => void save({ [key]: input.checked }));
   }

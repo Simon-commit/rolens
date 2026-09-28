@@ -114,7 +114,8 @@ export async function startCancel(
     }
   }
 
-  // Trade contents: saved ones first; for the ownership check, read the rest from Roblox.
+  // Trade contents: saved ones first, then the rest from Roblox, for the ownership check
+  // and the value filters.
   const saved = deps.tradeCache ? await deps.tradeCache.all(me) : new Map<number, TradeOffers>();
   const offers = new Map<number, TradeOffers>();
   let unread = 0;
@@ -124,8 +125,7 @@ export async function startCancel(
       offers.set(row.id, known);
       continue;
     }
-    if (mode === 'all') continue;
-    dialog.progress(`Checking trade ${index + 1} of ${rows.length}…`, index / rows.length);
+    dialog.progress(`Reading trade ${index + 1} of ${rows.length}…`, index / rows.length);
     const read = await (deps.fetchOffers ?? fetchTradeOffers)(row.id, me);
     if (read) {
       offers.set(row.id, read);

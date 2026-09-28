@@ -14,6 +14,8 @@ export interface Settings {
   itemCardCollapsed: boolean;
   /** Blurs serial numbers of Limited U items across roblox.com. */
   hideSerials: boolean;
+  /** Blue and orange instead of green and red for gains and losses. */
+  colorBlind: boolean;
   /** Value badges on item cards across Roblox. */
   showBadges: boolean;
   /** Totals and win/loss on the trades page. */
@@ -58,6 +60,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tradeDetails: false,
   itemCardCollapsed: false,
   hideSerials: false,
+  colorBlind: false,
   showBadges: true,
   showTradeTotals: true,
   showItemPanel: true,
@@ -94,6 +97,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'useRoutility',
     'darkRoblox',
     'hideSerials',
+    'colorBlind',
   ] as const) {
     if (typeof raw[key] === 'boolean') result[key] = raw[key];
   }

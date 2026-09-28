@@ -35,6 +35,19 @@ export function resolveTheme(): Theme {
  * Switches every RoLens widget on the page to the preferred theme in place, so the
  * colour transition animates instead of the widgets being rebuilt.
  */
+let colorBlind = false;
+
+/** Switches every widget between the standard and the colour-blind palette in place. */
+export function applyColorBlind(on: boolean, root: ParentNode = document): void {
+  colorBlind = on;
+  for (const host of root.querySelectorAll<HTMLElement>(`[${ROLENS_ATTR}]`)) setPalette(host);
+}
+
+function setPalette(host: HTMLElement): void {
+  if (colorBlind) host.dataset.palette = 'cb';
+  else delete host.dataset.palette;
+}
+
 export function applyThemePreference(next: ThemePreference, root: ParentNode = document): void {
   preference = next;
   const theme = resolveTheme();
@@ -59,6 +72,7 @@ export function createWidget(
   const host = document.createElement(tag);
   host.setAttribute(ROLENS_ATTR, kind);
   host.dataset.theme = resolveTheme();
+  setPalette(host);
   const root = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = tokens + css;

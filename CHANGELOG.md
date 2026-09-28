@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-28
+
+### Added
+
+- Robux in trades. The trade analysis counts Robux you give in full and Robux you receive after Roblox's 30% fee, and shows both amounts, so the net value reflects what actually reaches your account.
+- A colour-blind palette in the popup's Display tab: gains in blue and losses in orange across RoLens and in trade proofs.
+- The outbound trade review, formerly Cancel all, lists every outbound trade with its value and offers quick selections: all, older than a chosen number of days, losing value, or none. Nothing is cancelled until you confirm.
+
 ### Fixed
 
 - The popup reads "1 item tracked", not "1 items tracked"; the same for USD coverage on inventories.

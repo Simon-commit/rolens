@@ -58,3 +58,21 @@ describe('item card', () => {
     expect(normaliseSettings({ itemCardCollapsed: 'yes' }).itemCardCollapsed).toBe(false);
   });
 });
+
+describe('colour-blind palette', () => {
+  it('is kept in settings and applied to every widget in place', async () => {
+    const { normaliseSettings } = await import('../src/core/settings');
+    const { applyColorBlind, createWidget } = await import('../src/content/ui/shadow');
+    expect(normaliseSettings({ colorBlind: true }).colorBlind).toBe(true);
+    expect(normaliseSettings({ colorBlind: 'yes' }).colorBlind).toBe(false);
+    const { host } = createWidget('test', '');
+    document.body.append(host);
+    expect(host.dataset.palette).toBeUndefined();
+    applyColorBlind(true);
+    expect(host.dataset.palette).toBe('cb');
+    expect(createWidget('test', '').host.dataset.palette).toBe('cb');
+    applyColorBlind(false);
+    expect(host.dataset.palette).toBeUndefined();
+    host.remove();
+  });
+});

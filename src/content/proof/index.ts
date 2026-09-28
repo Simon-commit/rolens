@@ -120,6 +120,7 @@ export async function createProof(
       valuesAt: now,
       compact: ctx.settings.compactNumbers,
       theme: resolveTheme(),
+      colorBlind: ctx.settings.colorBlind,
     });
     dialog.show(canvas, `rolens-trade-proof-${fileDate(date ?? now)}.png`);
   } catch {

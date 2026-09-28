@@ -15,7 +15,7 @@ import { renderCancelTools } from './cancel-trades';
 import { serveAlertReads } from './alerts-relay';
 import { renderTradeSummary } from './trade-summary';
 import type { RenderContext } from './ui/context';
-import { applyThemePreference, detectTheme } from './ui/shadow';
+import { applyColorBlind, applyThemePreference, detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
 
 const store = new ValueStore((ids) => send({ type: 'rolens:getItems', ids }));
@@ -173,7 +173,14 @@ function saveTradeDetails(expanded: boolean): void {
  * Settings that need no redraw: the theme is applied to widgets in place, dark Roblox is
  * handled by early.js, and the trade bar's open state is read when it is next drawn.
  */
-const LIVE_KEYS = new Set<keyof Settings>(['theme', 'tradeDetails', 'itemCardCollapsed', 'darkRoblox', 'hideSerials']);
+const LIVE_KEYS = new Set<keyof Settings>([
+  'theme',
+  'tradeDetails',
+  'itemCardCollapsed',
+  'darkRoblox',
+  'hideSerials',
+  'colorBlind',
+]);
 
 function onlyLiveKeysChanged(prev: Settings, next: Settings): boolean {
   return (Object.keys(next) as (keyof Settings)[]).every((key) => LIVE_KEYS.has(key) || prev[key] === next[key]);
@@ -222,6 +229,7 @@ function start(): void {
       const prev = settings;
       settings = next;
       if (next.theme !== prev.theme) applyThemePreference(next.theme);
+      if (next.colorBlind !== prev.colorBlind) applyColorBlind(next.colorBlind);
       if (onlyLiveKeysChanged(prev, next)) return;
       if (next.useRolimons !== prev.useRolimons || next.useRoutility !== prev.useRoutility) {
         store.clear();
@@ -249,5 +257,6 @@ function start(): void {
 void chrome.storage.sync.get('settings').then(({ settings: stored }) => {
   settings = normaliseSettings(stored);
   applyThemePreference(settings.theme);
+  applyColorBlind(settings.colorBlind);
   start();
 });

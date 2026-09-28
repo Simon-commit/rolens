@@ -47,9 +47,9 @@ export function renderOutboundTools(
       ),
       action(
         'all',
-        'Cancel all',
-        'Cancel all outbound trades',
-        'Lists every outbound trade so you can review and cancel them.',
+        'Review all',
+        'Review outbound trades',
+        'Lists every outbound trade with its value, with quick selections for old trades and trades that lose value, so you can choose which to cancel.',
       ),
     ),
   );

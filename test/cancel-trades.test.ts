@@ -92,6 +92,47 @@ describe('cancelling outbound trades', () => {
     expect(root.querySelector('.status')?.textContent).toBe('Cancelled 1 trade.');
   });
 
+  it('selects old trades and trades that lose value on request', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'user-data';
+    meta.dataset.userid = '1';
+    document.head.append(meta);
+    const now = Date.parse('2026-09-28T12:00:00Z');
+    const day = 86_400_000;
+    const aged = (id: number, name: string, days: number) => ({ ...row(id, name), created: now - days * day });
+    // Item 9 is received in every trade (value 100); the item given decides win or loss.
+    const values: Record<number, number> = { 5: 50, 6: 300, 7: 80, 9: 100 };
+    await startCancel(
+      'all',
+      ctx,
+      {
+        loadValues: () => Promise.resolve(),
+        lookup: (id) => item({ id, name: `Item ${id}`, value: values[id] ?? 0, rap: 1 }),
+        fetchList: () =>
+          Promise.resolve({ rows: [aged(1, 'Ava', 1), aged(2, 'Ben', 10), aged(3, 'Cy', 40)], next: null }),
+        fetchOffers: (id) => Promise.resolve(offer([id + 4])),
+        now: () => now,
+      },
+      null,
+    );
+    const root = document.querySelector('[data-rolens="cancel-dialog"]')!.shadowRoot!;
+    const checked = () => [...root.querySelectorAll<HTMLInputElement>('.trade input')].map((box) => box.checked);
+    expect(checked()).toEqual([true, true, true]);
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('.chip')];
+    const chip = (text: string) => chips.find((node) => node.textContent?.startsWith(text))!;
+    chip('Older than').click();
+    expect(checked()).toEqual([false, true, true]);
+    const age = root.querySelector('select')!;
+    age.value = '30';
+    age.dispatchEvent(new Event('change'));
+    expect(checked()).toEqual([false, false, true]);
+    chip('Losing value').click();
+    expect(checked()).toEqual([false, true, false]);
+    expect(root.querySelector('.btn--danger')?.textContent).toBe('Cancel 1 trade');
+    chip('None').click();
+    expect(root.querySelector<HTMLButtonElement>('.btn--danger')?.disabled).toBe(true);
+  });
+
   it('stops when the inventory cannot be read', async () => {
     const meta = document.createElement('meta');
     meta.name = 'user-data';
