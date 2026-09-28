@@ -212,6 +212,14 @@ function start(): void {
   // Until Roblox's own prices are on the page, follow the browser's language.
   setNumberLocale(navigator.language || document.documentElement.lang);
   // Roblox is a single-page app: re-scan whenever the page changes, ignoring our own nodes.
+  // Typing Robux into a trade changes no markup, so it is listened for directly.
+  document.addEventListener(
+    'input',
+    (event) => {
+      if ((event.target as Element | null)?.matches?.(SELECTORS.offerRobuxInput)) schedule();
+    },
+    true,
+  );
   new MutationObserver((mutations) => {
     const relevant = mutations.some((m) =>
       [...m.addedNodes, ...m.removedNodes].some((node) => !isOwnNode(node) && node.nodeType === Node.ELEMENT_NODE),

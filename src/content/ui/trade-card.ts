@@ -18,7 +18,7 @@ import { attachTip } from './tooltip';
  * slides open on demand and the choice is remembered.
  */
 const css = `
-:host { display: block; margin: 14px 0 12px; }
+:host { display: block; margin: 14px 0 12px; container-type: inline-size; }
 .wrap {
   position: relative; overflow: hidden;
   border-radius: var(--rl-radius);
@@ -36,6 +36,7 @@ const css = `
 .usd-delta.is-loss { color: var(--rl-loss); }
 .usd-delta.is-estimate { text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset: 2px; cursor: help; outline: none; }
 .meta { font-size: 12px; color: var(--rl-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.meta-short { display: none; font-size: 12px; font-weight: 600; color: var(--rl-text-2); white-space: nowrap; }
 .spacer { flex: 1; }
 .flags { display: flex; gap: 4px; flex: none; }
 .flag {
@@ -76,6 +77,10 @@ const css = `
 .offered { font-weight: 500; color: var(--rl-text-3); }
 .source { margin-top: 10px; font-size: 11px; color: var(--rl-text-3); }
 @media (max-width: 560px) { .meta { display: none; } }
+/* The column beside the inventories when sending a trade is narrow. */
+@container (max-width: 520px) { .meta { display: none; } .meta-short { display: inline; } }
+@container (max-width: 440px) { .sides { grid-template-columns: 1fr; } }
+@container (max-width: 400px) { .usd-delta, .bar .rl-pill { display: none; } }
 `;
 
 export interface TradeSide {
@@ -256,6 +261,11 @@ export function createTradeCard(
             usdDelta,
           ),
       el('span', 'meta', meta),
+      el(
+        'span',
+        'meta-short',
+        `${formatRobux(balance.give.value, compact)} → ${formatRobux(balance.receive.value, compact)}`,
+      ),
       el('span', 'spacer'),
       el('span', 'flags', ...flags),
       proof,

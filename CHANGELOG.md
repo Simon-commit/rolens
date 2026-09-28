@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-28
+
+### Added
+
+- Live trade analysis while sending a trade. The trade bar now appears above your offer on the page for sending a trade, with the value you give against the value you receive and the net result. It updates as items are added or removed and as Robux is typed in, with Robux you request counted after Roblox's fee. Each side's heading shows its own total.
+
 ## [0.12.2] - 2026-09-28
 
 ### Changed

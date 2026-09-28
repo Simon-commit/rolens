@@ -208,6 +208,22 @@ describe('trade card', () => {
     expect(text).toContain('1,400 of 2,000');
   });
 
+  it('analyses the trade being sent, including Robux typed in', () => {
+    const offer = (title: string, id: number, robux: string) =>
+      `<div class="trade-request-window-offer"><h2>${title}</h2><div class="trade-request-item"><div class="item-name"><a href="https://www.roblox.com/catalog/${id}/Hat">Hat</a></div></div><div class="robux-input-group"><input name="robux" value="${robux}"></div><div class="robux-line"><span class="text-lead">Total Value:</span><span class="robux-line-value">9.999</span></div></div>`;
+    setBody(
+      `<div class="trade-request-window">${offer('Your Offer', 1, '0')}${offer('Your Request', 3, '1000')}</div>`,
+    );
+    const offers = findTradeOffers(document);
+    expect(offers?.give.ids).toEqual([1]);
+    expect(offers?.receive.ids).toEqual([3]);
+    expect(offers?.receive.robux).toBe(1000);
+    const balance = renderTradeSummary(document, lookup, ctx);
+    // 4,000 + 700 received against 1,500 given.
+    expect(balance?.valueDelta).toBe(4700 - 1500);
+    expect(document.querySelector('.trade-request-window-offer h2 [data-rolens="side-total"]')).not.toBeNull();
+  });
+
   it('shows a USD loss in red', () => {
     const cheapGet = new Map(table);
     cheapGet.set(3, item({ id: 3, name: 'Cheap Hat', rap: 100, value: 100 }));

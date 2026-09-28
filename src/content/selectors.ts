@@ -22,9 +22,11 @@ export const SELECTORS = {
   rowAction: '.trade-request-item-remove, [class*="item-remove"]',
   /** Roblox's own Robux amounts, used to match its digit grouping (e.g. "14.186"). */
   robuxAmount: '.text-robux-tile, .text-robux, .text-robux-lg',
-  /** One side of a trade on the trades page. */
-  tradeOffer: '.trade-list-detail-offer',
-  tradeOfferHeader: '.trade-list-detail-offer-header, h3',
+  /** One side of a trade: on the Trades page, or in the window for sending a trade. */
+  tradeOffer: '.trade-list-detail-offer, .trade-request-window-offer',
+  tradeOfferHeader: '.trade-list-detail-offer-header, h3, h2',
+  /** The field for adding Robux to a side when sending a trade. */
+  offerRobuxInput: 'input[name="robux"]',
   /** A line under an offer with a Robux amount: the Robux added to the trade, or the offer's total. */
   offerRobuxLine: '.robux-line',
   /** The amount on such a line. */

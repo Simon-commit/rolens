@@ -18,6 +18,12 @@ export interface TradeOffers {
  * the digits are read.
  */
 export function offerRobux(offer: Element): number {
+  // When sending a trade, the Robux being added is typed into a field.
+  const input = offer.querySelector<HTMLInputElement>(SELECTORS.offerRobuxInput);
+  if (input) {
+    const amount = Number(input.value.replace(/\D/g, ''));
+    return Number.isSafeInteger(amount) ? amount : 0;
+  }
   for (const line of offer.querySelectorAll(SELECTORS.offerRobuxLine)) {
     const label = line.textContent?.toLowerCase() ?? '';
     if (!label.includes('robux') || label.includes('total')) continue;
@@ -29,8 +35,8 @@ export function offerRobux(offer: Element): number {
 }
 
 /**
- * Finds the two sides of the trade being viewed. The side is read from the header
- * text ("give" / "receive"), falling back to Roblox's order: give first, receive second.
+ * Finds the two sides of the trade being viewed or sent. The side is read from the header
+ * text, falling back to Roblox's order: give first, receive second.
  */
 export function findTradeOffers(root: ParentNode): TradeOffers | null {
   const offers = [...root.querySelectorAll(SELECTORS.tradeOffer)];
@@ -42,7 +48,9 @@ export function findTradeOffers(root: ParentNode): TradeOffers | null {
     header: element.querySelector(SELECTORS.tradeOfferHeader)?.textContent?.toLowerCase() ?? '',
   }));
   const [first, second] = sides as [(typeof sides)[0], (typeof sides)[0]];
-  const firstReceives = first.header.includes('receive') && !second.header.includes('receive');
+  // "You will receive" on the Trades page, "Your Request" when sending a trade.
+  const receives = (header: string) => header.includes('receive') || header.includes('request');
+  const firstReceives = receives(first.header) && !receives(second.header);
   const [give, receive] = firstReceives ? [second, first] : [first, second];
   return { give, receive };
 }
