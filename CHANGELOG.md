@@ -5,6 +5,14 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-09-28
+
+### Changed
+
+- The extension is named "RoLens: Trade Values for Roblox", so it does not read as an official Roblox product.
+- Clearer popup copy for the outbound trade tools and the trade window tools.
+- The README now states that RoLens changes your Roblox account only when you confirm cancelling trades you have reviewed.
+
 ## [0.12.1] - 2026-09-28
 
 ### Fixed

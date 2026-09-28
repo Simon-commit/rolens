@@ -20,8 +20,8 @@ RoLens is a Chrome extension for Roblox limited item traders. It brings market d
 [Rolimon's](https://www.rolimons.com) and [RoUtility](https://routility.io) onto the Roblox
 website, so every trade can be evaluated without leaving the page.
 
-RoLens is designed to be safe to install. It never reads your cookies or changes anything on
-your Roblox account, requests only the permissions it needs, and every line of shipped code is
+RoLens is designed to be safe to install. It never reads your cookies, changes your Roblox account only
+when you confirm cancelling trades you have reviewed, requests only the permissions it needs, and every line of shipped code is
 published in this repository.
 
 ## Features

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "RoLens: Roblox Trade Values",
+  "name": "RoLens: Trade Values for Roblox",
   "short_name": "RoLens",
   "description": "Item values, USD estimates and trade tools from Rolimon's and RoUtility, directly on Roblox. Open source, with no tracking.",
   "version": "0.0.0",
