@@ -5,6 +5,13 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-29
+
+### Changed
+
+- Discord alerts are redesigned. The embed shows the trade partner with their Roblox avatar, the gain or loss with its percentage and the RAP difference, and both sides with each item's value and a total. It also marks rare items and shows when the trade arrived.
+- Items on hold in the trade window now follow Roblox's own "Holding" marker. RoLens no longer adds its own tag or reads the partner's inventory for it. "Hide on hold" appears when an inventory has items on hold, and hides exactly those items.
+
 ## [0.13.1] - 2026-09-28
 
 ### Added

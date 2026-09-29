@@ -45,8 +45,8 @@ const bars = new WeakMap<HTMLElement, FilterBar & { setMeta: (meta: Meta) => voi
 
 interface Meta {
   total: number;
-  holdsKnown: boolean;
-  own: boolean;
+  /** Items Roblox marks as on hold; the hold toggle shows only when there are some. */
+  holds: number;
 }
 
 export function renderInventoryFilter(
@@ -98,7 +98,7 @@ export function renderInventoryFilter(
     },
     setMeta(next: Meta) {
       info = next;
-      hold.hidden = !next.holdsKnown;
+      hold.hidden = next.holds === 0 && !current.hideHold;
     },
   };
   bar.setMeta(meta);

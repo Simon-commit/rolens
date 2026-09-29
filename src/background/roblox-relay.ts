@@ -12,7 +12,8 @@ const TABS_KEY = 'robloxTabs';
 
 export type RelayRequest =
   | { type: 'rolens:relayTrades'; op: 'list' }
-  | { type: 'rolens:relayTrades'; op: 'offers'; tradeId: number; partnerId: number };
+  | { type: 'rolens:relayTrades'; op: 'offers'; tradeId: number; partnerId: number }
+  | { type: 'rolens:relayTrades'; op: 'headshot'; userId: number };
 
 export interface RelayResponse<T> {
   data: T | null;
@@ -26,6 +27,7 @@ export function isRelayRequest(message: unknown): message is RelayRequest {
   if (value.type !== 'rolens:relayTrades') return false;
   if (value.op === 'list') return true;
   const positive = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n > 0;
+  if (value.op === 'headshot') return positive(value.userId);
   return value.op === 'offers' && positive(value.tradeId) && positive(value.partnerId);
 }
 

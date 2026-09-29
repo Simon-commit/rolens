@@ -28,6 +28,7 @@ import {
   type TradeOffers,
   type TradeSide,
   type TradeSummaryRow,
+  userHeadshots,
 } from '../content/roblox-api';
 import { ROBUX_AFTER_FEE } from '../content/trade-values';
 
@@ -209,6 +210,8 @@ async function applyNumberFormat(): Promise<void> {
 export interface InboundReader {
   list(): Promise<{ rows: TradeSummaryRow[] } | null>;
   offers(tradeId: number, partnerId: number): Promise<TradeOffers | null>;
+  /** The player's public avatar headshot URL, for Discord alerts; null when unavailable. */
+  headshot?(userId: number): Promise<string | null>;
   /** Why the last read failed, such as "HTTP 401". */
   failure(): string | null;
 }
@@ -217,6 +220,10 @@ export interface InboundReader {
 export const directReader: InboundReader = {
   list: () => fetchTradeList('inbound', null),
   offers: (tradeId, partnerId) => fetchTradeOffersWith(tradeId, partnerId),
+  headshot: (userId) =>
+    userHeadshots([userId])
+      .then((images) => images.get(userId) ?? null)
+      .catch(() => null),
   failure: lastTradeFailure,
 };
 
@@ -311,6 +318,8 @@ async function runCheck(values: AlertValues, reader: InboundReader): Promise<Che
       result.filtered += 1;
       continue;
     }
+    // Only Discord shows the avatar, so it is only looked up for Discord.
+    if (settings.discordWebhook && reader.headshot) alert.avatar = await reader.headshot(row.partner.id);
     for (const failure of await deliver(alert, settings)) failures.add(failure);
     result.alerted += 1;
     state.lastAlert = Date.now();

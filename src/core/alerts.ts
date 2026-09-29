@@ -105,6 +105,8 @@ export interface TradeAlert {
   /** Items no source values; they are not counted in the totals. */
   unvalued: number;
   sources: string;
+  /** The partner's public avatar headshot on Roblox's CDN, shown in Discord alerts. */
+  avatar?: string | null;
 }
 
 export const hasRare = (alert: TradeAlert) => [...alert.give.items, ...alert.receive.items].some((item) => item.rare);
@@ -154,29 +156,55 @@ export function alertText(alert: TradeAlert): { title: string; body: string } {
   };
 }
 
-/** The Discord webhook message: an embed, with a mention only when the user asked for one. */
+/** One side of a trade for Discord: an item per line with its value, then the total. */
+function discordSide(side: TradeAlert['give']): string {
+  const lines = side.items.map(
+    (item) =>
+      `${item.value === null ? '*No value*' : `**${formatRobux(item.value, true)}**`}  ${item.name || 'Unnamed item'}${item.rare ? ' · *Rare*' : ''}`,
+  );
+  if (side.robux) lines.push(`**${formatRobux(side.robux, true)}**  Robux`);
+  if (!lines.length) lines.push('*Nothing*');
+  const total = `Total **${formatRobux(side.value, true)}**`;
+  // Discord allows 1,024 characters per field.
+  const body = lines.join('\n');
+  return `${body.length > 960 ? `${body.slice(0, 960)}…` : body}\n\n${total}`;
+}
+
+const CDN_IMAGE = /^https:\/\/[a-z0-9-]+\.rbxcdn\.com\/[\w./-]+$/;
+
+/**
+ * The Discord webhook message: an embed with the partner and their avatar, the verdict,
+ * both sides with their totals, and a mention only when the user asked for one.
+ */
 export function discordPayload(alert: TradeAlert, settings: AlertSettings): Record<string, unknown> {
   const color = alert.net > 0 ? 0x10b981 : alert.net < 0 ? 0xe11d48 : 0x8b93a1;
-  const field = (name: string, side: TradeAlert['give']) => ({
-    name: `${name} · ${formatRobux(side.value, true)}`,
-    value: sideLines(side).join('\n').slice(0, 1000),
-    inline: true,
-  });
+  const pct = percentChange(alert.net, alert.give.value);
+  const verdict = alert.net > 0 ? 'Gain' : alert.net < 0 ? 'Loss' : 'Even';
   const mention = settings.discordUserId ? `<@${settings.discordUserId}>` : '';
+  const avatar = alert.avatar && CDN_IMAGE.test(alert.avatar) ? alert.avatar : null;
   return {
     username: 'RoLens',
     content: mention,
     allowed_mentions: { parse: [], users: settings.discordUserId ? [settings.discordUserId] : [] },
     embeds: [
       {
-        title: alertText(alert).title.slice(0, 250),
+        author: { name: hasRare(alert) ? 'New inbound trade · Rare item' : 'New inbound trade' },
+        title: partnerLabel(alert).slice(0, 250),
         url: TRADES_URL,
         color,
-        description: `**${alertHeadline(alert)}** · RAP ${formatDelta(alert.rapDelta, true)}`,
-        fields: [field('You give', alert.give), field('You receive', alert.receive)],
+        ...(avatar ? { thumbnail: { url: avatar } } : {}),
+        description: [
+          `**${verdict} ${formatDelta(alert.net, true)}**${pct === null || alert.unvalued ? '' : ` (${formatPercent(pct)})`}`,
+          `RAP ${formatDelta(alert.rapDelta, true)}`,
+        ].join('\n'),
+        fields: [
+          { name: 'You give', value: discordSide(alert.give), inline: true },
+          { name: 'You receive', value: discordSide(alert.receive), inline: true },
+        ],
         footer: {
           text: `RoLens · Values from ${alert.sources}${alert.unvalued ? ` · ${alert.unvalued} unvalued not counted` : ''}`,
         },
+        timestamp: new Date().toISOString(),
       },
     ],
   };

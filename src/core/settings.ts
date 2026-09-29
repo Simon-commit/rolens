@@ -40,8 +40,8 @@ export interface Settings {
    */
   showCancelTools: boolean;
   /**
-   * In the window for sending a trade: a filter bar above each inventory and "On hold"
-   * tags, from Roblox's public inventory API read without cookies.
+   * In the window for sending a trade: a filter bar above each inventory, which can also
+   * hide the items Roblox marks as on hold.
    */
   showTradeWindowTools: boolean;
   /** A trade history button above the completed Trades list: totals, best and worst trades. */

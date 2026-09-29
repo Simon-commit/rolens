@@ -395,10 +395,6 @@ export interface OwnedItem {
   /** The copy's own id (Roblox's user asset id). */
   instanceId: number | null;
   assetId: number;
-  /** The copy's serial number, for Limited U items. */
-  serial?: number | null;
-  /** Roblox holds recently acquired items for a period before they can be traded. */
-  onHold?: boolean;
 }
 
 /**
@@ -422,14 +418,7 @@ export async function fetchCollectibles(userId: number, fetchFn: typeof fetch = 
     for (const entry of body.data) {
       if (!isRecord(entry)) continue;
       const assetId = positiveInt(entry.assetId);
-      if (assetId) {
-        owned.push({
-          assetId,
-          instanceId: positiveInt(entry.userAssetId),
-          serial: positiveInt(entry.serialNumber),
-          onHold: entry.isOnHold === true,
-        });
-      }
+      if (assetId) owned.push({ assetId, instanceId: positiveInt(entry.userAssetId) });
     }
     cursor = typeof body.nextPageCursor === 'string' && body.nextPageCursor ? body.nextPageCursor : null;
     if (!cursor) return owned;

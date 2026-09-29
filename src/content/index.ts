@@ -135,7 +135,7 @@ async function update(): Promise<void> {
     });
   }
   if (settings.showTradeHistory) renderHistoryButton(ctx, { ...valuer, tradeCache });
-  if (settings.showTradeWindowTools) renderTradeWindow({ lookup, redraw: schedule });
+  if (settings.showTradeWindowTools) renderTradeWindow({ lookup });
   if (settings.warnDuplicateTrades) {
     await renderDuplicateTrade(ctx, {
       loadValues: (ids) => store.load(ids),

@@ -65,8 +65,18 @@ describe('alert messages', () => {
     expect(quiet.content).toBe('');
     expect(quiet.allowed_mentions).toEqual({ parse: [], users: [] });
     const embed = (quiet.embeds as { title: string; fields: { name: string; value: string }[] }[])[0]!;
-    expect(embed.title).toBe('New trade from RoLens test (@rolens_test)');
-    expect(embed.fields[0]!.value).toBe('Test item A: 120K');
+    expect(embed.title).toBe('RoLens test (@rolens_test)');
+    expect(embed.fields[0]!.value).toBe('**120K**  Test item A\n\nTotal **120K**');
+    expect(embed).not.toHaveProperty('thumbnail');
+  });
+
+  it("shows the partner's avatar only from Roblox's image CDN", () => {
+    const image = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-ABC/150/150/AvatarHeadshot/Png/noFilter';
+    const embed = (payload: Record<string, unknown>) => (payload.embeds as Record<string, unknown>[])[0]!;
+    expect(embed(discordPayload({ ...alert(), avatar: image }, DEFAULT_ALERTS)).thumbnail).toEqual({ url: image });
+    expect(
+      embed(discordPayload({ ...alert(), avatar: 'https://example.com/a.png' }, DEFAULT_ALERTS)),
+    ).not.toHaveProperty('thumbnail');
   });
 
   it('sends ntfy a plain-text message without cookies', () => {

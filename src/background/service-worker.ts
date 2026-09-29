@@ -217,6 +217,10 @@ const alertReader: InboundReader = {
     lastRelayFailure = direct ? null : (directReader.failure() ?? relayed?.failure ?? null);
     return direct;
   },
+  async headshot(userId) {
+    const relayed = await viaRobloxTab<string>({ type: 'rolens:relayTrades', op: 'headshot', userId });
+    return relayed?.data ?? (await directReader.headshot!(userId));
+  },
   async offers(tradeId, partnerId) {
     const relayed = await viaRobloxTab<TradeOffers>({ type: 'rolens:relayTrades', op: 'offers', tradeId, partnerId });
     if (relayed?.data) return ((lastRelayFailure = null), relayed.data);
