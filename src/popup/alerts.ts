@@ -6,6 +6,7 @@ import {
   DISCORD_ORIGIN,
   isDiscordUserId,
   isNtfyTopic,
+  MIN_NEW_NTFY_TOPIC,
   normaliseWebhook,
   NTFY_ORIGIN,
   ROBLOX_TRADES_ORIGIN,
@@ -120,8 +121,9 @@ function renderDiscord(): void {
 }
 
 function randomTopic(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  return `rolens-${[...bytes].map((byte) => (byte % 36).toString(36)).join('')}`;
+  // 16 characters from 32, without the bias of byte % 36: 80 random bits.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return `rolens-${[...bytes].map((byte) => (byte % 32).toString(32)).join('')}`;
 }
 
 function renderNtfy(): void {
@@ -141,8 +143,14 @@ function renderNtfy(): void {
         await release({ origins: [NTFY_ORIGIN] });
         return note('#ntfy-note', 'Phone alerts are off.');
       }
-      if (!isNtfyTopic(value)) {
-        return note('#ntfy-note', 'Use 6 to 64 letters, digits, dashes or underscores.', 'bad');
+      const tooShort = value !== alerts.ntfyTopic && value.length < MIN_NEW_NTFY_TOPIC;
+      if (!isNtfyTopic(value) || tooShort) {
+        topic.setAttribute('aria-invalid', 'true');
+        return note(
+          '#ntfy-note',
+          `Use ${MIN_NEW_NTFY_TOPIC} to 64 letters, digits, dashes or underscores, or press Generate. Anyone who knows the topic can read its alerts.`,
+          'bad',
+        );
       }
       if (!(await requestAlertChange({ ntfyTopic: value, enabled: true }, withAlerts({ origins: [NTFY_ORIGIN] })))) {
         return note('#ntfy-note', 'Chrome did not allow RoLens to reach ntfy.sh.', 'bad');

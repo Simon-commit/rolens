@@ -5,6 +5,18 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-09-29
+
+### Security
+
+- New ntfy topics must be at least 20 characters, because anyone who knows a topic can read its alerts. Generate now creates a 23-character topic with 80 random bits. Topics saved by earlier versions keep working.
+- GitHub Actions in the CI and release workflows are pinned to full commit SHAs.
+- SECURITY.md now lists inbound alert polling, the avatar in Discord alerts, and every site RoLens contacts, including Rolimon's player pages.
+
+### Removed
+
+- A folder of stray example screenshots that had been committed by mistake.
+
 ## [0.15.0] - 2026-09-29
 
 ### Added

@@ -65,6 +65,11 @@ export function normaliseWebhook(url: string): string | null {
 
 export const isDiscordUserId = (value: string) => DISCORD_ID.test(value.trim());
 export const isNtfyTopic = (value: string) => NTFY_TOPIC.test(value.trim());
+/**
+ * ntfy.sh topics are public: anyone who knows the name can read the alerts. New topics
+ * must be long enough not to be guessed. Shorter topics saved by earlier versions keep working.
+ */
+export const MIN_NEW_NTFY_TOPIC = 20;
 
 const number = (value: unknown, min: number, max: number): number | null =>
   typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max ? value : null;
