@@ -5,6 +5,12 @@ and the project uses [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-29
+
+### Added
+
+- Hold end times, off by default. In the window for sending a trade, each item Roblox marks as "Holding" shows how long until it can be traded, with the date and time on hover. The time is Roblox's 48-hour holding period counted from when Rolimon's first saw the current owner with the item, so the hold ends by then at the latest. Turning it on asks Chrome for access to Rolimon's player pages, which RoLens reads without cookies.
+
 ## [0.14.0] - 2026-09-29
 
 ### Changed

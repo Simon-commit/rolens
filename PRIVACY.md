@@ -4,6 +4,7 @@ RoLens does not collect or share any personal data. Everything it saves stays in
 
 - **Network requests to data sources.** Requests to Rolimon's and RoUtility never include cookies or any information about you.
   - `https://api.rolimons.com` provides the public item value table, and the inventory of a player whose profile you open. Only that player's user ID is sent, so Rolimon's can see which profiles are viewed, but not who is viewing them.
+  - `https://www.rolimons.com/player/{id}` (only when hold end times are turned on, which asks Chrome for access to that page) provides when a player received each of their items. When you open the page to send a trade, RoLens reads your trade partner's page, and yours if you have items on hold. Only the player's user ID is sent. Turning hold end times off removes the permission.
   - `https://routility.io` provides details for individual items shown on the page you are viewing. Only the item ID is sent. RoUtility can therefore see which limited items are viewed, but not who is viewing them.
 
   Either source can be disabled in the popup, which stops all requests to it.

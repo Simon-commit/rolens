@@ -1,3 +1,4 @@
+import { ROLIMONS_PAGES_ORIGIN } from '../core/owner-since';
 import { STALE_AFTER_MS } from '../core/cache';
 import { initAlerts } from './alerts';
 import { formatAge } from '../core/format';
@@ -132,6 +133,34 @@ function renderToggles(): void {
   }
 }
 
+/**
+ * Hold end times read the trade partner's Rolimon's page, so the switch asks Chrome for
+ * that site when it is turned on and gives the permission back when it is turned off.
+ */
+function renderHoldTimes(): void {
+  const input = $<HTMLInputElement>('#hold-times');
+  const pages = { origins: [ROLIMONS_PAGES_ORIGIN] };
+  input.checked = false;
+  void chrome.permissions
+    .contains(pages)
+    .catch(() => false)
+    .then((granted) => (input.checked = settings.showHoldTimes && granted));
+  input.addEventListener('change', () => {
+    if (!input.checked) {
+      void chrome.permissions.remove(pages).catch(() => false);
+      void save({ showHoldTimes: false });
+      return;
+    }
+    void chrome.permissions
+      .request(pages)
+      .catch(() => false)
+      .then((granted) => {
+        input.checked = granted;
+        return save({ showHoldTimes: granted });
+      });
+  });
+}
+
 /** Names the serial shortcut as the user has it set, or says none is assigned. */
 function renderSerialShortcut(): void {
   void chrome.commands.getAll().then((commands) => {
@@ -256,6 +285,7 @@ async function main(): Promise<void> {
   renderTheme();
   renderSources();
   renderToggles();
+  renderHoldTimes();
   renderSerialShortcut();
   renderFormat();
   renderRate();

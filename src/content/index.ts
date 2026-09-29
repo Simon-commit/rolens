@@ -16,6 +16,7 @@ import { renderHistoryButton } from './trade-history';
 import { serveAlertReads } from './alerts-relay';
 import { renderTradeSummary } from './trade-summary';
 import { renderTradeWindow, resetTradeWindow } from './trade-window';
+import type { OwnerSince } from '../core/owner-since';
 import type { RenderContext } from './ui/context';
 import { applyColorBlind, applyThemePreference, detectTheme } from './ui/shadow';
 import { ValueStore } from './value-store';
@@ -45,6 +46,22 @@ async function pageItemId(): Promise<number | null> {
   await store.resolveNames([name], findByName);
   return store.idForName(name) ?? null;
 }
+/** Owner Since tables by player, asked of the service worker once per page view and player. */
+const ownerSince = new Map<number, OwnerSince | null | undefined>();
+function ownerSinceFor(userId: number): OwnerSince | null | undefined {
+  if (!ownerSince.has(userId)) {
+    ownerSince.set(userId, undefined);
+    void send({ type: 'rolens:getOwnerSince', userId })
+      .then(({ data }) => data)
+      .catch(() => null)
+      .then((data) => {
+        ownerSince.set(userId, data);
+        schedule();
+      });
+  }
+  return ownerSince.get(userId);
+}
+
 let settings: Settings = normaliseSettings(undefined);
 let scheduled = false;
 
@@ -135,7 +152,13 @@ async function update(): Promise<void> {
     });
   }
   if (settings.showTradeHistory) renderHistoryButton(ctx, { ...valuer, tradeCache });
-  if (settings.showTradeWindowTools) renderTradeWindow({ lookup });
+  if (settings.showTradeWindowTools || settings.showHoldTimes) {
+    renderTradeWindow({
+      lookup,
+      filters: settings.showTradeWindowTools,
+      holdTimes: settings.showHoldTimes ? { ownerSince: ownerSinceFor, now: Date.now } : null,
+    });
+  }
   if (settings.warnDuplicateTrades) {
     await renderDuplicateTrade(ctx, {
       loadValues: (ids) => store.load(ids),
@@ -249,7 +272,8 @@ function start(): void {
       }
       if (!next.showTradePreviews) resetTradeList();
       if (!next.warnDuplicateTrades) resetDuplicateTrade();
-      if (!next.showTradeWindowTools) resetTradeWindow();
+      if (!next.showTradeWindowTools || !next.showHoldTimes) resetTradeWindow();
+      if (next.showHoldTimes && !prev.showHoldTimes) ownerSince.clear();
       removeOwnNodes(document);
       schedule();
     } else if (area === 'local' && changes[TRADE_CACHE_KEY] && changes[TRADE_CACHE_KEY].newValue === undefined) {

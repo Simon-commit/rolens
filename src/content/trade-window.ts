@@ -1,9 +1,12 @@
+import { holdEndsBy, type OwnerSince } from '../core/owner-since';
 import type { ItemValue } from '../core/types';
+import { makeAnchor, releaseAnchor } from './chip-fit';
 import { findItemCards } from './badges';
 import { isOwnNode } from './dom';
 import { tradePartnerFromPath } from './duplicate-trade';
 import { SELECTORS } from './selectors';
 import { signedInUserId } from './trade-list';
+import { renderHoldTime } from './ui/hold-time';
 import { renderInventoryFilter, type InventoryFilter } from './ui/inventory-filter';
 
 /*
@@ -11,14 +14,25 @@ import { renderInventoryFilter, type InventoryFilter } from './ui/inventory-filt
  * items by name, acronym, minimum value or rarity, and can hide items on hold. Roblox
  * marks items on hold itself ("Holding"), so RoLens reads that marker instead of asking
  * Roblox again. Items are only hidden from view; nothing is added to or removed from the
- * trade.
+ * trade. Optionally, each item on hold shows when it comes off hold, estimated from the
+ * owner's Rolimon's page.
  */
 
 export const FILTERED_ATTR = 'data-rolens-filtered';
 
 export interface TradeWindowDeps {
   lookup: (id: number) => ItemValue | null | undefined;
+  /** The filter bars. */
+  filters: boolean;
+  /** Hold end times; null when turned off. */
+  holdTimes: {
+    /** When a player received each copy; undefined while it loads, null when unavailable. */
+    ownerSince: (userId: number) => OwnerSince | null | undefined;
+    now: () => number;
+  } | null;
 }
+
+const HOLD_TIME_SELECTOR = ':scope > [data-rolens="hold-time"]';
 
 const filters = new WeakMap<Element, InventoryFilter>();
 /** Applies a filter to the tiles as last drawn, per inventory. */
@@ -38,6 +52,20 @@ export function tileOnHold(tile: Element): boolean {
   }
   return false;
 }
+
+/** The serial Roblox shows on a Limited U tile, such as "#1,234"; null without one. */
+export function tileSerial(tile: Element): number | null {
+  const text = tile.querySelector(SELECTORS.serialNumber)?.textContent ?? '';
+  const digits = /#?\s*([\d,.\s]+)/.exec(text)?.[1]?.replace(/\D/g, '');
+  const serial = digits ? Number(digits) : NaN;
+  return Number.isSafeInteger(serial) && serial > 0 ? serial : null;
+}
+
+/** Whether a panel is the signed-in user's inventory ("Your Inventory"). */
+const isOwnPanel = (panel: Element, index: number) => {
+  const heading = panel.querySelector(SELECTORS.inventoryHeading)?.textContent ?? '';
+  return heading.trim() ? /\byour\b/i.test(heading) : index === 0;
+};
 
 /** Parses "50K", "1.2m" or "250000" as a minimum value; null for anything else. */
 export function minimumValue(query: string): number | null {
@@ -73,12 +101,19 @@ export function renderTradeWindow(deps: TradeWindowDeps): void {
     resetTradeWindow();
     return;
   }
-  for (const panel of panels) {
+  for (const [index, panel] of panels.entries()) {
+    const owner = isOwnPanel(panel, index) ? me! : partner!;
     const tiles: { tile: Element; name: string; item: ItemValue | null | undefined; onHold: boolean }[] = [];
     for (const [card, id] of findItemCards(panel)) {
       const tile = tileOf(card);
       const name = tile.querySelector(SELECTORS.cardName)?.textContent?.trim() ?? '';
-      tiles.push({ tile, name, item: deps.lookup(id), onHold: tileOnHold(tile) });
+      const onHold = tileOnHold(tile);
+      tiles.push({ tile, name, item: deps.lookup(id), onHold });
+      renderTileHoldTime(tile, onHold ? id : null, owner, deps);
+    }
+    if (!deps.filters) {
+      panel.querySelector(':scope [data-rolens="inventory-filter"]')?.remove();
+      continue;
     }
 
     const apply = (filter: InventoryFilter): number => {
@@ -113,10 +148,40 @@ export function renderTradeWindow(deps: TradeWindowDeps): void {
   }
 }
 
-/** Shows every tile again and removes the filter bars. */
+/** Adds, updates or removes the hold end time on one tile. */
+function renderTileHoldTime(tile: Element, heldId: number | null, owner: number, deps: TradeWindowDeps): void {
+  const thumb = tile.querySelector<HTMLElement>(SELECTORS.cardThumb);
+  if (!thumb) return;
+  const existing = thumb.querySelector<HTMLElement>(HOLD_TIME_SELECTOR);
+  const data = heldId !== null && deps.holdTimes ? deps.holdTimes.ownerSince(owner) : null;
+  const now = deps.holdTimes?.now() ?? 0;
+  const endsBy = data && heldId !== null ? holdEndsBy(data, heldId, tileSerial(tile), now) : null;
+  if (endsBy === null) {
+    // Kept while the owner's page loads again, so the tag doesn't flicker.
+    if (data !== undefined && existing) {
+      existing.remove();
+      releaseIfUnused(thumb);
+    }
+    return;
+  }
+  const tag = renderHoldTime(existing, endsBy, now);
+  if (tag.parentElement !== thumb) {
+    makeAnchor(thumb);
+    thumb.append(tag);
+  }
+}
+
+/** Shows every tile again and removes the filter bars and hold times. */
 export function resetTradeWindow(): void {
   for (const tile of document.querySelectorAll(`[${FILTERED_ATTR}]`)) tile.removeAttribute(FILTERED_ATTR);
-  for (const node of document.querySelectorAll('[data-rolens="inventory-filter"], [data-rolens="hold-tag"]')) {
+  for (const node of document.querySelectorAll('[data-rolens="inventory-filter"], [data-rolens="hold-time"]')) {
+    const thumb = node.parentElement;
     node.remove();
+    if (thumb) releaseIfUnused(thumb);
   }
+}
+
+/** Undoes makeAnchor once no other RoLens element is positioned in the thumbnail. */
+function releaseIfUnused(thumb: HTMLElement): void {
+  if (!thumb.querySelector(':scope > [data-rolens]')) releaseAnchor(thumb);
 }

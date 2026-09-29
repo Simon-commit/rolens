@@ -4,6 +4,7 @@ import {
   type CacheStatus,
   type ItemsResponse,
   type NamesResponse,
+  type OwnerSinceResponse,
   type PlayerResponse,
   type Request,
   type RoutilityResponse,
@@ -29,6 +30,7 @@ import { applyPendingChange } from './alert-grants';
 import type { TradeOffers, TradeSummaryRow } from '../content/roblox-api';
 import { buildNameIndex, normaliseName } from '../core/names';
 import { PlayerCache } from '../core/player-cache';
+import { OwnerSinceCache, ROLIMONS_PAGES_ORIGIN } from '../core/owner-since';
 import { TRADE_CACHE_KEY } from '../core/trade-cache';
 import { RoutilityCache, type RoutilityEntry } from '../core/routility-cache';
 import { normaliseSettings, type Settings } from '../core/settings';
@@ -63,6 +65,7 @@ const routility = new RoutilityCache(fetch.bind(globalThis), {
 });
 
 const players = new PlayerCache(fetch.bind(globalThis));
+const ownerSince = new OwnerSinceCache(fetch.bind(globalThis));
 
 async function currentSettings(): Promise<Settings> {
   const { settings } = await chrome.storage.sync.get('settings');
@@ -89,6 +92,7 @@ async function handle(
   | NamesResponse
   | RoutilityResponse
   | PlayerResponse
+  | OwnerSinceResponse
   | TestAlertResponse
   | CheckAlertsResponse
   | CacheStatus
@@ -113,6 +117,11 @@ async function handle(
       (inventory) => ({ inventory }),
       (error: unknown) => ({ error: error instanceof Error ? error.message : String(error) }),
     );
+  }
+  if (request.type === 'rolens:getOwnerSince') {
+    // Optional: only once the user has allowed Rolimon's player pages.
+    const allowed = await chrome.permissions.contains({ origins: [ROLIMONS_PAGES_ORIGIN] });
+    return { data: allowed ? await ownerSince.get(request.userId) : null };
   }
   switch (request.type) {
     case 'rolens:getItems': {
@@ -141,6 +150,7 @@ async function handle(
       // Saved trades, inventories and RoUtility estimates. The public value table is kept.
       await routility.clear();
       players.clear();
+      ownerSince.clear();
       await chrome.storage.local.remove(TRADE_CACHE_KEY);
       return { ...values.status(), routility: routility.status() };
     case 'rolens:refresh':

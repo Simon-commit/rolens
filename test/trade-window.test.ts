@@ -78,7 +78,7 @@ describe('trade window tools', () => {
       [2, item({ id: 2, name: 'Shaggy', value: 70_000 })],
       [3, item({ id: 3, name: 'Valkyrie Helm', value: 270_000 })],
     ]);
-    const deps = { lookup: (id: number) => values.get(id) };
+    const deps = { lookup: (id: number) => values.get(id), filters: true, holdTimes: null };
     renderTradeWindow(deps);
     const bars = [...document.querySelectorAll<HTMLElement>('[data-rolens="inventory-filter"]')];
     expect(bars).toHaveLength(2);

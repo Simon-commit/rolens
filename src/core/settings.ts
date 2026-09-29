@@ -46,6 +46,12 @@ export interface Settings {
   showTradeWindowTools: boolean;
   /** A trade history button above the completed Trades list: totals, best and worst trades. */
   showTradeHistory: boolean;
+  /**
+   * In the window for sending a trade: when each item Roblox marks as on hold comes off
+   * hold, estimated from Rolimon's "Owner Since". Needs the optional permission for
+   * Rolimon's player pages, requested when the user turns it on.
+   */
+  showHoldTimes: boolean;
   /** 1.2M instead of 1,234,567. */
   compactNumbers: boolean;
   /** Show USD estimates where available. */
@@ -77,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showCancelTools: true,
   showTradeWindowTools: true,
   showTradeHistory: true,
+  showHoldTimes: false,
   compactNumbers: true,
   showUsd: true,
   useRolimons: true,
@@ -102,6 +109,7 @@ export function normaliseSettings(stored: unknown): Settings {
     'showCancelTools',
     'showTradeWindowTools',
     'showTradeHistory',
+    'showHoldTimes',
     'compactNumbers',
     'showUsd',
     'useRolimons',

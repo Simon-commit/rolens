@@ -1,4 +1,5 @@
 import type { CheckResult } from '../background/inbound-alerts';
+import type { OwnerSince } from './owner-since';
 import type { PlayerInventory } from './player';
 import type { RoutilityStatus } from './routility-cache';
 import type { ItemValue, RoutilityData, SourceId } from './types';
@@ -8,6 +9,7 @@ export type Request =
   | { type: 'rolens:getItems'; ids: number[] }
   | { type: 'rolens:getRoutility'; ids: number[] }
   | { type: 'rolens:getPlayer'; userId: number }
+  | { type: 'rolens:getOwnerSince'; userId: number }
   | { type: 'rolens:findByName'; names: string[] }
   | { type: 'rolens:getStatus' }
   | { type: 'rolens:refresh' }
@@ -42,6 +44,11 @@ export interface CheckAlertsResponse {
   result: CheckResult | null;
 }
 
+/** When a player received each copy, per Rolimon's; null without the permission or when unavailable. */
+export interface OwnerSinceResponse {
+  data: OwnerSince | null;
+}
+
 /** A player's inventory, or why it couldn't be fetched. */
 export type PlayerResponse = { inventory: PlayerInventory } | { error: string };
 
@@ -67,13 +74,15 @@ export type ResponseFor<R extends Request> = R extends { type: 'rolens:getItems'
       ? RoutilityResponse
       : R extends { type: 'rolens:getPlayer' }
         ? PlayerResponse
-        : R extends { type: 'rolens:testAlert' }
-          ? TestAlertResponse
-          : R extends { type: 'rolens:checkAlerts' }
-            ? CheckAlertsResponse
-            : R extends { type: 'rolens:hello' }
-              ? null
-              : CacheStatus;
+        : R extends { type: 'rolens:getOwnerSince' }
+          ? OwnerSinceResponse
+          : R extends { type: 'rolens:testAlert' }
+            ? TestAlertResponse
+            : R extends { type: 'rolens:checkAlerts' }
+              ? CheckAlertsResponse
+              : R extends { type: 'rolens:hello' }
+                ? null
+                : CacheStatus;
 
 export function isRequest(message: unknown): message is Request {
   if (typeof message !== 'object' || message === null) return false;
@@ -96,7 +105,7 @@ export function isRequest(message: unknown): message is Request {
       names.every((name) => typeof name === 'string' && name.length > 0 && name.length <= MAX_NAME_LENGTH)
     );
   }
-  if (type === 'rolens:getPlayer') {
+  if (type === 'rolens:getPlayer' || type === 'rolens:getOwnerSince') {
     const { userId } = message as { userId?: unknown };
     return typeof userId === 'number' && Number.isSafeInteger(userId) && userId > 0;
   }

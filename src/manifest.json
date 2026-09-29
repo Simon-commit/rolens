@@ -47,9 +47,14 @@
   "permissions": ["storage"],
   "optional_permissions": ["alarms", "notifications"],
   "host_permissions": ["https://api.rolimons.com/*", "https://routility.io/*"],
-  "optional_host_permissions": ["https://trades.roblox.com/*", "https://discord.com/*", "https://ntfy.sh/*"],
+  "optional_host_permissions": [
+    "https://trades.roblox.com/*",
+    "https://discord.com/*",
+    "https://ntfy.sh/*",
+    "https://www.rolimons.com/player/*"
+  ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com https://routility.io https://trades.roblox.com https://thumbnails.roblox.com https://discord.com https://ntfy.sh"
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; connect-src https://api.rolimons.com https://www.rolimons.com https://routility.io https://trades.roblox.com https://thumbnails.roblox.com https://discord.com https://ntfy.sh"
   },
   "web_accessible_resources": [
     {
