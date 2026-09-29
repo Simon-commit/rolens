@@ -1,0 +1,55 @@
+/*
+ * Page-level styles (shipped as content.css). RoLens widgets style themselves inside
+ * Shadow DOM; this file only places them on Roblox's cards, outlines rare items and keeps
+ * the optional dark mode from flashing, always through RoLens's own data-rolens-*
+ * attributes (see attrs.ts). The font is registered in fonts.ts.
+ */
+
+/* Optional dark Roblox (see roblox-dark.ts): stays dark while the page loads, before Roblox's own dark styles apply. */
+html[data-rolens-dark] {
+  --rolens-roblox-dark: #191b1d; /* Roblox's own dark page background */
+  color-scheme: dark;
+  background-color: var(--rolens-roblox-dark);
+}
+html[data-rolens-dark] body:not(.dark-theme) {
+  background-color: var(--rolens-roblox-dark) !important;
+}
+
+/* Chips float over Roblox's cards (see chip-fit.ts), so Roblox's own layout never changes size. */
+[data-rolens='badge'][data-placement='overlay'] {
+  position: absolute;
+  /* Matches TILE_INSET in chip-fit.ts. */
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  margin: 0;
+  /* The chip keeps its natural width; shrinkToFit() (chip.ts) keeps it clear of Roblox's
+     selection checkbox by abbreviating figures instead of clipping them. */
+  max-width: none;
+  white-space: nowrap;
+}
+[data-rolens='badge'][data-placement='row'] {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+}
+
+/* Rare items: a quiet gold hairline, no glow or animation. */
+[data-rolens-rare] .item-card-thumb-container,
+[data-rolens-rare]:not(:has(.item-card-thumb-container)) {
+  outline: 1.5px solid rgba(214, 158, 46, 0.75);
+  outline-offset: -1.5px;
+}
+
+/* Hidden serials (see serials.ts): blurred in place, so Roblox's layout keeps its size. */
+html[data-rolens-serials-hidden] [data-rolens-serial],
+html[data-rolens-serials-hidden] .limited-number,
+html[data-rolens-serials-hidden] .limited-number-container {
+  filter: blur(5px);
+  user-select: none;
+}
+
+/* Items the trade window filter bar hides from view (see trade-window.ts). */
+[data-rolens-filtered] {
+  display: none !important;
+}

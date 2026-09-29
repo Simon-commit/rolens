@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest something that would make trading easier.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the trading problem, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could RoLens help?

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Simon-commit/rolens/security/advisories/new
+    about: Please report security issues privately.
+  - name: Wrong item value
+    url: https://www.rolimons.com
+    about: Values come from Rolimon's. Disagreements about a value belong with them.

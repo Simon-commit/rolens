@@ -1,0 +1,283 @@
+/*
+ * RoLens design tokens. Every widget lives in its own Shadow DOM, so these never
+ * touch Roblox's styles and Roblox's styles never touch these.
+ */
+:host {
+  --rl-font: 'RoLens Inter', 'Builder Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --rl-bg: #ffffff;
+  --rl-bg-raised: #ffffff;
+  --rl-surface: #f4f5f7;
+  --rl-surface-2: #eceef1;
+  --rl-border: rgba(15, 23, 42, 0.09);
+  --rl-border-strong: rgba(15, 23, 42, 0.16);
+  --rl-text: #0f1419;
+  --rl-text-2: #4b5563;
+  --rl-text-3: #8b93a1;
+
+  --rl-accent: #059669;
+  --rl-accent-soft: rgba(5, 150, 105, 0.1);
+  --rl-brand-a: #10b981;
+  --rl-brand-b: #06b6d4;
+
+  --rl-win: #059669;
+  --rl-win-soft: rgba(5, 150, 105, 0.1);
+  --rl-loss: #e11d48;
+  --rl-loss-soft: rgba(225, 29, 72, 0.09);
+  --rl-warn: #d97706;
+  --rl-warn-soft: rgba(217, 119, 6, 0.1);
+
+  --rl-rare-text: #b7791f;
+  --rl-rare-soft: rgba(245, 184, 61, 0.14);
+  --rl-rare-line: rgba(214, 158, 46, 0.55);
+
+  --rl-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --rl-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -6px rgba(15, 23, 42, 0.12);
+  --rl-shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.06), 0 24px 48px -12px rgba(15, 23, 42, 0.25);
+
+  /* Categorical colours, for the inventory composition bar. */
+  --rl-series-1: #10b981;
+  --rl-series-2: #06b6d4;
+  --rl-series-3: #6366f1;
+  --rl-series-4: #f59e0b;
+  --rl-series-5: #ec4899;
+  --rl-series-6: #8b5cf6;
+
+  --rl-radius-sm: 6px;
+  --rl-radius: 12px;
+  --rl-radius-lg: 16px;
+
+  font-family: var(--rl-font);
+  font-feature-settings:
+    'tnum' 1,
+    'cv11' 1,
+    'ss01' 1;
+  -webkit-font-smoothing: antialiased;
+  color: var(--rl-text);
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+:host([data-theme='dark']) {
+  --rl-bg: #0b0e13;
+  --rl-bg-raised: #12161d;
+  --rl-surface: #1a1f28;
+  --rl-surface-2: #252b36;
+  --rl-border: rgba(255, 255, 255, 0.07);
+  --rl-border-strong: rgba(255, 255, 255, 0.12);
+  --rl-text: #eef1f5;
+  --rl-text-2: #a3acb9;
+  --rl-text-3: #697386;
+
+  --rl-accent: #34d399;
+  --rl-accent-soft: rgba(52, 211, 153, 0.12);
+  --rl-brand-a: #34d399;
+  --rl-brand-b: #22d3ee;
+
+  --rl-win: #34d399;
+  --rl-win-soft: rgba(52, 211, 153, 0.12);
+  --rl-loss: #fb7185;
+  --rl-loss-soft: rgba(251, 113, 133, 0.12);
+  --rl-warn: #fbbf24;
+  --rl-warn-soft: rgba(251, 191, 36, 0.12);
+
+  --rl-rare-text: #fcd34d;
+  --rl-rare-soft: rgba(252, 211, 77, 0.12);
+  --rl-rare-line: rgba(252, 211, 77, 0.45);
+
+  --rl-series-1: #34d399;
+  --rl-series-2: #22d3ee;
+  --rl-series-3: #818cf8;
+  --rl-series-4: #fbbf24;
+  --rl-series-5: #f472b6;
+  --rl-series-6: #a78bfa;
+
+  --rl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -6px rgba(0, 0, 0, 0.5);
+  --rl-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.3), 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Theme changes cross-fade instead of snapping. */
+:host,
+:host * {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 0.35s;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Shared atoms */
+
+/* USD figures: published estimates in the accent colour; figures calculated at the
+   fallback rate in a neutral tone with a dotted underline, explained on hover. */
+.usd {
+  color: var(--rl-accent);
+}
+.usd.is-estimate {
+  color: var(--rl-text-2);
+  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent);
+  text-underline-offset: 2px;
+}
+.rl-glyph {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.rl-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rl-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rl-text-3);
+}
+.rl-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--rl-text);
+}
+.rl-faint {
+  color: var(--rl-text-3);
+}
+
+.rl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--rl-surface);
+  color: var(--rl-text-2);
+}
+.rl-pill .rl-icon {
+  width: 12px;
+  height: 12px;
+}
+.rl-pill--warn {
+  background: var(--rl-warn-soft);
+  color: var(--rl-warn);
+}
+.rl-pill--win {
+  background: var(--rl-win-soft);
+  color: var(--rl-win);
+}
+.rl-pill--loss {
+  background: var(--rl-loss-soft);
+  color: var(--rl-loss);
+}
+.rl-pill--rare {
+  background: var(--rl-rare-soft);
+  color: var(--rl-rare-text);
+  box-shadow: inset 0 0 0 1px var(--rl-rare-line);
+}
+
+/* Demand meter: five bars */
+.rl-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.rl-meter span {
+  width: 4px;
+  border-radius: 1.5px;
+  background: var(--rl-surface-2);
+}
+.rl-meter span:nth-child(1) {
+  height: 40%;
+}
+.rl-meter span:nth-child(2) {
+  height: 55%;
+}
+.rl-meter span:nth-child(3) {
+  height: 70%;
+}
+.rl-meter span:nth-child(4) {
+  height: 85%;
+}
+.rl-meter span:nth-child(5) {
+  height: 100%;
+}
+.rl-meter span.is-on {
+  background: var(--rl-accent);
+}
+.rl-meter[data-level='1'] span.is-on,
+.rl-meter[data-level='2'] span.is-on {
+  background: var(--rl-loss);
+}
+.rl-meter[data-level='3'] span.is-on {
+  background: var(--rl-warn);
+}
+
+/* Confidence: three dots */
+.rl-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.rl-confidence i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rl-surface-2);
+}
+.rl-confidence i.is-on {
+  background: var(--rl-accent);
+}
+
+@keyframes rl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Colour-blind palette: blue for gains, orange for losses, told apart by more than hue. */
+:host([data-palette='cb']) {
+  --rl-win: #1d4ed8;
+  --rl-win-soft: rgba(29, 78, 216, 0.1);
+  --rl-loss: #c2410c;
+  --rl-loss-soft: rgba(194, 65, 12, 0.1);
+}
+:host([data-palette='cb'][data-theme='dark']) {
+  --rl-win: #60a5fa;
+  --rl-win-soft: rgba(96, 165, 250, 0.14);
+  --rl-loss: #fb923c;
+  --rl-loss-soft: rgba(251, 146, 60, 0.14);
+}
+
+/* The hidden attribute must win over display rules in widget styles. */
+[hidden] {
+  display: none !important;
+}
