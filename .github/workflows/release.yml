@@ -1,6 +1,7 @@
 name: Release
 
-# Push a tag like v0.1.0 to publish a release built from exactly that commit.
+# Push a tag like v0.1.0, or publish a release with a new tag from GitHub's Releases page,
+# to attach a build made from exactly that commit.
 on:
   push:
     tags: ['v*']
@@ -27,4 +28,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha256sum rolens-*.zip > SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" rolens-*.zip SHA256SUMS.txt --generate-notes
+          # A release published from GitHub's Releases page creates the tag itself; attach the build to it.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" rolens-*.zip SHA256SUMS.txt --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" rolens-*.zip SHA256SUMS.txt --generate-notes
+          fi
